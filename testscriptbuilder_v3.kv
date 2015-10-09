@@ -1,0 +1,320 @@
+#: kivy 1.9.0
+
+<SelectableButton>:
+	background_normal: 'Selection_Up.png'
+	on_press: self.SelectButton(self, args[0])
+
+<KeyActionGroupScreen>:
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		ActionBar:
+			size_hint: 1, 0.075
+			ActionView:
+				ActionPrevious:
+					title: 'Key Actions'
+					app_icon: 'AO_Small_White.png'
+					with_previous: False
+				ActionOverflow:
+				ActionGroup:
+					id: filedropdown_kag
+					text: 'Options'
+					ActionButton:
+						text: 'Import Key Actions'
+						id: importcsv_kag
+						on_press: app.ImportKeyActions(self, args[0])
+					ActionButton:
+						text: 'Import Workflows'
+						id: exportcsv_kag
+						on_press: app.ImportWorkflows(self, args[0])
+					ActionButton:
+						text: 'Load DB'
+						id: loaddb_kag
+						on_press: app.LoadDatabase(self, args[0])
+					ActionButton:
+						text: 'Quit'
+						id: quit_kag
+						on_press: app.Quit(self, args[0])
+				ActionGroup:
+					id: navigationdropdown_kag
+					text: 'Navigation'
+					ActionButton:
+						text: 'Flow Editor'
+						id: workflownav_kag
+						on_press: app.GoToWorkflowPage(self, args[0])
+					ActionButton:
+						text: 'Analysis'
+						id: analysisnav_kag
+						on_press: app.GoToAnalysisPage(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.1
+			GridLayout:
+				size_hint: 0.195, 1
+				rows: 2
+				Label:
+					text: 'Custom'
+				GridLayout:
+					cols: 2
+					Switch:
+						id: custswitch
+					CheckBox:
+						id: customfilter
+			TextInput:
+				hint_text: 'Module'
+				id: modulefilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			TextInput:
+				hint_text: 'System Area'
+				id: safilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			TextInput:
+				hint_text: 'Key Action'
+				id: kafilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			Button:
+				on_press: app.ApplyFilterKAG(self, args[0])
+				size_hint: 0.065, 1
+				background_down: 'Filter_Button_Down.png'
+				background_normal: 'Filter_Button_Up.png'
+			Button:
+				on_press: app.ClearFilterKAG(self, args[0])
+				size_hint: 0.065, 1
+				background_down: 'Clear_Button_Down.png'
+				background_normal: 'Clear_Button_Up.png'
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint:1, 0.825
+			BoxLayout:
+				size_hint:0.75, 1
+				orientation: 'vertical'
+				SelectableGrid:
+					size_hint:1, 0.9
+					cols: 4
+					rows: 4
+					id: selection_layout
+				ActionBar:
+					size_hint: 1, 0.1
+					ActionView:
+						ActionPrevious:
+							app_icon: 'double_note_down.png'
+							with_previous: False
+						ActionOverflow:
+						ActionButton:
+							text: 'Last Page'
+							on_press: app.LoadPrevPageKAG(self, args[0])
+							background_down: 'PrevPage_Down.png'
+							background_normal: 'PrevPage_Up.png'
+						ActionButton:
+							text: 'Next Page'
+							on_press: app.LoadNextPageKAG(self, args[0])
+							background_down: 'NextPage_Down.png'
+							background_normal: 'NextPage_Up.png'
+						ActionButton:
+							on_press: app.ClearQuickAction(self, args[0])
+							text: 'Quick Action'
+						ActionGroup:
+							text: 'Key Action'
+							ActionButton:
+								text: 'Edit Selected'
+								on_press: app.LoadQuickAction(self, args[0])
+							ActionButton:
+								text: 'Duplicate'
+								id: duplkeyaction_kag
+								on_press: app.DuplicateKeyAction(self, args[0])
+							ActionButton:
+								text: 'Delete'
+								id: deletekeyaction_kag
+								on_press: app.DeleteKeyAction(self, args[0])
+					
+			BoxLayout:
+				size_hint: 0.25, 1
+				orientation: 'vertical'
+				Button:
+					size_hint: 1, 0.1
+					text: 'Create Flow'
+					on_press: app.CreateFlow(self, args[0])
+				Button:
+					size_hint: 1, 0.1
+					text: 'Add To Flow'
+					on_press: app.AddToFlow(self, args[0])
+				Carousel:
+					size_hint: 1, 0.7
+					id: carousel_ka
+				Button:
+					size_hint: 1, 0.1
+					text: 'Save'
+					on_press: app.SaveQuickKeyAction(self, args[0])
+
+<WorkflowScreen>
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		ActionBar:
+			size_hint: 1, 0.075
+			ActionView:
+				ActionPrevious:
+					title: 'Workflows'
+					app_icon: 'AO_Small_White.png'
+					with_previous: False
+				ActionOverflow:
+				ActionGroup:
+					id: filedropdown_wf
+					text: 'Options'
+					ActionButton:
+						text: 'Import CSV'
+						id: importcsv_wf
+						on_press: app.ImportCSV(self, args[0])
+					ActionButton:
+						text: 'Export CSV'
+						id: exportcsv_wf
+						on_press: app.ExportCSV(self, args[0])
+					ActionButton:
+						text: 'Load DB'
+						id: loaddb_wf
+						on_press: app.LoadDatabase(self, args[0])
+					ActionButton:
+						text: 'Quit'
+						id: quit_wf
+						on_press: app.Quit(self, args[0])
+				ActionGroup:
+					id: navigationdropdown_wf
+					text: 'Navigation'
+					ActionButton:
+						text: 'Key Action'
+						id: analysisnav_wf
+						on_press: app.GoToKeyActionGroupPage(self, args[0])
+					ActionButton:
+						text: 'Analysis'
+						id: analysisnav_wf
+						on_press: app.GoToAnalysisPage(self, args[0])
+				ActionGroup:
+					id: workflowdropdown
+					text: 'Workflow'
+					ActionButton:
+						text: 'Add'
+						id: addworkflow_wf
+						on_press: app.AddWorkflow(self, args[0])
+					ActionButton:
+						text: 'Duplicate'
+						id: duplworkflow_wf
+						on_press: app.DuplicateWorkflow(self, args[0])
+					ActionButton:
+						text: 'Delete'
+						id: deleteworkflow_wf
+						on_press: app.DeleteWorkflow(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.075
+			TextInput:
+				hint_text: 'Module'
+				id: modulefilter_wf
+				size_hint: 0.2, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+			TextInput:
+				hint_text: 'System Area'
+				id: safilter_wf
+				size_hint: 0.2, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+			TextInput:
+				hint_text: 'Key Action'
+				id: kafilter_wf
+				size_hint: 0.2, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+			Button:
+				text: 'Clear'
+				on_press: app.ClearFilterWF(self, args[0])
+				size_hint: 0.1, 1
+				background_down: 'Button_Down.png'
+				background_normal: 'Button_Up.png'
+			Button:
+				text: 'Apply'
+				on_press: app.ApplyFilterWF(self, args[0])
+				size_hint: 0.1, 1
+				background_down: 'Button_Down.png'
+				background_normal: 'Button_Up.png'
+		BoxLayout:
+			size_hint: 1, 0.1
+			TextInput:
+				hint_text: 'Workflow'
+				id: workflowfilter_wf
+				size_hint: 0.2, 1
+				background_normal: 'TextInput_Unselected.png'
+				background_active: 'TextInput_Selected.png'
+			Label:
+				size_hint:0.15, 1
+				text: 'Custom'
+			CheckBox:
+				size_hint: 0.05, 1
+				id: customfilter_wf
+			Button:
+				size_hint:0.3, 1
+				text: 'Prev Page'
+				font_size: 20
+				on_press: app.LoadPrevPageWF(self, args[0])
+				background_down: 'PrevPage_Down.png'
+				background_normal: 'PrevPage_Up.png'
+			Button:
+				size_hint:0.3, 1
+				text: 'Next Page'
+				font_size: 20
+				on_press: app.LoadNextPageWF(self, args[0])
+				background_down: 'NextPage_Down.png'
+				background_normal: 'NextPage_Up.png'
+		BoxLayout:
+			size_hint: 1, 0.1
+			Carousel:
+				size_hint: 0.7, 1
+				id:carousel
+				Label:
+					text: 'Workflow 1'
+					id: wf_wf
+				Label:
+					text: 'Workflow 2'
+					id: wf2_wf
+			GridLayout:
+				cols: 2
+				Button:
+					text: 'Import Workflow'
+					on_press: app.ImportWorkflow(self, args[0])
+				Button:
+					text: 'Load Workflow'
+					on_press: app.LoadWorkflow(self, args[0])
+		BoxLayout:
+			orientation: 'horizontal'
+			FloatLayout:
+				size_hint: 0.5, 1
+				BoxLayout:
+				GridLayout:
+					id: grid_layout
+					rows: int(self.height / 20)
+				FloatLayout:
+					id: float_layout
+			BoxLayout:
+				size_hint: 0.5, 1
+				orientation: 'vertical'
+				Carousel:
+					size_hint: 1, 0.9
+					id: wf_carousel
+				GridLayout:
+					size_hint: 1, 0.1
+					cols: 2
+					Button:
+						text: 'Save Flow'
+						on_press: app.SaveFlow(self, args[0])
+					Button:
+						text: 'Save Order'
+						on_press: app.ReorderKeyActionCarousel_WF(self, args[0])
