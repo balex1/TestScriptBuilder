@@ -13,13 +13,12 @@ from kivy.properties import ListProperty, StringProperty, BooleanProperty, Objec
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.actionbar import ActionBar, ActionView, ActionButton, ActionGroup
 from kivy.uix.togglebutton import ToggleButton
-from NodeWidget6 import NodeWidget
-from DraggableImage import DraggableImage
+from src.DraggableImage import DraggableImage
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from KeyActionCarouselItem import KeyActionCarouselItem
+from src.KeyActionCarouselItem import KeyActionCarouselItem
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 import os.path
