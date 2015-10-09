@@ -28,3 +28,5 @@ class ExcelReader:
 			result.append(["E%s" % i])
 			result.append(["F%s" % i])
 			i += 1
+			
+		return result
