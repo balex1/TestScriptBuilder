@@ -18,7 +18,7 @@ Windows Install
 
 4.	Open the command prompt.  Go to the directory to which you unzipped sqlalchemy and run the following command:
 
-a.	<Path_to_Python_Executable>\python.exe .\setup.py install
+a.	""Path_to_Python_Executable"\python.exe .\setup.py install
 
 5.	For instance, my system compiled successfully with:
 
