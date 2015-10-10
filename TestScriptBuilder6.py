@@ -910,7 +910,7 @@ class TestScriptBuilderApp(App):
 			for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
 				
 				#Module
-				modName = child.module
+				modName = child.module_in.text
 				module = Module(name=modName)
 				session.add(module)
 				rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
@@ -921,7 +921,7 @@ class TestScriptBuilderApp(App):
 				session.commit()
 				
 				#System Area
-				saName = child.systemarea
+				saName = child.sa_in.text
 				systemarea = SystemArea(name=saName)
 				session.add(systemarea)
 				rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
@@ -933,7 +933,7 @@ class TestScriptBuilderApp(App):
 				session.commit()
 		
 				#Key Action
-				kaName = child.keyaction
+				kaName = child.ka_in.text
 				keyaction = KeyAction(name=kaName)
 				session.add(keyaction)
 				rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
@@ -942,19 +942,19 @@ class TestScriptBuilderApp(App):
 				elif len(rows) == 1:
 					keyaction.id = rows[0].id
 				keyaction.systemareaid = systemarea.id
-				keyaction.description = child.description
-				keyaction.custom = child.custom
+				keyaction.description = child.desc_in.text
+				keyaction.custom = child.custom_in.active
 				session.commit()
 				
 				#Input Parameters
 				#TO-DO: Check if the parameter exists before adding
-				inpparam = InputParameter(name=child.ip1)
+				inpparam = InputParameter(name=child.ip_in.text)
 				session.add(inpparam)
 				inpparam.keyactionid = keyaction.id
-				inpparam2 = InputParameter(name=child.ip2)
+				inpparam2 = InputParameter(name=child.ip2_in.text)
 				session.add(inpparam2)
 				inpparam2.keyactionid = keyaction.id
-				inpparam3 = InputParameter(name=child.ip3)
+				inpparam3 = InputParameter(name=child.ip3_in.text)
 				session.add(inpparam3)
 				inpparam3.keyactionid = keyaction.id
 				session.commit()
@@ -965,7 +965,7 @@ class TestScriptBuilderApp(App):
 			child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 
 			#Module
-			modName = child.module
+			modName = child.module_in.text
 			module = Module(name=modName)
 			session.add(module)
 			rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
@@ -976,7 +976,7 @@ class TestScriptBuilderApp(App):
 			session.commit()
 			
 			#System Area
-			saName = child.systemarea
+			saName = child.sa_in.text
 			systemarea = SystemArea(name=saName)
 			session.add(systemarea)
 			rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
@@ -988,7 +988,7 @@ class TestScriptBuilderApp(App):
 			session.commit()
 	
 			#Key Action
-			kaName = child.keyaction
+			kaName = child.ka_in.text
 			keyaction = KeyAction(name=kaName)
 			session.add(keyaction)
 			rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
@@ -997,8 +997,8 @@ class TestScriptBuilderApp(App):
 			elif len(rows) == 1:
 				keyaction.id = rows[0].id
 			keyaction.systemareaid = systemarea.id
-			keyaction.description = child.description
-			keyaction.custom = child.custom
+			keyaction.description = child.desc_in.text
+			keyaction.custom = child.custom_in.active
 			session.commit()
 			
 			#Input Parameters
@@ -1006,13 +1006,13 @@ class TestScriptBuilderApp(App):
 			rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == keyaction.id).all()
 			#No existing input parameters for key action
 			if len(rows) == 0:
-				inpparam = InputParameter(name=child.ip1)
+				inpparam = InputParameter(name=child.ip_in.text)
 				session.add(inpparam)
 				inpparam.keyactionid = keyaction.id
-				inpparam2 = InputParameter(name=child.ip2)
+				inpparam2 = InputParameter(name=child.ip2_in.text)
 				session.add(inpparam2)
 				inpparam2.keyactionid = keyaction.id
-				inpparam3 = InputParameter(name=child.ip3)
+				inpparam3 = InputParameter(name=child.ip3_in.text)
 				session.add(inpparam3)
 				inpparam3.keyactionid = keyaction.id
 				session.commit()
@@ -1020,46 +1020,46 @@ class TestScriptBuilderApp(App):
 			#Single Existing input parameter for key action
 			elif len(rows) == 1:
 				if rows[0].name == child.ip1:
-					inpparam = InputParameter(name=child.ip1)
+					inpparam = InputParameter(name=child.ip_in.text)
 					inpparam.id = rows[0].id
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2)
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3)
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
-				elif rows[0].name == child.ip2:
-					inpparam = InputParameter(name=child.ip1)
+				elif rows[0].name == child.ip2_in.text:
+					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2)
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					inpparam2.id = rows[0].id
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3)
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
-				elif rows[0].name == child.ip3:
-					inpparam = InputParameter(name=child.ip1)
+				elif rows[0].name == child.ip3_in.text:
+					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2)
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3)
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					inpparam3.id = rows[0].id
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
 				else:
-					inpparam = InputParameter(name=child.ip1)
+					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2)
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3)
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
 				
@@ -1067,106 +1067,106 @@ class TestScriptBuilderApp(App):
 				
 			#2 Existing input parameters for key action
 			elif len(rows) == 2:
-				if rows[0].name == child.ip1:
-					inpparam = InputParameter(name=child.ip1)
+				if rows[0].name == child.ip_in.text:
+					inpparam = InputParameter(name=child.ip_in.text)
 					inpparam.id = rows[0].id
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					if rows[1].name == child.ip2:
-						inpparam2 = InputParameter(name=child.ip2)
+					if rows[1].name == child.ip2_in.text:
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						inpparam2.id = rows[1].id
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
-					elif rows[1].name == child.ip3:
-						inpparam2 = InputParameter(name=child.ip2)
+					elif rows[1].name == child.ip3_in.text:
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						inpparam3.id = rows[1].id
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
 					else:
 						#The input parameters in the UI don't match those in the DB
-						inpparam2 = InputParameter(name=child.ip2)
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
 					
-				elif rows[0].name == child.ip2:
-					inpparam2 = InputParameter(name=child.ip2)
+				elif rows[0].name == child.ip2_in.text:
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					inpparam2.id = rows[0].id
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
 					if rows[1].name == child.ip1:
-						inpparam1 = InputParameter(name=child.ip1)
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						inpparam1.id = rows[1].id
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
-					elif rows[1].name == child.ip3:
-						inpparam1 = InputParameter(name=child.ip1)
+					elif rows[1].name == child.ip3_in.text:
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						inpparam3.id = rows[1].id
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
 					else:
 						#The input parameters in the UI don't match those in the DB
-						inpparam1 = InputParameter(name=child.ip1)
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
 					
-				elif rows[0].name == child.ip3:
-					inpparam3 = InputParameter(name=child.ip3)
+				elif rows[0].name == child.ip3_in.text:
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					inpparam3.id = rows[0].id
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
-					if rows[1].name == child.ip2:
-						inpparam1 = InputParameter(name=child.ip1)
+					if rows[1].name == child.ip2_in.text:
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						inpparam1.id = rows[1].id
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam2 = InputParameter(name=child.ip2)
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-					elif rows[1].name == child.ip1:
-						inpparam1 = InputParameter(name=child.ip1)
+					elif rows[1].name == child.ip_in.text:
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam2 = InputParameter(name=child.ip2)
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						inpparam2.id = rows[1].id
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
 					else:
 						#The input parameters in the UI don't match those in the DB
-						inpparam1 = InputParameter(name=child.ip1)
+						inpparam1 = InputParameter(name=child.ip_in.text)
 						inpparam1.id = rows[1].id
 						session.add(inpparam1)
 						inpparam1.keyactionid = keyaction.id
-						inpparam2 = InputParameter(name=child.ip2)
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
 					
 				else:
 					#The input parameters in the UI don't match those in the DB
-					inpparam = InputParameter(name=child.ip1)
+					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2)
+					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
 					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3)
+					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
 					inpparam3.keyactionid = keyaction.id
 					
@@ -1174,50 +1174,50 @@ class TestScriptBuilderApp(App):
 				
 			#3 or more Existing Input Parameters for Key Action
 			else:
-				if rows[0].name == child.ip1:
-					inpparam = InputParameter(name=child.ip1)
+				if rows[0].name == child.ip_in.text:
+					inpparam = InputParameter(name=child.ip_in.text)
 					inpparam.id = rows[0].id
 					session.add(inpparam)
 					inpparam.keyactionid = keyaction.id
-					if rows[1].name == child.ip2 or rows[2].name == child.ip3:
-						inpparam2 = InputParameter(name=child.ip2)
+					if rows[1].name == child.ip2_in.text or rows[2].name == child.ip3_in.text:
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						inpparam2.id = rows[1].id
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						inpparam3.id = rows[2].id
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
-					elif rows[1].name == child.ip3 or rows[2].name == child.ip2:
-						inpparam2 = InputParameter(name=child.ip2)
+					elif rows[1].name == child.ip3_in.text or rows[2].name == child.ip2_in.text:
+						inpparam2 = InputParameter(name=child.ip2_in.text)
 						inpparam2.id = rows[2].id
 						session.add(inpparam2)
 						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3)
+						inpparam3 = InputParameter(name=child.ip3_in.text)
 						inpparam3.id = rows[1].id
 						session.add(inpparam3)
 						inpparam3.keyactionid = keyaction.id
 					else:
 						pass
-				elif rows[0].name == child.ip2:
-					if rows[1].name == child.ip1:
+				elif rows[0].name == child.ip2_in.text:
+					if rows[1].name == child.ip_in.text:
 						pass
-					elif rows[1].name == child.ip3:
+					elif rows[1].name == child.ip3_in.text:
 						pass
-					elif rows[2].name == child.ip2:
+					elif rows[2].name == child.ip2_in.text:
 						pass
-					elif rows[2].name == child.ip3:
+					elif rows[2].name == child.ip3_in.text:
 						pass
 					else:
 						pass
-				elif rows[0].name == child.ip3:
-					if rows[1].name == child.ip2:
+				elif rows[0].name == child.ip3_in.text:
+					if rows[1].name == child.ip2_in.text:
 						pass
-					elif rows[1].name == child.ip1:
+					elif rows[1].name == child.ip_in.text:
 						pass
-					elif rows[2].name == child.ip2:
+					elif rows[2].name == child.ip2_in.text:
 						pass
-					elif rows[2].name == child.ip3:
+					elif rows[2].name == child.ip3_in.text:
 						pass
 					else:
 						pass
@@ -1232,18 +1232,20 @@ class TestScriptBuilderApp(App):
 				child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 				
 				#Module
-				modName = child.module
+				modName = child.module_in.text
 				module = Module(name=modName)
 				session.add(module)
 				rows = session.query(Module).filter(Module.name == modName).all()
 				if len(rows) > 1:
+					for row in rows:
+						print(row)
 					raise KeyError('Business Key Violation in table module')
 				elif len(rows) == 1:
 					module.id = rows[0].id
 				session.commit()
 				
 				#System Area
-				saName = child.systemarea
+				saName = child.sa_in.text
 				systemarea = SystemArea(name=saName)
 				session.add(systemarea)
 				rows = session.query(SystemArea).filter(SystemArea.name == saName).all()
@@ -1255,22 +1257,22 @@ class TestScriptBuilderApp(App):
 				session.commit()
 			
 				#Key Action
-				kaName = child.keyaction
+				kaName = child.ka_in.text
 				keyaction = KeyAction(name=kaName)
 				session.add(keyaction)
 				keyaction.systemareaid = systemarea.id
-				keyaction.description = child.description
-				keyaction.custom = child.custom
+				keyaction.description = child.desc_in.text
+				keyaction.custom = child.custom_in.active
 				session.commit()
 				
 				#Input Parameters				
-				inpparam = InputParameter(name=child.ip1)
+				inpparam = InputParameter(name=child.ip_in.text)
 				session.add(inpparam)
 				inpparam.keyactionid = keyaction.id
-				inpparam2 = InputParameter(name=child.ip2)
+				inpparam2 = InputParameter(name=child.ip2_in.text)
 				session.add(inpparam2)
 				inpparam2.keyactionid = keyaction.id
-				inpparam3 = InputParameter(name=child.ip3)
+				inpparam3 = InputParameter(name=child.ip3_in.text)
 				session.add(inpparam3)
 				inpparam3.keyactionid = keyaction.id
 				session.commit()
