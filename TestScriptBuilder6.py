@@ -633,6 +633,7 @@ class TestScriptBuilderApp(App):
 		self.root.get_screen('keyactiongroup').ids.kafilter_kag.text = ''
 		self.root.get_screen('keyactiongroup').ids.custswitch.active = False
 		filter.setCustomFilteringEnabled(self.root.get_screen('keyactiongroup').ids.custswitch.active)
+		self.ApplyFilterKAG(args)
 		
 	def SetCustom(self, *args):
 		Logger.debug('Set Custom')
@@ -699,21 +700,21 @@ class TestScriptBuilderApp(App):
 		numSelected = len(selected)
 		
 		if numSelected > 1:
-			for action in selected_ids:
+			for action in selected:
 				#Create the Key Action Carousel Item
 				keyaction = KeyActionCarouselItem()
 					
 				#Set the Module & System Area
-				sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
+				sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
 				keyaction.systemarea = sa_rows[0].name
-				mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
+				mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
 				keyaction.module = mod_rows[0].name
 				
 				#Create a new Key Action
 				ka = KeyAction()
 				session.add(ka)
 				
-				rows = session.query(KeyAction).filter(KeyAction.id == action)
+				rows = session.query(KeyAction).filter(KeyAction.name == action)
 				
 				#Set the Key Action attributes
 				keyaction.keyaction = "New %s" % (rows[0].name)
@@ -722,6 +723,7 @@ class TestScriptBuilderApp(App):
 				ka.description = rows[0].description
 				keyaction.custom = rows[0].custom
 				ka.custom = rows[0].custom
+				ka.systemareaid = rows[0].systemareaid
 				session.commit()
 					
 				#Set the Input Parameters
@@ -772,21 +774,21 @@ class TestScriptBuilderApp(App):
 				#Add the base widget to the screen in the carousel
 				self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
 		elif numSelected == 1:
-			action = selected_ids[0]
+			action = selected[0]
 			#Create the Key Action Carousel Item
 			keyaction = KeyActionCarouselItem()
 				
 			#Set the Module & System Area
-			sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
+			sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
 			keyaction.systemarea = sa_rows[0].name
-			mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
+			mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
 			keyaction.module = mod_rows[0].name
 			
 			#Create a new Key Action
 			ka = KeyAction()
 			session.add(ka)
 			
-			rows = session.query(KeyAction).filter(KeyAction.id == action)
+			rows = session.query(KeyAction).filter(KeyAction.name == action)
 			
 			#Set the Key Action attributes
 			keyaction.keyaction = "New %s" % (rows[0].name)
@@ -795,6 +797,7 @@ class TestScriptBuilderApp(App):
 			ka.description = rows[0].description
 			keyaction.custom = rows[0].custom
 			ka.custom = rows[0].custom
+			ka.systemareaid = rows[0].systemareaid
 			session.commit()
 				
 			#Set the Input Parameters
@@ -844,6 +847,7 @@ class TestScriptBuilderApp(App):
 	
 			#Add the base widget to the screen in the carousel
 			self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+			self.ApplyFilterKAG(args)
 	
 	def DeleteKeyAction(self, *args):
 		Logger.debug('Delete Key Action')
@@ -868,6 +872,7 @@ class TestScriptBuilderApp(App):
 				session.add(result)
 				session.delete(result)
 				session.commit()
+		self.ApplyFilterKAG(args)
 				
 	#----------------------------------------------------------
 	#-------------------Grid Methods---------------------------
@@ -904,7 +909,6 @@ class TestScriptBuilderApp(App):
 	def SaveQuickKeyAction(self, *args):
 		Logger.debug('Save Quick Key Action Frame')
 		i = 0
-		#TO-DO: Save based on ID's, not names
 		#Loop through the children of the carousel and save each one
 		if len(selected_ids)>1:
 			for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
@@ -919,7 +923,7 @@ class TestScriptBuilderApp(App):
 				session.commit()
 				
 				#System Area
-				sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+				sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
 				if len(rows) > 1:
 					raise KeyError('Business Key Violation in table system area')
 				elif len(sa_rows) == 1:
@@ -928,7 +932,7 @@ class TestScriptBuilderApp(App):
 				session.commit()
 		
 				#Key Action
-				ka_rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+				ka_rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
 				if len(ka_rows) > 1:
 					raise KeyError('Business Key Violation in table key action')
 				elif len(ka_rows) == 1:
@@ -940,7 +944,7 @@ class TestScriptBuilderApp(App):
 				
 				#Input Parameters
 			
-				rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == ka_rows[0].id).all()
+				rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
 				
 				#No existing input parameters for key action
 				if len(rows) == 0:
@@ -1089,31 +1093,31 @@ class TestScriptBuilderApp(App):
 							rows[2].name=child.ip3_in.text
 					elif rows[0].name == child.ip3_in.text:
 						if rows[1].name == child.ip2_in.text:
-							if rows[2].name != child.ip_in.text:
+							if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 								rows[2].name=child.ip_in.text
 						elif rows[1].name == child.ip_in.text:
-							if rows[2].name != child.ip2_in.text:
+							if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 								rows[2].name=child.ip2_in.text
-						elif rows[2].name == child.ip2_in.text:
+						elif rows[2].name == child.ip2_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 							rows[1].name=child.ip_in.text
-						elif rows[2].name == child.ip_in.text:
+						elif rows[2].name == child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 							rows[1].name=child.ip2_in.text
 						else:
 							rows[1].name=child.ip_in.text
 							rows[2].name=child.ip2_in.text
 					else:
 						if rows[1].name == child.ip_in.text:
-							if rows[2].name == child.ip2_in.text:
+							if rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
 								rows[0].name=child.ip3_in.text
-							elif rows[2].name == child.ip3_in.text:
+							elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 								rows[0].name=child.ip2_in.text
 							else:
 								rows[0].name=child.ip2_in.text
 								rows[2].name=child.ip3_in.text
 						elif rows[2].name == child.ip_in.text:
-							if rows[1].name == child.ip2_in.text:
+							if rows[1].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
 								rows[0].name=child.ip3_in.text
-							elif rows[1].name == child.ip3_in.text:
+							elif rows[1].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 								rows[0].name=child.ip2_in.text
 							else:
 								rows[0].name=child.ip2_in.text
@@ -1307,31 +1311,31 @@ class TestScriptBuilderApp(App):
 						rows[2].name=child.ip3_in.text
 				elif rows[0].name == child.ip3_in.text:
 					if rows[1].name == child.ip2_in.text:
-						if rows[2].name != child.ip_in.text:
+						if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 							rows[2].name=child.ip_in.text
 					elif rows[1].name == child.ip_in.text:
-						if rows[2].name != child.ip2_in.text:
+						if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 							rows[2].name=child.ip2_in.text
-					elif rows[2].name == child.ip2_in.text:
+					elif rows[2].name == child.ip2_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 						rows[1].name=child.ip_in.text
-					elif rows[2].name == child.ip_in.text:
+					elif rows[2].name == child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
 						rows[1].name=child.ip2_in.text
 					else:
 						rows[1].name=child.ip_in.text
 						rows[2].name=child.ip2_in.text
 				else:
 					if rows[1].name == child.ip_in.text:
-						if rows[2].name == child.ip2_in.text:
+						if rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
 							rows[0].name=child.ip3_in.text
-						elif rows[2].name == child.ip3_in.text:
+						elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 							rows[0].name=child.ip2_in.text
 						else:
 							rows[0].name=child.ip2_in.text
 							rows[2].name=child.ip3_in.text
 					elif rows[2].name == child.ip_in.text:
-						if rows[1].name == child.ip2_in.text:
+						if rows[1].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
 							rows[0].name=child.ip3_in.text
-						elif rows[1].name == child.ip3_in.text:
+						elif rows[1].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
 							rows[0].name=child.ip2_in.text
 						else:
 							rows[0].name=child.ip2_in.text
@@ -1349,35 +1353,39 @@ class TestScriptBuilderApp(App):
 				child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 				
 				#Module
-				modName = child.module_in.text
-				module = Module(name=modName)
-				session.add(module)
-				rows = session.query(Module).filter(Module.name == modName).all()
+				rows = session.query(Module).filter(Module.name == child.module_in.text).all()
 				if len(rows) > 1:
-					for row in rows:
-						print(row)
 					raise KeyError('Business Key Violation in table module')
-				elif len(rows) == 1:
-					module.id = rows[0].id
+				elif len(rows) != 1:
+					mod = Module()
+					mod.name = child.module_in.text
+					session.add(mod)
 				session.commit()
 				
 				#System Area
-				saName = child.sa_in.text
-				systemarea = SystemArea(name=saName)
-				session.add(systemarea)
-				rows = session.query(SystemArea).filter(SystemArea.name == saName).all()
-				if len(rows) > 1:
+				sa_rows = session.query(SystemArea).filter(SystemArea.name == child.sa_in.text).all()
+				if len(sa_rows) > 1:
 					raise KeyError('Business Key Violation in table system area')
-				elif len(rows) == 1:
-					systemarea.id = rows[0].id
-				systemarea.moduleid = module.id
+				elif len(sa_rows) == 1:
+					sa_rows[0].name == child.sa_in.text
+					if len(rows) == 1:
+						sa_rows[0].moduleid = rows[0].id
+					else:
+						sa_rows[0].moduleid = mod.id
+				else:
+					sys = SystemArea()
+					sys.name = child.sa_in.text
+					session.add(sys)
 				session.commit()
 			
 				#Key Action
 				kaName = child.ka_in.text
 				keyaction = KeyAction(name=kaName)
 				session.add(keyaction)
-				keyaction.systemareaid = systemarea.id
+				if len(sa_rows) == 1:
+					keyaction.systemareaid = sa_rows[0].id
+				else:
+					keyaction.systemareaid = sys.id
 				keyaction.description = child.desc_in.text
 				keyaction.custom = child.custom_in.active
 				session.commit()
@@ -1393,6 +1401,7 @@ class TestScriptBuilderApp(App):
 				session.add(inpparam3)
 				inpparam3.keyactionid = keyaction.id
 				session.commit()
+		self.ApplyFilterKAG(args)
 			
 	def LoadQuickAction(self, *args):
 		Logger.debug('Load Quick Action')
