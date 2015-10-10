@@ -910,319 +910,436 @@ class TestScriptBuilderApp(App):
 			for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
 				
 				#Module
-				modName = child.module_in.text
-				module = Module(name=modName)
-				session.add(module)
 				rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-				if len(rows > 1):
+				module = rows[0]
+				if len(rows) > 1:
 					raise KeyError('Business Key Violation in table module')
 				elif len(rows) == 1:
-					module.id = rows[0].id
+					rows[0].name = child.module_in.text
 				session.commit()
 				
 				#System Area
-				saName = child.sa_in.text
-				systemarea = SystemArea(name=saName)
-				session.add(systemarea)
-				rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-				if len(rows > 1):
+				sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+				if len(rows) > 1:
 					raise KeyError('Business Key Violation in table system area')
-				elif len(rows) == 1:
-					systemarea.id = rows[0].id
-				systemarea.moduleid = module.id
+				elif len(sa_rows) == 1:
+					sa_rows[0].name == child.sa_in.text
+				sa_rows[0].moduleid = rows[0].id
 				session.commit()
 		
 				#Key Action
-				kaName = child.ka_in.text
-				keyaction = KeyAction(name=kaName)
-				session.add(keyaction)
-				rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-				if len(rows) > 1:
+				ka_rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+				if len(ka_rows) > 1:
 					raise KeyError('Business Key Violation in table key action')
-				elif len(rows) == 1:
-					keyaction.id = rows[0].id
-				keyaction.systemareaid = systemarea.id
-				keyaction.description = child.desc_in.text
-				keyaction.custom = child.custom_in.active
+				elif len(ka_rows) == 1:
+					ka_rows[0].id == child.ka_in.text
+				ka_rows[0].systemareaid = sa_rows[0].id
+				ka_rows[0].description = child.desc_in.text
+				ka_rows[0].custom = child.custom_in.active
 				session.commit()
 				
 				#Input Parameters
-				#TO-DO: Check if the parameter exists before adding
-				inpparam = InputParameter(name=child.ip_in.text)
-				session.add(inpparam)
-				inpparam.keyactionid = keyaction.id
-				inpparam2 = InputParameter(name=child.ip2_in.text)
-				session.add(inpparam2)
-				inpparam2.keyactionid = keyaction.id
-				inpparam3 = InputParameter(name=child.ip3_in.text)
-				session.add(inpparam3)
-				inpparam3.keyactionid = keyaction.id
-				session.commit()
-				i += 1
+			
+				rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == ka_rows[0].id).all()
+				
+				#No existing input parameters for key action
+				if len(rows) == 0:
+					inpparam = InputParameter(name=child.ip_in.text)
+					session.add(inpparam)
+					inpparam.keyactionid = ka_rows[0].id
+					inpparam2 = InputParameter(name=child.ip2_in.text)
+					session.add(inpparam2)
+					inpparam2.keyactionid = ka_rows[0].id
+					inpparam3 = InputParameter(name=child.ip3_in.text)
+					session.add(inpparam3)
+					inpparam3.keyactionid = ka_rows[0].id
+					session.commit()
+					
+				#Single Existing input parameter for key action
+				elif len(rows) == 1:
+					if rows[0].name == child.ip_in.text:
+						inpparam2 = InputParameter(name=child.ip2_in.text)
+						session.add(inpparam2)
+						inpparam2.keyactionid = ka_rows[0].id
+						inpparam3 = InputParameter(name=child.ip3_in.text)
+						session.add(inpparam3)
+						inpparam3.keyactionid = ka_rows[0].id
+					elif rows[0].name == child.ip2_in.text:
+						inpparam = InputParameter(name=child.ip_in.text)
+						session.add(inpparam)
+						inpparam.keyactionid = ka_rows[0].id
+						inpparam3 = InputParameter(name=child.ip3_in.text)
+						session.add(inpparam3)
+						inpparam3.keyactionid = ka_rows[0].id
+					elif rows[0].name == child.ip3_in.text:
+						inpparam = InputParameter(name=child.ip_in.text)
+						session.add(inpparam)
+						inpparam.keyactionid = ka_rows[0].id
+						inpparam2 = InputParameter(name=child.ip2_in.text)
+						session.add(inpparam2)
+						inpparam2.keyactionid = ka_rows[0].id
+					else:
+						rows[0].name = child.ip_in.text
+						inpparam2 = InputParameter(name=child.ip2_in.text)
+						session.add(inpparam2)
+						inpparam2.keyactionid = ka_rows[0].id
+						inpparam3 = InputParameter(name=child.ip3_in.text)
+						session.add(inpparam3)
+						inpparam3.keyactionid = ka_rows[0].id
+					
+					session.commit()
+					
+				#2 Existing input parameters for key action
+				elif len(rows) == 2:
+					if rows[0].name == child.ip_in.text:
+						if rows[1].name == child.ip2_in.text:
+							if child.ip3_in.text != '' and child.ip3_in.text is not None:
+								inpparam3 = InputParameter(name=child.ip3_in.text)
+								session.add(inpparam3)
+								inpparam3.keyactionid = ka_rows[0].id
+						elif rows[1].name == child.ip3_in.text:
+							if child.ip2_in.text != '' and child.ip2_in.text is not None:
+								inpparam2 = InputParameter(name=child.ip2_in.text)
+								session.add(inpparam2)
+								inpparam2.keyactionid = ka_rows[0].id
+						else:
+							#The input parameters in the UI don't match those in the DB
+							rows[1].name=child.ip2_in.text
+							if child.ip3_in.text != '' and child.ip3_in.text is not None:
+								inpparam3 = InputParameter(name=child.ip3_in.text)
+								session.add(inpparam3)
+								inpparam3.keyactionid = ka_rows[0].id
+						
+					elif rows[0].name == child.ip2_in.text:
+						if rows[1].name == child.ip1:
+							if child.ip3_in.text != '' and child.ip3_in.text is not None:
+								inpparam3 = InputParameter(name=child.ip3_in.text)
+								session.add(inpparam3)
+								inpparam3.keyactionid = ka_rows[0].id
+						elif rows[1].name == child.ip3_in.text:
+							if child.ip2_in.text != '' and child.ip2_in.text is not None:
+								inpparam1 = InputParameter(name=child.ip_in.text)
+								session.add(inpparam1)
+								inpparam1.keyactionid = ka_rows[0].id
+						else:
+							#The input parameters in the UI don't match those in the DB
+							inpparam1 = InputParameter(name=child.ip_in.text)
+							session.add(inpparam1)
+							inpparam1.keyactionid = ka_rows[0].id
+							rows[1].name=child.ip3_in.text
+						
+					elif rows[0].name == child.ip3_in.text:
+						if rows[1].name == child.ip2_in.text:
+							if child.ip_in.text != '' and child.ip_in.text is not None:
+								inpparam2 = InputParameter(name=child.ip_in.text)
+								session.add(inpparam2)
+								inpparam2.keyactionid = ka_rows[0].id
+						elif rows[1].name == child.ip_in.text:
+							if child.ip2_in.text != '' and child.ip2_in.text is not None:
+								inpparam2 = InputParameter(name=child.ip2_in.text)
+								session.add(inpparam2)
+								inpparam2.keyactionid = ka_rows[0].id
+						else:
+							#The input parameters in the UI don't match those in the DB
+							rows[1].name=child.ip_in.text
+							inpparam2 = InputParameter(name=child.ip2_in.text)
+							session.add(inpparam2)
+							inpparam2.keyactionid = ka_rows[0].id
+						
+					else:
+						#The input parameters in the UI don't match those in the DB
+						rows[0].name=child.ip_in.text
+						rows[1].name=child.ip2_in.text
+						if child.ip3_in.text != '' and child.ip3_in.text is not None:
+							inpparam3 = InputParameter(name=child.ip3_in.text)
+							session.add(inpparam3)
+							inpparam3.keyactionid = ka_rows[0].id
+						
+					session.commit()
+					
+				#3 or more Existing Input Parameters for Key Action
+				else:
+					if rows[0].name == child.ip_in.text:
+						if rows[1].name == child.ip2_in.text:
+							if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+								rows[2].name=child.ip3_in.text
+						elif rows[1].name == child.ip3_in.text:
+							if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
+								rows[2].name=child.ip2_in.text
+						elif rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+							rows[1].name=child.ip3_in.text
+						elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
+							rows[1].name=child.ip2_in.text
+						else:
+							rows[1].name=child.ip2_in.text
+							rows[2].name=child.ip3_in.text
+					elif rows[0].name == child.ip2_in.text:
+						if rows[1].name == child.ip_in.text:
+							if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+								rows[2].name=child.ip3_in.text
+						elif rows[1].name == child.ip3_in.text:
+							if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
+								rows[2].name=child.ip_in.text
+						elif rows[2].name == child.ip_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+							rows[1].name=child.ip3_in.text
+						elif rows[2].name == child.ip3_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
+							rows[1].name=child.ip_in.text
+						else:
+							rows[1].name=child.ip_in.text
+							rows[2].name=child.ip3_in.text
+					elif rows[0].name == child.ip3_in.text:
+						if rows[1].name == child.ip2_in.text:
+							if rows[2].name != child.ip_in.text:
+								rows[2].name=child.ip_in.text
+						elif rows[1].name == child.ip_in.text:
+							if rows[2].name != child.ip2_in.text:
+								rows[2].name=child.ip2_in.text
+						elif rows[2].name == child.ip2_in.text:
+							rows[1].name=child.ip_in.text
+						elif rows[2].name == child.ip_in.text:
+							rows[1].name=child.ip2_in.text
+						else:
+							rows[1].name=child.ip_in.text
+							rows[2].name=child.ip2_in.text
+					else:
+						if rows[1].name == child.ip_in.text:
+							if rows[2].name == child.ip2_in.text:
+								rows[0].name=child.ip3_in.text
+							elif rows[2].name == child.ip3_in.text:
+								rows[0].name=child.ip2_in.text
+							else:
+								rows[0].name=child.ip2_in.text
+								rows[2].name=child.ip3_in.text
+						elif rows[2].name == child.ip_in.text:
+							if rows[1].name == child.ip2_in.text:
+								rows[0].name=child.ip3_in.text
+							elif rows[1].name == child.ip3_in.text:
+								rows[0].name=child.ip2_in.text
+							else:
+								rows[0].name=child.ip2_in.text
+								rows[1].name=child.ip3_in.text
+						else:
+							rows[0].name=child.ip_in.text
+							rows[1].name=child.ip2_in.text
+							rows[2].name=child.ip3_in.text
 				
 		#If there is only one child, save it
 		elif len(selected_ids) == 1:
 			child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 
 			#Module
-			modName = child.module_in.text
-			module = Module(name=modName)
-			session.add(module)
 			rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
+			module = rows[0]
 			if len(rows) > 1:
 				raise KeyError('Business Key Violation in table module')
 			elif len(rows) == 1:
-				module.id = rows[0].id
+				rows[0].name = child.module_in.text
 			session.commit()
 			
 			#System Area
-			saName = child.sa_in.text
-			systemarea = SystemArea(name=saName)
-			session.add(systemarea)
-			rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+			sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
 			if len(rows) > 1:
 				raise KeyError('Business Key Violation in table system area')
-			elif len(rows) == 1:
-				systemarea.id = rows[0].id
-			systemarea.moduleid = module.id
+			elif len(sa_rows) == 1:
+				sa_rows[0].name == child.sa_in.text
+			sa_rows[0].moduleid = rows[0].id
 			session.commit()
 	
 			#Key Action
-			kaName = child.ka_in.text
-			keyaction = KeyAction(name=kaName)
-			session.add(keyaction)
-			rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
-			if len(rows) > 1:
+			ka_rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[0]).all()
+			if len(ka_rows) > 1:
 				raise KeyError('Business Key Violation in table key action')
-			elif len(rows) == 1:
-				keyaction.id = rows[0].id
-			keyaction.systemareaid = systemarea.id
-			keyaction.description = child.desc_in.text
-			keyaction.custom = child.custom_in.active
+			elif len(ka_rows) == 1:
+				ka_rows[0].id == child.ka_in.text
+			ka_rows[0].systemareaid = sa_rows[0].id
+			ka_rows[0].description = child.desc_in.text
+			ka_rows[0].custom = child.custom_in.active
 			session.commit()
 			
 			#Input Parameters
 			
-			rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == keyaction.id).all()
+			rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == ka_rows[0].id).all()
+			
 			#No existing input parameters for key action
 			if len(rows) == 0:
 				inpparam = InputParameter(name=child.ip_in.text)
 				session.add(inpparam)
-				inpparam.keyactionid = keyaction.id
+				inpparam.keyactionid = ka_rows[0].id
 				inpparam2 = InputParameter(name=child.ip2_in.text)
 				session.add(inpparam2)
-				inpparam2.keyactionid = keyaction.id
+				inpparam2.keyactionid = ka_rows[0].id
 				inpparam3 = InputParameter(name=child.ip3_in.text)
 				session.add(inpparam3)
-				inpparam3.keyactionid = keyaction.id
+				inpparam3.keyactionid = ka_rows[0].id
 				session.commit()
 				
 			#Single Existing input parameter for key action
 			elif len(rows) == 1:
-				if rows[0].name == child.ip1:
-					inpparam = InputParameter(name=child.ip_in.text)
-					inpparam.id = rows[0].id
-					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
+				if rows[0].name == child.ip_in.text:
 					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
+					inpparam2.keyactionid = ka_rows[0].id
 					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
+					inpparam3.keyactionid = ka_rows[0].id
 				elif rows[0].name == child.ip2_in.text:
 					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2_in.text)
-					inpparam2.id = rows[0].id
-					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
+					inpparam.keyactionid = ka_rows[0].id
 					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
+					inpparam3.keyactionid = ka_rows[0].id
 				elif rows[0].name == child.ip3_in.text:
 					inpparam = InputParameter(name=child.ip_in.text)
 					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
+					inpparam.keyactionid = ka_rows[0].id
 					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3_in.text)
-					inpparam3.id = rows[0].id
-					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
+					inpparam2.keyactionid = ka_rows[0].id
 				else:
-					inpparam = InputParameter(name=child.ip_in.text)
-					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
+					rows[0].name = child.ip_in.text
 					inpparam2 = InputParameter(name=child.ip2_in.text)
 					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
+					inpparam2.keyactionid = ka_rows[0].id
 					inpparam3 = InputParameter(name=child.ip3_in.text)
 					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
+					inpparam3.keyactionid = ka_rows[0].id
 				
 				session.commit()
 				
 			#2 Existing input parameters for key action
 			elif len(rows) == 2:
 				if rows[0].name == child.ip_in.text:
-					inpparam = InputParameter(name=child.ip_in.text)
-					inpparam.id = rows[0].id
-					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
 					if rows[1].name == child.ip2_in.text:
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						inpparam2.id = rows[1].id
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						if child.ip3_in.text != '' and child.ip3_in.text is not None:
+							inpparam3 = InputParameter(name=child.ip3_in.text)
+							session.add(inpparam3)
+							inpparam3.keyactionid = ka_rows[0].id
 					elif rows[1].name == child.ip3_in.text:
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						inpparam3.id = rows[1].id
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						if child.ip2_in.text != '' and child.ip2_in.text is not None:
+							inpparam2 = InputParameter(name=child.ip2_in.text)
+							session.add(inpparam2)
+							inpparam2.keyactionid = ka_rows[0].id
 					else:
 						#The input parameters in the UI don't match those in the DB
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						rows[1].name=child.ip2_in.text
+						if child.ip3_in.text != '' and child.ip3_in.text is not None:
+							inpparam3 = InputParameter(name=child.ip3_in.text)
+							session.add(inpparam3)
+							inpparam3.keyactionid = ka_rows[0].id
 					
 				elif rows[0].name == child.ip2_in.text:
-					inpparam2 = InputParameter(name=child.ip2_in.text)
-					inpparam2.id = rows[0].id
-					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
 					if rows[1].name == child.ip1:
-						inpparam1 = InputParameter(name=child.ip_in.text)
-						inpparam1.id = rows[1].id
-						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						if child.ip3_in.text != '' and child.ip3_in.text is not None:
+							inpparam3 = InputParameter(name=child.ip3_in.text)
+							session.add(inpparam3)
+							inpparam3.keyactionid = ka_rows[0].id
 					elif rows[1].name == child.ip3_in.text:
-						inpparam1 = InputParameter(name=child.ip_in.text)
-						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						inpparam3.id = rows[1].id
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						if child.ip2_in.text != '' and child.ip2_in.text is not None:
+							inpparam1 = InputParameter(name=child.ip_in.text)
+							session.add(inpparam1)
+							inpparam1.keyactionid = ka_rows[0].id
 					else:
 						#The input parameters in the UI don't match those in the DB
 						inpparam1 = InputParameter(name=child.ip_in.text)
 						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+						inpparam1.keyactionid = ka_rows[0].id
+						rows[1].name=child.ip3_in.text
 					
 				elif rows[0].name == child.ip3_in.text:
-					inpparam3 = InputParameter(name=child.ip3_in.text)
-					inpparam3.id = rows[0].id
-					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
 					if rows[1].name == child.ip2_in.text:
-						inpparam1 = InputParameter(name=child.ip_in.text)
-						inpparam1.id = rows[1].id
-						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
+						if child.ip_in.text != '' and child.ip_in.text is not None:
+							inpparam2 = InputParameter(name=child.ip_in.text)
+							session.add(inpparam2)
+							inpparam2.keyactionid = ka_rows[0].id
 					elif rows[1].name == child.ip_in.text:
-						inpparam1 = InputParameter(name=child.ip_in.text)
-						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						inpparam2.id = rows[1].id
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
+						if child.ip2_in.text != '' and child.ip2_in.text is not None:
+							inpparam2 = InputParameter(name=child.ip2_in.text)
+							session.add(inpparam2)
+							inpparam2.keyactionid = ka_rows[0].id
 					else:
 						#The input parameters in the UI don't match those in the DB
-						inpparam1 = InputParameter(name=child.ip_in.text)
-						inpparam1.id = rows[1].id
-						session.add(inpparam1)
-						inpparam1.keyactionid = keyaction.id
+						rows[1].name=child.ip_in.text
 						inpparam2 = InputParameter(name=child.ip2_in.text)
 						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
+						inpparam2.keyactionid = ka_rows[0].id
 					
 				else:
 					#The input parameters in the UI don't match those in the DB
-					inpparam = InputParameter(name=child.ip_in.text)
-					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
-					inpparam2 = InputParameter(name=child.ip2_in.text)
-					session.add(inpparam2)
-					inpparam2.keyactionid = keyaction.id
-					inpparam3 = InputParameter(name=child.ip3_in.text)
-					session.add(inpparam3)
-					inpparam3.keyactionid = keyaction.id
+					rows[0].name=child.ip_in.text
+					rows[1].name=child.ip2_in.text
+					if child.ip3_in.text != '' and child.ip3_in.text is not None:
+						inpparam3 = InputParameter(name=child.ip3_in.text)
+						session.add(inpparam3)
+						inpparam3.keyactionid = ka_rows[0].id
 					
 				session.commit()
 				
 			#3 or more Existing Input Parameters for Key Action
 			else:
 				if rows[0].name == child.ip_in.text:
-					inpparam = InputParameter(name=child.ip_in.text)
-					inpparam.id = rows[0].id
-					session.add(inpparam)
-					inpparam.keyactionid = keyaction.id
-					if rows[1].name == child.ip2_in.text or rows[2].name == child.ip3_in.text:
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						inpparam2.id = rows[1].id
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						inpparam3.id = rows[2].id
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
-					elif rows[1].name == child.ip3_in.text or rows[2].name == child.ip2_in.text:
-						inpparam2 = InputParameter(name=child.ip2_in.text)
-						inpparam2.id = rows[2].id
-						session.add(inpparam2)
-						inpparam2.keyactionid = keyaction.id
-						inpparam3 = InputParameter(name=child.ip3_in.text)
-						inpparam3.id = rows[1].id
-						session.add(inpparam3)
-						inpparam3.keyactionid = keyaction.id
+					if rows[1].name == child.ip2_in.text:
+						if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+							rows[2].name=child.ip3_in.text
+					elif rows[1].name == child.ip3_in.text:
+						if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
+							rows[2].name=child.ip2_in.text
+					elif rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+						rows[1].name=child.ip3_in.text
+					elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
+						rows[1].name=child.ip2_in.text
 					else:
-						pass
+						rows[1].name=child.ip2_in.text
+						rows[2].name=child.ip3_in.text
 				elif rows[0].name == child.ip2_in.text:
 					if rows[1].name == child.ip_in.text:
-						pass
+						if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+							rows[2].name=child.ip3_in.text
 					elif rows[1].name == child.ip3_in.text:
-						pass
-					elif rows[2].name == child.ip2_in.text:
-						pass
-					elif rows[2].name == child.ip3_in.text:
-						pass
+						if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
+							rows[2].name=child.ip_in.text
+					elif rows[2].name == child.ip_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
+						rows[1].name=child.ip3_in.text
+					elif rows[2].name == child.ip3_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
+						rows[1].name=child.ip_in.text
 					else:
-						pass
+						rows[1].name=child.ip_in.text
+						rows[2].name=child.ip3_in.text
 				elif rows[0].name == child.ip3_in.text:
 					if rows[1].name == child.ip2_in.text:
-						pass
+						if rows[2].name != child.ip_in.text:
+							rows[2].name=child.ip_in.text
 					elif rows[1].name == child.ip_in.text:
-						pass
+						if rows[2].name != child.ip2_in.text:
+							rows[2].name=child.ip2_in.text
 					elif rows[2].name == child.ip2_in.text:
-						pass
-					elif rows[2].name == child.ip3_in.text:
-						pass
+						rows[1].name=child.ip_in.text
+					elif rows[2].name == child.ip_in.text:
+						rows[1].name=child.ip2_in.text
 					else:
-						pass
+						rows[1].name=child.ip_in.text
+						rows[2].name=child.ip2_in.text
 				else:
-					pass
+					if rows[1].name == child.ip_in.text:
+						if rows[2].name == child.ip2_in.text:
+							rows[0].name=child.ip3_in.text
+						elif rows[2].name == child.ip3_in.text:
+							rows[0].name=child.ip2_in.text
+						else:
+							rows[0].name=child.ip2_in.text
+							rows[2].name=child.ip3_in.text
+					elif rows[2].name == child.ip_in.text:
+						if rows[1].name == child.ip2_in.text:
+							rows[0].name=child.ip3_in.text
+						elif rows[1].name == child.ip3_in.text:
+							rows[0].name=child.ip2_in.text
+						else:
+							rows[0].name=child.ip2_in.text
+							rows[1].name=child.ip3_in.text
+					else:
+						rows[0].name=child.ip_in.text
+						rows[1].name=child.ip2_in.text
+						rows[2].name=child.ip3_in.text
 		else:
 			#Save the key action as a new key action
 			if len(self.root.get_screen('keyactiongroup').ids.carousel_ka.slides) != 0:
