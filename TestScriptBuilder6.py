@@ -65,10 +65,21 @@ class Module(Base):
 	__tablename__ = 'module'
 	
 	id = Column(Integer, primary_key=True)
+	productid = Column, Integer, ForeignKey('product.id')
 	name = Column(String)
 	
 	def __repr_(self):
-		return "<Module: ID = '%s', Name = '%s'>" % (self.id, self.name)
+		return "<Module: ID = '%s', Name = '%s', Product = %s>" % (self.id, self.name, self.productid)
+	
+#Store the base level product
+class Product(Base):
+	__tablename__ = 'product'
+	
+	id = Column(Integer, primary_key=True)
+	name = Column(String)
+	
+	def __repr_(self):
+		return "<Product: ID = '%s', Name = '%s'>" % (self.id, self.name)
 
 #Store the base level input parameter
 class InputParameter(Base):
@@ -82,32 +93,71 @@ class InputParameter(Base):
 	
 	def __repr_(self):
 		return "<Input Parameter: ID = '%s', Key Action ID = '%s', Name = '%s'>" % (self.id, self.keyactionid, self.name)
+	
+#Store the base level client
+class Client(Base):
+	__tablename__ = 'client'
+	
+	id = Column(Integer, primary_key=True)
+	name = Column(String)
+	
+	def __repr_(self):
+		return "<Client: ID = '%s', Name = '%s'>" % (self.id, self.name)
+	
+#Store the base level project
+class Project(Base):
+	__tablename__ = 'project'
+	
+	id = Column(Integer, primary_key=True)
+	clientid = Column(Integer, ForeignKey('client.id'))
+	name = Column(String)
+	
+	mod = relationship("Client", backref=backref('project', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+	
+	def __repr_(self):
+		return "<Project: ID = '%s', Client ID = '%s', Name = '%s'>" % (self.id, self.clientid, self.name)
+	
+#Store the base level system area
+class TestScript(Base):
+	__tablename__ = 'testscript'
+	
+	id = Column(Integer, primary_key=True)
+	projectid = Column(Integer, ForeignKey('project.id'))
+	name = Column(String)
+	
+	mod = relationship("Project", backref=backref('testscript', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+	
+	def __repr_(self):
+		return "<Test Script: ID = '%s', Project ID = '%s', Name = '%s'>" % (self.id, self.projectid, self.name)
+	
+#Store the base level system area
+class Workflow(Base):
+	__tablename__ = 'workflow'
+	
+	id = Column(Integer, primary_key=True)
+	testscriptid = Column(Integer, ForeignKey('testscript.id'))
+	name = Column(String)
+	
+	mod = relationship("TestScript", backref=backref('workflow', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+	
+	def __repr_(self):
+		return "<System Area: ID = '%s', Module ID = '%s', Name = '%s'>" % (self.id, self.moduleid, self.name)
 
 class WorkflowAction(Base):
 	__tablename__ = 'workflowaction'
 	
 	id = Column(Integer, primary_key=True)
-	keyactionid = Column(Integer)
+	keyactionid = Column(Integer, ForeignKey('keyaction.id'))
+	workflowid = Column(Integer, ForeignKey('workflow.id'))
 	expectedresult = Column(String)
 	notes = Column(String)
 	fail = Column(Boolean)
 	
+	ka = relationship("KeyAction", backref=backref('workflowaction', order_by=id), single_parent=True)
+	wf = relationship("Workflow", backref=backref('workflowaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+	
 	def __repr_(self):
 		return "<Workflow Action: ID = '%s', Key Action ID = '%s', Expected Results = '%s', Notes = '%s', Fail = '%s'>" % (self.id, self.keyactionid, self.expectedresult, self.notes, self.fail)
-
-class WorkflowSequence(Base):
-	__tablename__ = 'workflowseq'
-	
-	id = Column(Integer, primary_key=True)
-	name = Column(String)
-	workflowid = Column(Integer)
-	workflowdesc = Column(String)
-	keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
-	
-	act = relationship("WorkflowAction", backref=backref('workflowseq', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	
-	def __repr_(self):
-		return "<Workflow Sequence: ID = '%s', Name = '%s', Key Action ID = '%s'>" % (self.id, self.name, self.keyactionid)
 	
 class WorkflowNextAction(Base):
 	__tablename__ = 'workflownextaction'
@@ -120,73 +170,20 @@ class WorkflowNextAction(Base):
 	
 	def __repr_(self):
 		return "<Workflow Next Action: ID = '%s', Key Action ID = '%s', Next Action ID = '%s'>" % (self.id, self.keyactionid, self.nextactionid)
-
-class SubflowAction(Base):
-	__tablename__ = 'subflowaction'
 	
-	id = Column(Integer, primary_key=True)
-	keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
-	expectedresult = Column(String)
-	notes = Column(String)
-	fail = Column(Boolean)
-	
-	act = relationship("WorkflowAction", backref=backref('subflowaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	
-	def __repr_(self):
-		return "<Workflow Action: ID = '%s', Key Action ID = '%s', Expected Results = '%s', Notes = '%s', Fail = '%s'>" % (self.id, self.keyactionid, self.expectedresult, self.notes, self.fail)
-
-class SubflowSequence(Base):
-	__tablename__ = 'subflowseq'
-	
-	id = Column(Integer, primary_key=True)
-	name = Column(String)
-	keyactionid = Column(Integer, ForeignKey('subflowaction.id'))
-	parentid = Column(Integer)
-	subflowid = Column(Integer)
-	
-	act = relationship("SubflowAction", backref=backref('subflowseq', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	
-	def __repr_(self):
-		return "<Subflow Sequence: ID = '%s', Name = '%s', Key Action ID = '%s', Parent Workflow ID = '%s'>" % (self.id, self.name, self.keyactionid, self.parentid)
-
-class SubflowNextAction(Base):
-	__tablename__ = 'subflownextaction'
-	
-	id = Column(Integer, primary_key=True)
-	keyactionid = Column(Integer, ForeignKey('subflowaction.id'))
-	nextactionid = Column(Integer)
-	
-	act = relationship("SubflowAction", backref=backref('subflownextaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	
-	def __repr_(self):
-		return "<Subflow Next Action: ID = '%s', Key Action ID = '%s', Next Action ID = '%s'>" % (self.id, self.keyactionid, self.nextactionid)
-
 class WorkflowParameter(Base):
 	__tablename__ = 'workflowparam'
 	
 	id = Column(Integer, primary_key=True)
-	inputparamid = Column(Integer)
+	inputparamid = Column(Integer, ForeignKey('inputparameter.id'))
 	keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
 	value = Column(String)
 	
 	act = relationship("WorkflowAction", backref=backref('workflowparam', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+	ip = relationship("InputParameter", backref=backref('workflowparam', order_by=id), single_parent=True)
 	
 	def __repr_(self):
 		return "<Workflow Parameter: ID = '%s', Input Parameter ID = '%s', Key Action ID = '%s', Value = '%s'>" % (self.id, self.inputparamid, self.keyactionid, self.value)
-
-class SubflowParameter(Base):
-	__tablename__ = 'subflowparam'
-	
-	id = Column(Integer, primary_key=True)
-	inputparamid = Column(Integer, ForeignKey('workflowparam.id'))
-	keyactionid = Column(Integer, ForeignKey('subflowaction.id'))
-	value = Column(String)
-	
-	act = relationship("SubflowAction", backref=backref('subflowparam', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	param = relationship("WorkflowParameter", backref=backref('subflowparam', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
-	
-	def __repr_(self):
-		return "<Subflow Parameter: ID = '%s', Input Parameter ID = '%s', Key Action ID = '%s', Value = '%s'>" % (self.id, self.inputparamid, self.keyactionid, self.value)
 
 #Connect to the DB
 engine = create_engine('sqlite:///test.db', echo=True)
@@ -503,6 +500,7 @@ Logger.info('KV: KV File Loaded')
 
 #Create the filter manager
 filter = FilterManager()
+current_product = 'Default'
 
 #Create the Selection List
 selected = []
@@ -552,6 +550,12 @@ class TestScriptBuilderApp(App):
 		#Set the current page to key action and run a default filter
 		sm.current = 'keyactiongroup'
 		filter.FirstPage()
+		prod_rows = session.query(Product).filter(Product.name == current_product).all()
+		if len(prod_rows) == 0:
+			prod = Product(name=current_product)
+			session.add(prod)
+			session.commit()
+
 		return sm
 	
 #----------------------------------------------------------
@@ -961,12 +965,14 @@ class TestScriptBuilderApp(App):
 				child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 				
 				#Module
+				prod_rows = session.query(Product).filter(Product.name == current_product).all()
 				rows = session.query(Module).filter(Module.name == child.module_in.text).all()
 				if len(rows) > 1:
 					raise KeyError('Business Key Violation in table module')
 				elif len(rows) != 1:
 					mod = Module()
 					mod.name = child.module_in.text
+					mod.productid = prod_rows[0].id
 					session.add(mod)
 				session.commit()
 				Logger.debug('QKA: Module Committed %s' % (child.module_in.text))
