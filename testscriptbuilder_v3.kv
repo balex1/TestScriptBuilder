@@ -1,5 +1,120 @@
 #: kivy 1.9.0
 
+<WorkflowScreen>
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		ActionBar:
+			size_hint: 1, 0.075
+			ActionView:
+				ActionPrevious:
+					title: 'Workflows'
+					app_icon: 'image/AO_Small_White.png'
+					with_previous: False
+				ActionOverflow:
+				ActionGroup:
+					id: filedropdown_kag
+					text: 'Options'
+					ActionButton:
+						text: 'Advanced Options'
+						on_press: app.AdvancedOptionsPopup_WF(self, args[0])
+					ActionButton:
+						text: 'Test Script Options'
+						on_press: app.TestScriptPopup_WF(self, args[0])
+					ActionButton:
+						text: 'Quit'
+						id: quit_kag
+						on_press: app.Quit(self, args[0])
+				ActionGroup:
+					text: 'Navigation'
+					ActionButton:
+						text: 'Key Actions'
+						id: workflownav_kag
+						on_press: app.GoToKeyActionGroupPage(self, args[0])
+					ActionButton:
+						text: 'Analysis'
+						id: analysisnav_kag
+						on_press: app.GoToAnalysisPage(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.85
+			BoxLayout:
+				orientation: 'vertical'
+				size_hint: 0.2, 1
+				FloatLayout:
+					size_hint: 1, 0.9
+					BoxLayout:
+					GridLayout:
+						id: grid_layout
+						rows: int(self.height / 20)
+					FloatLayout:
+						id: float_layout
+				Button:
+					size_hint: 1, 0.1
+					text: 'Linear Flow'
+					on_press: app.GenerateLinearFlow(self, args[0])
+			FloatLayout:
+				size_hint: 0.6, 1
+				id: node_editor
+			BoxLayout:
+				size_hint: 0.2, 1
+				orientation: 'vertical'
+				Button:
+					size_hint: 1, 0.1
+					text: 'New Flow'
+					on_press: app.CreateNewWorkflow(self, args[0])
+				Button:
+					size_hint: 1, 0.1
+					text: 'New Subflow'
+					on_press: app.CreateNewSubflow(self, args[0])
+				Label:
+					size_hint: 1, 0.1
+					text: 'Current Workflow'
+				TextInput:
+					size_hint: 1, 0.1
+					id: current_wf
+					on_text_validate: app.UpdateWorkflowName(self, args[0])
+				Carousel:
+					id: wf_carousel
+					size_hint: 1, 0.5
+				Button: 
+					text: 'Save Flow'
+					size_hint: 1, 0.1
+					on_press: app.SaveWorkflow(self, args[0])
+				
+		ActionBar:
+			size_hint: 1, 0.1
+			ActionView:
+				ActionPrevious:
+					app_icon: 'image/double_note_down.png'
+					with_previous: False
+				ActionOverflow:
+				ActionButton:
+					text: 'Last Page'
+					on_press: app.LoadPrevPageWF(self, args[0])
+					background_down: 'image/PrevPage_Down.png'
+					background_normal: 'image/PrevPage_Up.png'
+				ActionButton:
+					text: 'Next Page'
+					on_press: app.LoadNextPageWF(self, args[0])
+					background_down: 'image/NextPage_Down.png'
+					background_normal: 'image/NextPage_Up.png'
+				ActionButton:
+					on_press: app.WFQuickActionPopup(self, args[0])
+					text: 'Quick Action'
+				ActionGroup:
+					text: 'Key Action'
+					ActionButton:
+						text: 'Edit Selected'
+						on_press: app.WFLoadActionPopup(self, args[0])
+					ActionButton:
+						text: 'Duplicate'
+						id: duplkeyaction_kag
+						on_press: app.WFDuplicateKeyAction(self, args[0])
+					ActionButton:
+						text: 'Delete'
+						id: deletekeyaction_kag
+						on_press: app.WFDeleteKeyAction(self, args[0])
+
 <SelectableButton>:
 	background_normal: 'image/Selection_Up.png'
 	background_down: 'image/Selection_Down.png'
@@ -21,17 +136,8 @@
 					id: filedropdown_kag
 					text: 'Options'
 					ActionButton:
-						text: 'Import Key Actions'
-						id: importcsv_kag
-						on_press: app.ImportKeyActions(self, args[0])
-					ActionButton:
-						text: 'Import Workflows'
-						id: exportcsv_kag
-						on_press: app.ImportWorkflows(self, args[0])
-					ActionButton:
-						text: 'Load DB'
-						id: loaddb_kag
-						on_press: app.LoadDatabase(self, args[0])
+						text: 'Advanced Options'
+						on_press: app.AdvancedOptionsPopup_KAG(self, args[0])
 					ActionButton:
 						text: 'Quit'
 						id: quit_kag

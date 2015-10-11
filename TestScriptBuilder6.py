@@ -4,6 +4,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.checkbox import CheckBox
@@ -18,6 +19,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.KeyActionCarouselItem import KeyActionCarouselItem
+from src.WFCarouselItem import WFCarouselItem
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 import os.path
@@ -514,6 +516,9 @@ class WorkflowScreen(Screen):
 class KeyActionGroupScreen(Screen):
 	pass
 
+class WorkflowScreen(Screen):
+	pass
+
 class SelectableGrid(GridLayout):
 	pass
 
@@ -534,6 +539,7 @@ class SelectableButton(ToggleButton):
 #Create the Screenmanager and add the Screens
 sm = ScreenManager()
 sm.add_widget(KeyActionGroupScreen(name='keyactiongroup'))
+sm.add_widget(WorkflowScreen(name='workflow'))
 Logger.info('Kivy: Screens added to Screen Manager')
 
 #App Definition
@@ -547,6 +553,50 @@ class TestScriptBuilderApp(App):
 		sm.current = 'keyactiongroup'
 		filter.FirstPage()
 		return sm
+	
+#----------------------------------------------------------
+#------------------WF Callbacks----------------------------
+#----------------------------------------------------------
+
+	def AdvancedOptionsPopup_WF(self, *args):
+		Logger.debug('WF: Advanced Options Popup')
+		
+	def LoadPrevPageWF(self, *args):
+		Logger.debug('WF: Load Previous Page')
+		
+	def LoadNextPageWF(self, *args):
+		Logger.debug('WF: Load Next Page Workflow')
+		
+	def WFQuickActionPopup(self, *args):
+		Logger.debug('WF: Quick Action Popup')
+		
+	def WFLoadActionPopup(self, *args):
+		Logger.debug('WF: Load Action Popup')
+		
+	def WFDuplicateKeyAction(self, *args):
+		Logger.debug('WF: Duplicate Key Action')
+		
+	def WFDeleteKeyAction(self, *args):
+		Logger.debug('WF: Delete Key Action')
+		
+	def TestScriptPopup_WF(self, *args):
+		Logger.debug('WF: Test Script Popup')
+		
+	def UpdateWorkflowName(self, *args):
+		Logger.debug('WF: Update Workflow Name')
+		
+	def SaveWorkflow(self, *args):
+		Logger.debug('WF: Save Workflow')
+		
+	def CreateNewWorkflow(self, *args):
+		Logger.debug('WF: Create New Workflow')
+	
+	def CreateNewSubflow(self, *args):
+		Logger.debug('WF: Create New Subflow')
+		
+	def GenerateLinearFlow(self, *args):
+		Logger.debug('WF: Generate Linear Flow')
+	
 #----------------------------------------------------------
 #-------------------Key Action Page Callbacks--------------
 #----------------------------------------------------------
@@ -646,6 +696,8 @@ class TestScriptBuilderApp(App):
 	#----------------------------------------------------------
 	#-------------------Action Bar Methods---------------------
 	
+	def AdvancedOptionsPopup_KAG(self, *args):
+		Logger.debug('Advanced Options')
 	def ImportKeyActions(self, *args):
 		Logger.debug('DB Import')
 	def ImportWorkflows(self, *args):
@@ -654,8 +706,10 @@ class TestScriptBuilderApp(App):
 		Logger.debug('DB Import')
 	def Quit(self, *args):
 		Logger.debug('Graceful Exit')
+		
 	def GoToWorkflowPage(self, *args):
 		Logger.debug('Go To Workflow Page')
+		sm.current='workflow'
 
 	def GoToAnalysisPage(self, *args):
 		Logger.debug('Go To Analysis Page')
@@ -663,16 +717,6 @@ class TestScriptBuilderApp(App):
 	def GoToKeyActionGroupPage(self, *args):
 		Logger.debug('Go To Key Action Page')
 		sm.current = 'keyactiongroup'
-		#Set the FilterManager to page 1
-		filter.FirstPage()
-		self.root.get_screen('keyactiongroup').ids.selection_layout.clear_widgets()
-		filter.setCustomFilteringEnabled(self.root.get_screen('keyactiongroup').ids.custswitch.active)
-		results = filter.ApplyFilter(str(self.root.get_screen('workflow').ids.modulefilter_kag.text), str(self.root.get_screen('workflow').ids.safilter_kag.text), str(self.root.get_screen('workflow').ids.kafilter_kag.text), str(self.root.get_screen('workflow').ids.customfilter.active))
-		i = 0
-		for i in range(0, len(results)):
-			sel = SelectableButton(text=str(results[i].name))
-			sel.bind(on_press.SelectButton)
-			self.root.get_screen('keyactiongroup').ids.selection_layout.add_widget(sel)
 		
 	def DuplicateKeyAction(self, *args):
 		Logger.debug('Duplicate Key Action')
