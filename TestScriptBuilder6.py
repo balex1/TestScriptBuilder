@@ -940,6 +940,10 @@ class TestScriptBuilderApp(App):
 					sys = SystemArea()
 					sys.name = child.sa_in.text
 					session.add(sys)
+					if len(rows) == 1:
+						sys.moduleid = rows[0].id
+					else:
+						sys.moduleid = mod.id
 				session.commit()
 				Logger.debug('QKA: System Area Committed %s' % (child.sa_in.text))
 			
