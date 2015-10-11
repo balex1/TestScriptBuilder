@@ -942,6 +942,7 @@ class TestScriptBuilderApp(App):
 				
 				keyactions = self.SaveKeyAction(child, i)
 				self.SaveInputParameters(child, keyactions, i)
+				i += 1
 				
 		#If there is only one child, save it
 		elif len(selected_ids) == 1:
