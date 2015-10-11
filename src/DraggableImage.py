@@ -28,28 +28,10 @@ class DraggableImage(Magnet):
         return super(DraggableImage, self).on_touch_down(touch, *args)
 
     def on_touch_move(self, touch, *args):
-        grid_layout = self.app.root.get_screen('workflow').ids.grid_layout
-        float_layout = self.app.root.get_screen('workflow').ids.float_layout
 
         if touch.grab_current == self:
             self.img.center = touch.pos
-            if grid_layout.collide_point(*touch.pos):
-                grid_layout.remove_widget(self)
-                float_layout.remove_widget(self)
-
-                for i, c in enumerate(grid_layout.children):
-                    #We need to keep things in the floatlayout longer
-                    if c.collision_point(*touch.pos):
-                        grid_layout.add_widget(self, i+1)
-                        break
-                else:
-                    grid_layout.add_widget(self)
-            else:
-                if self.parent == grid_layout:
-                    grid_layout.remove_widget(self)
-                    float_layout.add_widget(self)
-
-                self.center = touch.pos
+            self.center = touch.pos
 
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
