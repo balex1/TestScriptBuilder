@@ -896,16 +896,16 @@ class TestScriptBuilderApp(App):
 			Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
 			for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
 				
-				keyactions = self.SaveKeyAction(child)
-				self.SaveInputParameters(child, keyactions)
+				keyactions = self.SaveKeyAction(child, i)
+				self.SaveInputParameters(child, keyactions, i)
 				
 		#If there is only one child, save it
 		elif len(selected_ids) == 1:
 			Logger.debug('QKA: Selected IDs Length 1')
 			child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 
-			keyactions = self.SaveKeyAction(child)
-			self.SaveInputParameters(child, keyactions)
+			keyactions = self.SaveKeyAction(child, i)
+			self.SaveInputParameters(child, keyactions, i)
 		else:
 			#Save the key action as a new key action
 			Logger.debug('QKA: Selected IDs Length 0')
@@ -1076,9 +1076,11 @@ class TestScriptBuilderApp(App):
 				#No matching business keys are found
 				raise KeyError('Business Key Called from UI that does not exist in DB')
 	
-	#Internal Methods for Saving, called in the SaveQuickKeyAction method
+	#----------------------------------------------------------
+	#----------------Internal Methods for Saving---------------
+	#----------called in the SaveQuickKeyAction method---------
 	
-	def SaveKeyAction(self, child):
+	def SaveKeyAction(self, child, i):
 		#Module
 		rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
 		if len(rows) > 1:
@@ -1090,7 +1092,7 @@ class TestScriptBuilderApp(App):
 		
 		#System Area
 		sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-		if len(rows) > 1:
+		if len(sa_rows) > 1:
 			raise KeyError('Business Key Violation in table system area')
 		elif len(sa_rows) == 1:
 			sa_rows[0].name == child.sa_in.text
@@ -1111,7 +1113,7 @@ class TestScriptBuilderApp(App):
 		Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
 		return ka_rows
 		
-	def SaveInputParameters(self, child, ka_rows):
+	def SaveInputParameters(self, child, ka_rows, i):
 		#Input Parameters
 			
 		rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
