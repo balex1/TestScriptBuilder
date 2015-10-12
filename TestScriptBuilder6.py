@@ -14,14 +14,20 @@ from kivy.properties import ListProperty, StringProperty, BooleanProperty, Objec
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.actionbar import ActionBar, ActionView, ActionButton, ActionGroup
 from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.uix.popup import Popup
+from kivy.uix.spinner import Spinner
+
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.KeyActionCarouselItem import KeyActionCarouselItem
-from src.WFCarouselItem import WFCarouselItem
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
+
+from src.KeyActionCarouselItem import KeyActionCarouselItem
+from src.WFCarouselItem import WFCarouselItem
+
 import os.path
 
 #------------------------------------------------------------
@@ -65,7 +71,7 @@ class Module(Base):
 	__tablename__ = 'module'
 	
 	id = Column(Integer, primary_key=True)
-	productid = Column, Integer, ForeignKey('product.id')
+	productid = Column(Integer, ForeignKey('product.id'))
 	name = Column(String)
 	
 	def __repr_(self):
@@ -520,6 +526,24 @@ class WorkflowScreen(Screen):
 class SelectableGrid(GridLayout):
 	pass
 
+class ProductPanel(BoxLayout):
+	pass
+
+class ConnectionsPanel(BoxLayout):
+	pass
+
+class KeyActionAdvancedOptionsPopup(BoxLayout):
+	pass
+
+class KeyActionTabbedPanel(TabbedPanel):
+	pass
+
+class TestScriptOptionsPopup(BoxLayout):
+	pass
+
+class ExportPopup(BoxLayout):
+	pass
+
 class SelectableButton(ToggleButton):
 	#Exposes on_selection event
 	selection = BooleanProperty(False)
@@ -564,6 +588,22 @@ class TestScriptBuilderApp(App):
 
 	def AdvancedOptionsPopup_WF(self, *args):
 		Logger.debug('WF: Advanced Options Popup')
+		#This popup should allow for loading a script configuration file (HTML & SQL)
+		#It should also allow for exporting the script and choosing export format
+		popup = Popup(title='Export Options', content=ExportPopup(), size_hint=(0.5, 0.75))
+		popup.open()
+		
+	def FindConfigurationFile(self, *args):
+		Logger.debug('WF: Find Configuration File')
+		
+	def LoadConfigurationFile(self, *args):
+		Logger.debug('WF: Load Configuration File')
+		
+	def FindExportFile(self, *args):
+		Logger.debug('WF: Find Export File')
+		
+	def ExportTestScript(self, *args):
+		Logger.debug('WF: Export Test Scripts')
 		
 	def LoadPrevPageWF(self, *args):
 		Logger.debug('WF: Load Previous Page')
@@ -573,9 +613,15 @@ class TestScriptBuilderApp(App):
 		
 	def WFQuickActionPopup(self, *args):
 		Logger.debug('WF: Quick Action Popup')
+		popup = Popup(title='Quick Key Action', content=KeyActionCarouselItem(), size_hint=(0.5, 0.75))
+		popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
+		popup.open()
 		
 	def WFLoadActionPopup(self, *args):
 		Logger.debug('WF: Load Action Popup')
+		
+	def WFSaveQuickActionPopup(self, *args):
+		Logger.debug('WF: Save Action Popup')
 		
 	def WFDuplicateKeyAction(self, *args):
 		Logger.debug('WF: Duplicate Key Action')
@@ -585,6 +631,11 @@ class TestScriptBuilderApp(App):
 		
 	def TestScriptPopup_WF(self, *args):
 		Logger.debug('WF: Test Script Popup')
+		popup = Popup(title='Test Script Options', content=TestScriptOptionsPopup(), size_hint=(0.5, 0.75))
+		popup.open()
+		
+	def SaveTestScriptPopup(self, *args):
+		Logger.debug('WF: Save Test Script Popup')
 		
 	def UpdateWorkflowName(self, *args):
 		Logger.debug('WF: Update Workflow Name')
@@ -604,6 +655,24 @@ class TestScriptBuilderApp(App):
 #----------------------------------------------------------
 #-------------------Key Action Page Callbacks--------------
 #----------------------------------------------------------
+
+	def SaveProductPanel(self, *args):
+		Logger.debug('Update Product Panel')
+		
+	def SaveProductPanelDefaults(self, *args):
+		Logger.debug('Update Product Panel Defaults')
+		
+	def FindDatabaseFile(self, *args):
+		Logger.debug('Update Product Panel Defaults')
+		
+	def LoadDatabase(self, *args):
+		Logger.debug('Update Product Panel Defaults')
+		
+	def FindExcelLoader(self, *args):
+		Logger.debug('Update Product Panel Defaults')
+		
+	def FindExcelLoader(self, *args):
+		Logger.debug('Update Product Panel Defaults')
 	
 	#----------------------------------------------------------
 	#-------------------Filtering Methods----------------------
@@ -702,6 +771,9 @@ class TestScriptBuilderApp(App):
 	
 	def AdvancedOptionsPopup_KAG(self, *args):
 		Logger.debug('Advanced Options')
+		popup = Popup(title='Advanced Options', content=KeyActionTabbedPanel(), size_hint=(0.75, 0.75))
+		popup.open()
+		
 	def ImportKeyActions(self, *args):
 		Logger.debug('DB Import')
 	def ImportWorkflows(self, *args):

@@ -1,5 +1,99 @@
 #: kivy 1.9.0
 
+<ExportPopup>
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint:1, 1
+		Label:
+			text: 'Configuration File'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Button:
+				text: 'Find Config File'
+				on_press: app.FindConfigurationFile(self, args[0])
+			TextInput:
+				id: config_text
+		Button:
+			text: 'Load Config File'
+			size_hint: 1, 0.1
+			on_press: app.LoadConfigurationFile(self, args[0])
+		Label:
+			text: 'Export File'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Button:
+				text: 'Find Export File'
+				on_press: app.FindExportFile(self, args[0])
+			TextInput:
+				id: export_dest_text
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Export Type'
+			Spinner:
+				text: 'Excel'
+				values: 'Excel', 'HTML'
+		Button:
+			size_hint: 1, 0.1
+			text: 'Export'
+			on_press: app.ExportTestScript(self, args[0])
+
+<TestScriptOptionsPopup>
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		Label:
+			id: current_client
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Client'
+			Spinner:
+				id: load_client
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Client'
+			id: new_client
+		Label:
+			id: current_project
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Project'
+			Spinner:
+				id: load_project
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Project'
+			id: new_project
+		Label:
+			id: current_testscript
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Testscript'
+			Spinner:
+				id: load_testscript
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Testscript'
+			id: new_testscript
+		Button:
+			text: 'Save'
+			size_hint: 1, 0.1
+			on_press: app.SaveTestScriptPopup(self, args[0])
+
 <WorkflowScreen>
 	BoxLayout:
 		orientation: 'vertical'
@@ -16,7 +110,7 @@
 					id: filedropdown_kag
 					text: 'Options'
 					ActionButton:
-						text: 'Advanced Options'
+						text: 'Script Generation'
 						on_press: app.AdvancedOptionsPopup_WF(self, args[0])
 					ActionButton:
 						text: 'Test Script Options'
@@ -119,6 +213,96 @@
 	background_normal: 'image/Selection_Up.png'
 	background_down: 'image/Selection_Down.png'
 	on_press: self.SelectButton(self, args[0])
+	
+<ProductPanel>
+	BoxLayout:
+		size_hint: 1, 1
+		orientation: 'vertical'
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Product'
+			TextInput:
+				id: product_text
+		Label:
+			text: 'Filter Settings'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Columns'
+			TextInput:
+				id: numcols_text
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Rows'
+			TextInput:
+				id: numrows_text
+		Button:
+			text: 'Save'
+			size_hint: 1, 0.2
+			on_press: SaveProductPanel(self, args[0])
+		Button:
+			text: 'Save As Default'
+			size_hint: 1, 0.1
+			on_press: SaveProductPanelDefaults(self, args[0])
+				
+<ConnectionsPanel>
+	BoxLayout:
+		size_hint: 1, 1
+		orientation: 'vertical'
+		Label:
+			text: 'Database Info'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Database Name'
+			TextInput:
+				id: database_text
+		Button:
+			text: 'Find Database'
+			size_hint: 1, 0.1
+			on_press: app.FindDatabaseFile(self, args[0])
+		Button:
+			on_press: app.LoadDatabase(self, args[0])
+			size_hint: 1, 0.1
+			text: 'Load Database'
+		Label:
+			text: 'Excel Loader Info'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Excel Sheet Name'
+			TextInput:
+				id: excel_loader_text
+		Button:
+			size_hint: 1, 0.1
+			text: 'Find Excel Loader'
+			on_press: app.FindExcelLoader(self, args[0])
+		Button:
+			size_hint: 1, 0.1
+			text: 'Import Excel Loader'
+			on_press: app.FindExcelLoader(self, args[0])
+
+<KeyActionTabbedPanel>
+	size_hint: 1, 1
+	do_default_tab: False
+	TabbedPanelItem:
+		text: 'Product & Filter'
+		ProductPanel:
+			id: ka_prodpanel
+	TabbedPanelItem:
+		text: 'Connections'
+		ConnectionsPanel:
+			id: conn_panel
 
 <KeyActionGroupScreen>:
 	BoxLayout:
