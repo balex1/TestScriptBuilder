@@ -5,17 +5,17 @@ from kivy.properties import ObjectProperty, BooleanProperty
 from kivy.lang import Builder
 from kivy.clock import Clock
 
-#This class defines a draggable object which will be
-#added to the layout it's dropped on.  This allows for
-#a sortable list that can be dragged into the flow node_editor
-#The is_draggable property is exposed to allow for a button-like 
-#functionality when it is off, and a dragable functionality when
-#it is on.  This means we can have a connection mode to create
-#connections between the nodes
+#This class defines a draggable, pressable object which will be
+#added to the node editor it's dropped on.  
+#This allows for a button-like functionality when it is off, 
+#and a dragable functionality when it is on.  This means we 
+#can have a connection mode to create connections between the nodes
 class DraggableImage(Magnet):
     img = ObjectProperty(None, allownone=True)
     app = ObjectProperty(None)
     press = BooleanProperty(False)
+    release = BooleanProperty(False)
+    move = BooleanProperty(False)
     is_draggable = BooleanProperty(True)
 
     def on_img(self, *args):
@@ -42,37 +42,15 @@ class DraggableImage(Magnet):
         return super(DraggableImage, self).on_touch_down(touch, *args)
 
     def on_touch_move(self, touch, *args):
-        grid_layout = self.app.root.get_screen('workflow').ids.grid_layout
-        float_layout = self.app.root.get_screen('workflow').ids.float_layout
-        box_layout = self.app.root.get_screen('workflow').ids.box_layout
         node_editor = self.app.root.get_screen('workflow').ids.node_editor
 
         if touch.grab_current == self:
             self.img.center = touch.pos
-            if grid_layout.collide_point(*touch.pos):
-                grid_layout.remove_widget(self)
-                float_layout.remove_widget(self)
-
-                for i, c in enumerate(grid_layout.children):
-                    #We need to keep things in the floatlayout longer
-                    if c.collision_point(*touch.pos):
-                        grid_layout.add_widget(self, i+1)
-                        break
+            self.center = touch.pos
+        if move:
+                    move = False
                 else:
-                    grid_layout.add_widget(self)
-            elif box_layout.collision_point(*touch.pos):
-                if self.parent == grid_layout:
-                    grid_layout.remove_widget(self)
-                    float_layout.add_widget(self)
-            elif node_editor.collision_point(*touch.pos):
-                if self.parent == grid_layout:
-                    grid_layout.remove_widget(self)
-                    node_editor.add_widget(self)
-                elif self.parent == float_layout:
-                    float_layout.remove_widget(self)
-                    node_editor.add_widget(self)
-
-                self.center = touch.pos
+                    move = True
 
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
@@ -83,6 +61,8 @@ class DraggableImage(Magnet):
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
+            if node_editor.collide_point(*touch.pos):
+                node_editor.add_widget(self)
         else:
             if release:
                 release = False

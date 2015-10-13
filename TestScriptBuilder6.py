@@ -27,6 +27,7 @@ from sqlalchemy.orm import relationship, backref
 
 from src.KeyActionCarouselItem import KeyActionCarouselItem
 from src.WFCarouselItem import WFCarouselItem
+from src.DraggableImage import DraggableImage
 
 import os.path
 
