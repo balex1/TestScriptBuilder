@@ -7,7 +7,7 @@ from kivy.clock import Clock
 #This allows for a button-like functionality when it is off, 
 #and a dragable functionality when it is on.  This means we 
 #can have a connection mode to create connections between the nodes
-class DraggableImage(Magnet):
+class ConnectorNode(Magnet):
     img = ObjectProperty(None, allownone=True)
     app = ObjectProperty(None)
     press = BooleanProperty(False)
@@ -38,7 +38,7 @@ class DraggableImage(Magnet):
                     self.press = True
             return True
 
-        return super(DraggableImage, self).on_touch_down(touch, *args)
+        return super(ConnectorNode, self).on_touch_down(touch, *args)
 
     def on_touch_move(self, touch, *args):
         self.node_editor = self.app.root.get_screen('workflow').ids.node_editor
@@ -51,7 +51,7 @@ class DraggableImage(Magnet):
         else:
             self.move = True
 
-        return super(DraggableImage, self).on_touch_move(touch, *args)
+        return super(ConnectorNode, self).on_touch_move(touch, *args)
 
     def on_touch_up(self, touch, *args):
         self.node_editor = self.app.root.get_screen('workflow').ids.node_editor
@@ -61,8 +61,8 @@ class DraggableImage(Magnet):
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
-            if self.node_editor.collide_point(*touch.pos):
-                self.node_editor.add_widget(self)
+            #if self.node_editor.collide_point(*touch.pos):
+                #self.node_editor.add_widget(self)
         else:
             if self.release:
                 self.release = False
@@ -70,7 +70,7 @@ class DraggableImage(Magnet):
                 self.release = True
             return True
 
-        return super(DraggableImage, self).on_touch_up(touch, *args)
+        return super(ConnectorNode, self).on_touch_up(touch, *args)
 
     def collision_point(self, x, y):
         x_left = self.center_x - (self.width / 1.5)

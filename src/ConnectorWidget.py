@@ -1,26 +1,27 @@
-from kivy.widget import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line
 from ConnectorNode import ConnectorNode
 from kivy.properties import ObjectProperty, BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.image import Image
+from kivy.uix.button import Button
 
 #This class defines the line drawn between two nodes
 class Connector(Widget):
 	
 	#Front and Back vertices, the line is drawn in between
 	#2 Entry Lists
-	front = ListProperty([])
-	back = ListProperty([])
+	front = ListProperty([0, 0])
+	back = ListProperty([1, 1])
 	
 	#The color of the lines
 	#3 Entry Lists
-	line_color = ListProperty([])
+	line_color = ListProperty([1, 1, 1])
 	
 	ellipse_diameter = NumericProperty(20)
 	
 	def __init__(self, **kwargs):
 		super(Connector, self).__init__(**kwargs)
-		self.bind(front=self.set_front, back=self.set_back, color=self.set_color)
+		self.bind(front=self.set_front, back=self.set_back, line_color=self.set_color)
 	
 	def set_front(self, *args):
 		self.canvas.clear()
@@ -55,17 +56,17 @@ class ConnectorWidget(Widget):
 	
 	def __init__(self, **kwargs):
 		super(ConnectorWidget, self).__init__(**kwargs)
-		image = Image(source='image/press_node.png')
-		front_node = ConnectorNode(img=image, app=self.app, is_draggable=False)
+		#image = Image(source='image/press_node.png')
+		front_node = Button(background_normal='image/press_node.png')
 		front_node.bind(pos=self.set_front, on_press=self.press_front)
-		self.front = self.front_node
+		self.front = front_node
 		self.add_widget(front_node)
 		
 	def set_front(self, *args):
-		self.connect.front = self.front_node.pos
+		self.connect.front = self.front.pos
 		
 	def set_back(self, *args):
-		self.connect.back = self.back_node.pos
+		self.connect.back = self.back.pos
 		
 	def press_front(self, *args):
 		#Add the back node and connector to the widget
