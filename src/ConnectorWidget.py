@@ -42,6 +42,10 @@ class Connector(Widget):
 #This represents a connector with two connector node's
 class ConnectorWidget(Widget):
 	
+	moveback = BooleanProperty(False)
+	releaseback = BooleanProperty(False)
+	pressfront = BooleanProperty(False)
+	
 	front = ObjectProperty(None)
 	back = ListProperty([])
 	connections = ListProperty([])
@@ -72,10 +76,20 @@ class ConnectorWidget(Widget):
 		connections.append(connector)
 		self.add_widget(connector)
 		self.add_widget(back_node)
+		if pressfront:
+			pressfront = False
+		else:
+			pressfront = True
 		
 	def move_back(self, *args):
-		pass
+		if moveback:
+			moveback = False
+		else:
+			moveback = True
 	
 	def release_back(self, *args):
 		#Snap the back button to the nearest node
-		pass
+		if releaseback:
+			releaseback = False
+		else:
+			releaseback = True

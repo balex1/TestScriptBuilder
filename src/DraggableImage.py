@@ -16,7 +16,12 @@ class DraggableImage(Magnet):
     img = ObjectProperty(None, allownone=True)
     app = ObjectProperty(None)
     press = BooleanProperty(False)
+    release = BooleanProperty(False)
     is_draggable = BooleanProperty(True)
+    
+    down = BooleanProperty(False)
+    drag = BooleanProperty(False)
+    up = BooleanProperty(False)
 
     def on_img(self, *args):
         self.clear_widgets()
@@ -25,6 +30,10 @@ class DraggableImage(Magnet):
             Clock.schedule_once(lambda *x: self.add_widget(self.img), 0)
 
     def on_touch_down(self, touch, *args):
+        if down:
+            down = False
+        else:
+            down = True
         if self.collide_point(*touch.pos):
             if is_draggable:
                 touch.grab(self)
@@ -73,7 +82,10 @@ class DraggableImage(Magnet):
                     node_editor.add_widget(self)
 
                 self.center = touch.pos
-
+        if drag:
+            drag = False
+        else:
+            drag = True
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
     def on_touch_up(self, touch, *args):
@@ -89,6 +101,10 @@ class DraggableImage(Magnet):
             else:
                 release = True
             return True
+        if up:
+            up = False
+        else:
+            up = True
 
         return super(DraggableImage, self).on_touch_up(touch, *args)
 
