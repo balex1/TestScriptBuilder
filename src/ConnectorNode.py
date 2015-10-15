@@ -1,8 +1,5 @@
-from kivy.app import App
 from Magnet import Magnet
-from kivy.uix.image import Image
 from kivy.properties import ObjectProperty, BooleanProperty
-from kivy.lang import Builder
 from kivy.clock import Clock
 
 #This class defines a draggable, pressable object which will be
@@ -17,6 +14,8 @@ class DraggableImage(Magnet):
     release = BooleanProperty(False)
     move = BooleanProperty(False)
     is_draggable = BooleanProperty(True)
+    
+    node_editor = ObjectProperty(None)
 
     def on_img(self, *args):
         self.clear_widgets()
@@ -26,48 +25,49 @@ class DraggableImage(Magnet):
 
     def on_touch_down(self, touch, *args):
         if self.collide_point(*touch.pos):
-            if is_draggable:
+            if self.is_draggable:
                 touch.grab(self)
                 self.remove_widget(self.img)
                 self.app.root.get_screen('workflow').add_widget(self.img)
                 self.center = touch.pos
                 self.img.center = touch.pos
             else:
-                if press:
-                    press = False
+                if self.press:
+                    self.press = False
                 else:
-                    press = True
+                    self.press = True
             return True
 
         return super(DraggableImage, self).on_touch_down(touch, *args)
 
     def on_touch_move(self, touch, *args):
-        node_editor = self.app.root.get_screen('workflow').ids.node_editor
+        self.node_editor = self.app.root.get_screen('workflow').ids.node_editor
 
         if touch.grab_current == self:
             self.img.center = touch.pos
             self.center = touch.pos
-        if move:
-                    move = False
-                else:
-                    move = True
+        if self.move:
+            self.move = False
+        else:
+            self.move = True
 
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
     def on_touch_up(self, touch, *args):
-        if is_draggable:
+        self.node_editor = self.app.root.get_screen('workflow').ids.node_editor
+        if self.is_draggable:
             if touch.grab_current == self:
                 self.app.root.get_screen('workflow').remove_widget(self.img)
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
-            if node_editor.collide_point(*touch.pos):
-                node_editor.add_widget(self)
+            if self.node_editor.collide_point(*touch.pos):
+                self.node_editor.add_widget(self)
         else:
-            if release:
-                release = False
+            if self.release:
+                self.release = False
             else:
-                release = True
+                self.release = True
             return True
 
         return super(DraggableImage, self).on_touch_up(touch, *args)

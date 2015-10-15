@@ -385,6 +385,7 @@ class FilterManager():
 						order_by(KeyAction.id)[limit:offset]
 		return results
 	
+     #TO-DO: Update Query
 	def GetWorkflowResults(self, workflow, module, sysarea, keyaction, limit, offset):
 
 		if (module == "" or module is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None) and (workflow == "" or workflow is None):
@@ -671,9 +672,6 @@ class TestScriptBuilderApp(App):
 		
 	def FindExcelLoader(self, *args):
 		Logger.debug('Update Product Panel Defaults')
-		
-	def FindExcelLoader(self, *args):
-		Logger.debug('Update Product Panel Defaults')
 	
 	#----------------------------------------------------------
 	#-------------------Filtering Methods----------------------
@@ -778,8 +776,6 @@ class TestScriptBuilderApp(App):
 	def ImportKeyActions(self, *args):
 		Logger.debug('DB Import')
 	def ImportWorkflows(self, *args):
-		Logger.debug('DB Import')
-	def LoadDatabase(self, *args):
 		Logger.debug('DB Import')
 	def Quit(self, *args):
 		Logger.debug('Graceful Exit')

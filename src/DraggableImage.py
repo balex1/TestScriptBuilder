@@ -1,8 +1,5 @@
-from kivy.app import App
 from Magnet import Magnet
-from kivy.uix.image import Image
 from kivy.properties import ObjectProperty, BooleanProperty
-from kivy.lang import Builder
 from kivy.clock import Clock
 
 #This class defines a draggable object which will be
@@ -30,22 +27,22 @@ class DraggableImage(Magnet):
             Clock.schedule_once(lambda *x: self.add_widget(self.img), 0)
 
     def on_touch_down(self, touch, *args):
-        if down:
-            down = False
+        if self.down:
+            self.down = False
         else:
-            down = True
+            self.down = True
         if self.collide_point(*touch.pos):
-            if is_draggable:
+            if self.is_draggable:
                 touch.grab(self)
                 self.remove_widget(self.img)
                 self.app.root.get_screen('workflow').add_widget(self.img)
                 self.center = touch.pos
                 self.img.center = touch.pos
             else:
-                if press:
-                    press = False
+                if self.press:
+                    self.press = False
                 else:
-                    press = True
+                    self.press = True
             return True
 
         return super(DraggableImage, self).on_touch_down(touch, *args)
@@ -82,29 +79,29 @@ class DraggableImage(Magnet):
                     node_editor.add_widget(self)
 
                 self.center = touch.pos
-        if drag:
-            drag = False
+        if self.drag:
+            self.drag = False
         else:
-            drag = True
+            self.drag = True
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
     def on_touch_up(self, touch, *args):
-        if is_draggable:
+        if self.is_draggable:
             if touch.grab_current == self:
                 self.app.root.get_screen('workflow').remove_widget(self.img)
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
         else:
-            if release:
-                release = False
+            if self.release:
+                self.release = False
             else:
-                release = True
+                self.release = True
             return True
-        if up:
-            up = False
+        if self.up:
+            self.up = False
         else:
-            up = True
+            self.up = True
 
         return super(DraggableImage, self).on_touch_up(touch, *args)
 
