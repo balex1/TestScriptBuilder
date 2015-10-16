@@ -57,7 +57,7 @@ class ConnectorWidget(Widget):
 	def __init__(self, **kwargs):
 		super(ConnectorWidget, self).__init__(**kwargs)
 		#image = Image(source='image/press_node.png')
-		front_node = Button(background_normal='image/press_node.png')
+		front_node = Button(background_normal='image/press_node_small.png', background_down='image/press_node_down.png')
 		front_node.bind(pos=self.set_front, on_press=self.press_front)
 		self.front = front_node
 		self.add_widget(front_node)
@@ -70,7 +70,7 @@ class ConnectorWidget(Widget):
 		
 	def press_front(self, *args):
 		#Add the back node and connector to the widget
-		image2 = Image(source='image/drag_node.png')
+		image2 = Image(source='image/drag_node_small.png')
 		back_node = ConnectorNode(img=image2, app=self.app, is_draggable=True)
 		connector = Connector()
 		back_node.bind(pos=self.set_back, on_move=self.move_back, on_release=self.release_back)

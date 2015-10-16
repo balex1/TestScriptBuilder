@@ -28,6 +28,7 @@ from sqlalchemy.orm import relationship, backref
 from src.KeyActionCarouselItem import KeyActionCarouselItem
 from src.WFCarouselItem import WFCarouselItem
 from src.DraggableImage import DraggableImage
+from src.FlowChartNode import FlowChartNode
 
 import os.path
 
@@ -783,6 +784,8 @@ class TestScriptBuilderApp(App):
 	def GoToWorkflowPage(self, *args):
 		Logger.debug('Go To Workflow Page')
 		sm.current='workflow'
+		flow = FlowChartNode(app=self)
+		self.root.get_screen('workflow').ids.node_editor.add_widget(flow)
 
 	def GoToAnalysisPage(self, *args):
 		Logger.debug('Go To Analysis Page')

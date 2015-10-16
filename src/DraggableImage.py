@@ -61,16 +61,16 @@ class DraggableImage(Magnet):
 
                 for i, c in enumerate(grid_layout.children):
                     #We need to keep things in the floatlayout longer
-                    if c.collision_point(*touch.pos):
+                    if c.collide_point(*touch.pos):
                         grid_layout.add_widget(self, i+1)
                         break
                 else:
                     grid_layout.add_widget(self)
-            elif box_layout.collision_point(*touch.pos):
+            elif box_layout.collide_point(*touch.pos):
                 if self.parent == grid_layout:
                     grid_layout.remove_widget(self)
                     float_layout.add_widget(self)
-            elif node_editor.collision_point(*touch.pos):
+            elif node_editor.collide_point(*touch.pos):
                 if self.parent == grid_layout:
                     grid_layout.remove_widget(self)
                     node_editor.add_widget(self)
