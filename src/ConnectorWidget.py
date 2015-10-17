@@ -4,6 +4,11 @@ from ConnectorNode import ConnectorNode
 from kivy.properties import ObjectProperty, BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.image import Image
 from kivy.uix.button import Button
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.lang import Builder
+
+#Builder.load_file('src/connectorwidget.kv')
 
 #This class defines the line drawn between two nodes
 class Connector(Widget):
@@ -42,8 +47,11 @@ class Connector(Widget):
 			Line(points=[self.front[0], self.front[1], self.back[0], self.back[1]])
 	
 #This represents a connector with two connector node's
-class ConnectorWidget(Widget):
+class ConnectorWidget(FloatLayout):
 	
+	row = NumericProperty(1)
+	column = NumericProperty(1) 
+ 
 	moveback = BooleanProperty(False)
 	releaseback = BooleanProperty(False)
 	pressfront = BooleanProperty(False)
@@ -56,17 +64,17 @@ class ConnectorWidget(Widget):
 	
 	def __init__(self, **kwargs):
 		super(ConnectorWidget, self).__init__(**kwargs)
-		#image = Image(source='image/press_node.png')
-		front_node = Button(background_normal='image/press_node_small.png', background_down='image/press_node_down.png')
+		image = Image(source='image/press_node.png')
+		front_node = Button(pos=self.pos, size=self.size, background_normal='image/press_node_small.png', background_down='image/press_node_down.png')
 		front_node.bind(pos=self.set_front, on_press=self.press_front)
 		self.front = front_node
 		self.add_widget(front_node)
 		
 	def set_front(self, *args):
-		self.connect.front = self.front.pos
+		self.connect.front = self.front.center
 		
 	def set_back(self, *args):
-		self.connect.back = self.back.pos
+		self.connect.back = self.back.center
 		
 	def press_front(self, *args):
 		#Add the back node and connector to the widget
@@ -76,6 +84,7 @@ class ConnectorWidget(Widget):
 		back_node.bind(pos=self.set_back, on_move=self.move_back, on_release=self.release_back)
 		self.back = back_node
 		self.connect = connector
+		self.connect.front = self.front.center
 		self.add_widget(connector)
 		self.add_widget(back_node)
 		if self.pressfront:

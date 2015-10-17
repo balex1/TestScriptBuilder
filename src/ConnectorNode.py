@@ -1,4 +1,5 @@
 from Magnet import Magnet
+from kivy.uix.widget import Widget
 from kivy.properties import ObjectProperty, BooleanProperty
 from kivy.clock import Clock
 
@@ -7,7 +8,7 @@ from kivy.clock import Clock
 #This allows for a button-like functionality when it is off, 
 #and a dragable functionality when it is on.  This means we 
 #can have a connection mode to create connections between the nodes
-class ConnectorNode(Magnet):
+class ConnectorNode(Widget):
     img = ObjectProperty(None, allownone=True)
     app = ObjectProperty(None)
     press = BooleanProperty(False)

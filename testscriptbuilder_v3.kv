@@ -147,8 +147,10 @@
 					size_hint: 1, 0.1
 					text: 'Linear Flow'
 					on_press: app.GenerateLinearFlow(self, args[0])
-			FloatLayout:
+			SparseGridLayout:
 				size_hint: 0.6, 1
+				rows: 8
+				columns: 5
 				id: node_editor
 			BoxLayout:
 				size_hint: 0.2, 1
