@@ -93,8 +93,59 @@
 			text: 'Save'
 			size_hint: 1, 0.1
 			on_press: app.SaveTestScriptPopup(self, args[0])
+			
+<AddToWorkflowPopup>
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.1
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Workflow'
+				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
+				multiline: False
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Testscript'
+				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
+				multiline: False
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.1
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Client'
+				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
+				multiline: False
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Project'
+				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
+				multiline: False
+		GridLayout:
+			cols: 3
+			id: workflow_popup_results
+			size_hint: 1, 0.6
+		BoxLayout:
+			size_hint: 1, 0.1
+			orientation: 'horizontal'
+			Button:
+				on_press: app.WorkflowPopupFilterPrevPage
+				size_hint: 0.5, 1
+			Button:
+				on_press: app.WorkflowPopupFilterNextPage
+				size_hint: 0.5, 1
+		Button:
+			text: 'Add'
+			on_press: app.AddToFlow(self, args[0])
+			size_hint: 1, 0.1
 
 <WorkflowScreen>
+	drag_grid: node_editor
+	grid_layout: grid_layout
+	float_layout: float_layout
 	BoxLayout:
 		orientation: 'vertical'
 		size: root.size
@@ -147,10 +198,9 @@
 					size_hint: 1, 0.1
 					text: 'Linear Flow'
 					on_press: app.GenerateLinearFlow(self, args[0])
-			SparseGridLayout:
+			DragGrid:
 				size_hint: 0.6, 1
 				rows: 8
-				columns: 5
 				id: node_editor
 			BoxLayout:
 				size_hint: 0.2, 1
@@ -442,7 +492,7 @@
 				Button:
 					size_hint: 1, 0.1
 					text: 'Add To Flow'
-					on_press: app.AddToFlow(self, args[0])
+					on_press: app.AddToWorkflowPopup(self, args[0])
 				Carousel:
 					size_hint: 1, 0.7
 					id: carousel_ka
