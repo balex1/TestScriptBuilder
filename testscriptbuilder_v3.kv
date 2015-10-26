@@ -141,6 +141,57 @@
 			text: 'Add'
 			on_press: app.AddToFlow(self, args[0])
 			size_hint: 1, 0.1
+			
+<CreateWorkflowPopup>
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		TextInput:
+			hint_text: 'Workflow Name'
+			id: new_workflow_name_text
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.1
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Workflow'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Testscript'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.1
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Client'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Project'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+		GridLayout:
+			cols: 3
+			id: create_workflow_popup_results
+			size_hint: 1, 0.5
+		BoxLayout:
+			size_hint: 1, 0.1
+			orientation: 'horizontal'
+			Button:
+				on_press: app.CreateWorkflowPopupFilterPrevPage
+				size_hint: 0.5, 1
+			Button:
+				on_press: app.CreateWorkflowPopupFilterNextPage
+				size_hint: 0.5, 1
+		Button:
+			text: 'Add'
+			on_press: app.CreateFlow(self, args[0])
+			size_hint: 1, 0.1
 
 <WorkflowScreen>
 	drag_grid: node_editor
@@ -488,7 +539,7 @@
 				Button:
 					size_hint: 1, 0.1
 					text: 'Create Flow'
-					on_press: app.CreateFlow(self, args[0])
+					on_press: app.CreateWorkflowPopup(self, args[0])
 				Button:
 					size_hint: 1, 0.1
 					text: 'Add To Flow'

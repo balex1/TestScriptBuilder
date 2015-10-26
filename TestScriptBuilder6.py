@@ -512,6 +512,9 @@ Logger.info('KV: KV File Loaded')
 #Create the filter manager
 filter = FilterManager()
 current_product = 'Default'
+current_client = 'Default'
+current_project = 'Default'
+current_script = 'Default'
 
 #Create the Selection List
 selected = []
@@ -523,7 +526,7 @@ class WorkflowScreen(Screen):
     pass
 
 class KeyActionGroupScreen(Screen):
-    pass
+    pop_up=ObjectProperty(None)
 
 class WorkflowScreen(Screen):
     drag_screen=ObjectProperty(None)
@@ -552,7 +555,10 @@ class ExportPopup(BoxLayout):
     pass
 
 class AddToWorkflowPopup(BoxLayout):
-    pass
+    selected_flow=StringProperty('')
+    
+class CreateWorkflowPopup(BoxLayout):
+    selected_script=StringProperty('')
 
 class SelectableButton(ToggleButton):
     #Exposes on_selection event
@@ -678,14 +684,29 @@ class TestScriptBuilderApp(App):
     def CreateFlow(self, *args):
         Logger.debug('Create New Flow')
         
+        current_script=self.root.get_screen('workflow').popup.selected_script
+        
+        test_script=session.query(TestScript).filter(TestScript.name==current_script)
+        
+        workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('workflow').ids.new_workflow_name_text.text)
+        
         for option in selected:
-            pass
+            keyaction = session.query(KeyAction).filter(KeyAction.name==option)
+            wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
+            session.add(wfa)
+        session.commit()
         
     def AddToFlow(self, *args):
         Logger.debug('Add To Workflow')
         
+        current_workflow=self.root.get_screen('workflow').popup.selected_flow
+        
+        workflow = session.query(Workflow).filter(Workflow.name==current_workflow)
         for option in selected:
-            pass
+            keyaction = session.query(KeyAction).filter(KeyAction.name==option)
+            wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
+            session.add(wfa)
+        session.commit()
 
     def SaveProductPanel(self, *args):
         Logger.debug('Update Product Panel')
@@ -711,10 +732,30 @@ class TestScriptBuilderApp(App):
     def WorkflowPopupFilterNextPage(self, *args):
         Logger.debug('WF: Workflow Popup Next Page')
         
+    def ApplyCreateWorkflowPopupFilter(self, *args):
+        Logger.debug('Apply workflow filter popup')
+        
+    def CreateWorkflowPopupFilterPrevPage(self, *args):
+        Logger.debug('WF: Workflow Popup Previous Page')
+        
+    def CreateWorkflowPopupFilterNextPage(self, *args):
+        Logger.debug('WF: Workflow Popup Next Page')
+        
     def AddToWorkflowPopup(self, *args):
         Logger.debug('WF: Add to Workflow Popup')
         popup = Popup(title='Add To Workflow', content=AddToWorkflowPopup(), size_hint=(0.5, 0.75))
         popup.open()
+        self.root.get_screen('workflow').pop_up = popup
+        
+        #TO-DO: Create Selectable Grid
+        
+    def CreateWorkflowPopup(self, *args):
+        Logger.debug('WF: Add to Workflow Popup')
+        popup = Popup(title='Create Workflow', content=CreateWorkflowPopup(), size_hint=(0.5, 0.75))
+        popup.open()
+        self.root.get_screen('workflow').pop_up = popup
+        
+        #TO-DO: Create Selectable Grid
     
     #----------------------------------------------------------
     #-------------------Filtering Methods----------------------
