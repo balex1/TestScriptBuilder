@@ -100,47 +100,44 @@
 		size_hint: 1, 1
 		BoxLayout:
 			orientation: 'horizontal'
-			size_hint: 1, 0.1
+			size_hint: 1, 0.3
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Workflow'
 				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: atwp_workflow
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Testscript'
 				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: atwp_testscript
 		BoxLayout:
 			orientation: 'horizontal'
-			size_hint: 1, 0.1
+			size_hint: 1, 0.3
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Client'
 				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: atwp_client
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Project'
 				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: atwp_project
 		GridLayout:
-			cols: 3
-			id: workflow_popup_results
-			size_hint: 1, 0.6
-		BoxLayout:
-			size_hint: 1, 0.1
-			orientation: 'horizontal'
+			cols: 2
+			size_hint: 1, 0.4
+			Spinner:
+				text: 'Flow'
+				id: addtoflowpopup_script
 			Button:
-				on_press: app.WorkflowPopupFilterPrevPage
-				size_hint: 0.5, 1
-			Button:
-				on_press: app.WorkflowPopupFilterNextPage
-				size_hint: 0.5, 1
-		Button:
-			text: 'Add'
-			on_press: app.AddToFlow(self, args[0])
-			size_hint: 1, 0.1
+				text: 'Add'
+				on_press: app.AddToFlow(self, args[0])
+				size_hint: 1, 0.1
 			
 <CreateWorkflowPopup>
 	BoxLayout:
@@ -151,47 +148,45 @@
 			id: new_workflow_name_text
 		BoxLayout:
 			orientation: 'horizontal'
-			size_hint: 1, 0.1
+			size_hint: 1, 0.3
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Workflow'
 				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: cwp_workflow
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Testscript'
 				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: cwp_testscript
 		BoxLayout:
 			orientation: 'horizontal'
-			size_hint: 1, 0.1
+			size_hint: 1, 0.3
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Client'
 				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: cwp_client
 			TextInput:
 				size_hint: 0.5, 1
 				hint_text: 'Project'
 				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
 				multiline: False
+				id: cwp_project
 		GridLayout:
 			cols: 3
 			id: create_workflow_popup_results
-			size_hint: 1, 0.5
-		BoxLayout:
-			size_hint: 1, 0.1
-			orientation: 'horizontal'
+			size_hint: 1, 0.4
+			Spinner:
+				text: 'TestScript'
+				id: createflowpopup_flow
 			Button:
-				on_press: app.CreateWorkflowPopupFilterPrevPage
-				size_hint: 0.5, 1
-			Button:
-				on_press: app.CreateWorkflowPopupFilterNextPage
-				size_hint: 0.5, 1
-		Button:
-			text: 'Add'
-			on_press: app.CreateFlow(self, args[0])
-			size_hint: 1, 0.1
+				text: 'Add'
+				on_press: app.CreateFlow(self, args[0])
+				size_hint: 1, 0.1
 
 <WorkflowScreen>
 	drag_grid: node_editor
