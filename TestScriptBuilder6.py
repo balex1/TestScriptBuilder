@@ -548,114 +548,116 @@ class FilterManager():
         return results
     
      #TO-DO: Update Query
-    def GetWorkflowResults(self, workflow, module, sysarea, keyaction, limit, offset):
+    def GetWorkflowResults(self, workflow, testscript, project, client, limit, offset):
 
-        if (module == "" or module is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None) and (workflow == "" or workflow is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
+        if (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None) and (workflow == "" or workflow is None):
+            results = session.query(WorkflowAction).\
                 order_by(WorkflowAction.id)[limit:offset]
                     
-        elif (module == "" or module is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                filter(Workflow.name.like('%' + str(workflow) + '%')).\
                     order_by(WorkflowAction.id)[limit:offset]
                         
-        elif (workflow == "" or workflow is None) and (module == "" or module is None) and (sysarea == "" or sysarea is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    order_by(WorkflowAction.id)[limit:offset]
+        elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        order_by(WorkflowAction.id)[limit:offset]
                     
-        elif (workflow == "" or workflow is None) and (module == "" or module is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
+        elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Project.name.like('%' + str(project) + '%')).\
                         order_by(WorkflowAction.id)[limit:offset]
                             
-        elif (workflow == "" or workflow is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(Module.name.like('%' + str(module) + '%')).\
+        elif (workflow == "" or workflow is None) and (project == "" or project is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).\
                         order_by(WorkflowAction.id)[limit:offset]
                         
-        elif (workflow == "" or workflow is None) and (module == "" or module is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
+        elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(Project.name.like('%' + str(project) + '%')).\
                             order_by(WorkflowAction.id)[limit:offset]
                                     
-        elif (module == "" or module is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                        filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (testscript == "" or testscript is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Project.name.like('%' + str(project) + '%')).\
+                        filter(Workflow.name.like('%' + str(workflow) + '%')).\
                             order_by(WorkflowAction.id)[limit:offset]
                                     
-        elif (module == "" or module is None) and (sysarea == "" or sysarea is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).join(KeyAction).\
-                    filter(KeyAction.name.like("'%s'" % (keyaction))).\
-                            filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (testscript == "" or testscript is None) and (project == "" or project is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like("'%s'" % (client))).\
+                            filter(Workflow.name.like('%' + str(workflow) + '%')).\
                                 order_by(WorkflowAction.id)[limit:offset]
                                 
-        elif (workflow == "" or workflow is None) and (sysarea == "" or sysarea is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(Module.name.like('%' + str(module) + '%')).\
+        elif (workflow == "" or workflow is None) and (project == "" or project is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(TestScript.name.like('%' + str(testscript) + '%')).\
                             order_by(WorkflowAction.id)[limit:offset]
                                         
-        elif (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(Module.name.like('%' + str(module) + '%')).\
-                        filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (project == "" or project is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                        filter(Workflow.name.like('%' + str(workflow) + '%')).\
                             order_by(WorkflowAction.id)[limit:offset]
                                         
-        elif (workflow == "" or workflow is None) and (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                        filter(Module.name.like('%' + str(module) + '%')).\
+        elif (workflow == "" or workflow is None) and (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Project.name.like('%' + str(project) + '%')).\
+                        filter(TestScript.name.like('%' + str(testscript) + '%')).\
                             order_by(WorkflowAction.id)[limit:offset]
                                         
-        elif (module == "" or module is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                            filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (testscript == "" or testscript is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(Project.name.like('%' + str(project) + '%')).\
+                            filter(Workflow.name.like('%' + str(workflow) + '%')).\
                                 order_by(WorkflowAction.id)[limit:offset]
                                             
-        elif (sysarea == "" or sysarea is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(Module.name.like('%' + str(module) + '%')).\
-                            filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (project == "" or project is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                            filter(Workflow.name.like('%' + str(workflow) + '%')).\
                                 order_by(WorkflowAction.id)[limit:offset]
                                             
-        elif (keyaction == "" or keyaction is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                        filter(Module.name.like('%' + str(module) + '%')).\
-                            filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+        elif (client == "" or client is None):
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Project.name.like('%' + str(project) + '%')).\
+                        filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                            filter(Workflow.name.like('%' + str(workflow) + '%')).\
                                 order_by(WorkflowAction.id)[limit:offset]
                                 
         elif (workflow == "" or workflow is None):
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                            filter(Module.name.like('%' + str(module) + '%')).\
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(Project.name.like('%' + str(project) + '%')).\
+                            filter(TestScript.name.like('%' + str(testscript) + '%')).\
                                 order_by(WorkflowAction.id)[limit:offset]
                                             
         else:
-            results = session.query(WorkflowAction).join(WorkflowSequence).\
-                join(KeyAction).join(SystemArea).join(Module).\
-                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                            filter(Module.name.like('%' + str(module) + '%')).\
-                                filter(WorkflowSequence.name.like('%' + str(workflow) + '%')).\
+            results = session.query(Workflow).join(WorkflowAction).\
+                join(TestScript).join(Project).join(Client).\
+                    filter(Client.name.like('%' + str(client) + '%')).\
+                        filter(Project.name.like('%' + str(project) + '%')).\
+                            filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                                filter(Workflow.name.like('%' + str(workflow) + '%')).\
                                     order_by(WorkflowAction.id)[limit:offset]
                                                 
         return results
@@ -680,9 +682,6 @@ selected = []
 
 #Create the list of selected key action id's to allow updating names
 selected_ids = []
-
-class WorkflowScreen(Screen):
-    pass
 
 class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
