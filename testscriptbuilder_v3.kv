@@ -95,6 +95,11 @@
 			on_press: app.SaveTestScriptPopup(self, args[0])
 			
 <AddToWorkflowPopup>
+	spinner: addtoflowpopup_flow
+	atwp_workflow: atwp_workflow
+	atwp_testscript: atwp_testscript
+	atwp_client: atwp_client
+	atwp_project: atwp_project
 	BoxLayout:
 		orientation: 'vertical'
 		size_hint: 1, 1
@@ -133,13 +138,19 @@
 			size_hint: 1, 0.4
 			Spinner:
 				text: 'Flow'
-				id: addtoflowpopup_script
+				id: addtoflowpopup_flow
 			Button:
 				text: 'Add'
 				on_press: app.AddToFlow(self, args[0])
 				size_hint: 1, 0.1
 			
 <CreateWorkflowPopup>
+	new_flow: new_workflow_name_text
+	spinner: createflowpopup_flow
+	cwp_workflow: cwp_workflow
+	cwp_testscript: cwp_testscript
+	cwp_client: cwp_client
+	cwp_project: cwp_project
 	BoxLayout:
 		orientation: 'vertical'
 		size_hint: 1, 1

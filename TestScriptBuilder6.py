@@ -320,79 +320,79 @@ class FilterManager():
     def FindTestScripts(self, workflow, testscript, client, project, limit, offset):
         if (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
             results = session.query(TestScript).\
-                order_by(TestScript.id)[limit, offset]
+                order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).order_by(TestScript.id)[limit:offset]
                 
         elif (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).filter(Workflow.name == workflow).\
-                order_by(TestScript.id)[limit, offset]
+            results = session.query(TestScript).join(Workflow).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (client == "" or client is None):
             results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(Project.name == project).order_by(TestScript.id)[limit, offset]
+                filter(Project.name.like('%' + str(project) + '%')).order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None) and (client == "" or client is None):
             results = session.query(TestScript).\
-                filter(Testscript.name == testscript).order_by(TestScript.id)[limit, offset]
+                filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(TestScript.name == testscript).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (client == "" or client is None):
             results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(TestScript.name == testscript).filter(Project.name == project).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (project == "" or project is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Workflow.name == workflow).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (client == "" or client is None):
             results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(Workflow.name == workflow).filter(Project.name == project).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                     
         elif (project == "" or project is None) and (client == "" or client is None):
             results = session.query(TestScript).join(Workflow).\
-                filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
-                    order_by(TestScript.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                    order_by(TestScript.id)[limit:offset]
                     
         elif (workflow == "" or workflow is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(Workflow.name == workflow).order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(Workflow.name.like('%' + str(workflow) + '%')).order_by(TestScript.id)[limit:offset]
                     
         elif (project == "" or project is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Workflow.name == workflow).\
-                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
                     
         elif (client == "" or client is None):
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Workflow.name == workflow).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
                     
         else:
             results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).filter(Workflow.name == workflow).\
-                        order_by(TestScript.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                        order_by(TestScript.id)[limit:offset]
             
         return results
             
@@ -400,79 +400,79 @@ class FilterManager():
     def FindWorkflows(self, workflow, testscript, client, project, limit, offset):
         if (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
             results = session.query(Workflow).\
-                order_by(Workflow.id)[limit, offset]
+                order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).order_by(Workflow.id)[limit:offset]
                 
         elif (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
-            results = session.query(Workflow).filter(Workflow.name == workflow).\
-                order_by(Workflow.id)[limit, offset]
+            results = session.query(Workflow).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).join(Project).\
-                filter(Project.name == project).order_by(Workflow.id)[limit, offset]
+                filter(Project.name.like('%' + str(project) + '%')).order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None) and (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).\
-                filter(Testscript.name == testscript).order_by(Workflow.id)[limit, offset]
+                filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(TestScript.name == testscript).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).join(Project).\
-                filter(TestScript.name == testscript).filter(Project.name == project).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (project == "" or project is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Workflow.name == workflow).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).join(Project).\
-                filter(Workflow.name == workflow).filter(Project.name == project).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                     
         elif (project == "" or project is None) and (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).\
-                filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
-                    order_by(Workflow.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+                    order_by(Workflow.id)[limit:offset]
                     
         elif (workflow == "" or workflow is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(Workflow.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(Workflow.name == workflow).order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(Workflow.name.like('%' + str(workflow) + '%')).order_by(Workflow.id)[limit:offset]
                     
         elif (project == "" or project is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Workflow.name == workflow).\
-                    filter(TestScript.name == testscript).order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(Workflow.id)[limit:offset]
                     
         elif (client == "" or client is None):
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Workflow.name == workflow).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).order_by(Workflow.id)[limit, offset]
+                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(Workflow.id)[limit:offset]
                     
         else:
             results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-                filter(Client.name == client).filter(Project.name == project).\
-                    filter(TestScript.name == testscript).filter(Workflow.name == workflow).\
-                        order_by(Workflow.id)[limit, offset]
+                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+                    filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+                        order_by(Workflow.id)[limit:offset]
             
         return results
         
@@ -713,10 +713,19 @@ class ExportPopup(BoxLayout):
     pass
 
 class AddToWorkflowPopup(BoxLayout):
-    selected_flow=StringProperty('')
+    spinner=ObjectProperty(None)
+    atwp_workflow=ObjectProperty(None)
+    atwp_testscript=ObjectProperty(None)
+    atwp_client=ObjectProperty(None)
+    atwp_project=ObjectProperty(None)
     
 class CreateWorkflowPopup(BoxLayout):
-    selected_script=StringProperty('')
+    new_flow=ObjectProperty(None)
+    spinner=ObjectProperty(None)
+    cwp_workflow=ObjectProperty(None)
+    cwp_testscript=ObjectProperty(None)
+    cwp_client=ObjectProperty(None)
+    cwp_project=ObjectProperty(None)
 
 class SelectableButton(ToggleButton):
     #Exposes on_selection event
@@ -842,14 +851,15 @@ class TestScriptBuilderApp(App):
     def CreateFlow(self, *args):
         Logger.debug('Create New Flow')
         
-        current_script=self.root.get_screen('keyactiongroup').popup.selected_script
+        current_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         
-        test_script=session.query(TestScript).filter(TestScript.name==current_script)
+        test_script=session.query(TestScript).filter(TestScript.name==current_script).one()
         
-        workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('keyactiongroup').ids.new_workflow_name_text.text)
-        
+        workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('keyactiongroup').pop_up.content.new_flow.text)
+        session.add(workflow)
+        session.commit()
         for option in selected:
-            keyaction = session.query(KeyAction).filter(KeyAction.name==option)
+            keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
             session.add(wfa)
         session.commit()
@@ -857,11 +867,11 @@ class TestScriptBuilderApp(App):
     def AddToFlow(self, *args):
         Logger.debug('Add To Workflow')
         
-        current_workflow=self.root.get_screen('keyactiongroup').popup.selected_flow
+        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         
-        workflow = session.query(Workflow).filter(Workflow.name==current_workflow)
+        workflow = session.query(Workflow).filter(Workflow.name==current_workflow).one()
         for option in selected:
-            keyaction = session.query(KeyAction).filter(KeyAction.name==option)
+            keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
             session.add(wfa)
         session.commit()
@@ -885,14 +895,14 @@ class TestScriptBuilderApp(App):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
-        for value in self.root.get_screen('keyactiongroup').ids.addtoflowpopup_flow.values:
-            elf.root.get_screen('keyactiongroup').ids.addtoflowpopup_flow.values.remove(value)
+        for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
         
         #Get Filter Values
-        wf = self.root.get_screen('keyactiongroup').ids.atwp_workflow.text
-        ts = self.root.get_screen('keyactiongroup').ids.atwp_testscript.text
-        cl = self.root.get_screen('keyactiongroup').ids.atwp_client.text
-        pr = self.root.get_screen('keyactiongroup').ids.atwp_project.text
+        wf = self.root.get_screen('keyactiongroup').pop_up.content.atwp_workflow.text
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
@@ -904,20 +914,21 @@ class TestScriptBuilderApp(App):
         
         #Load Result Set Into Spinner
         for result in results:
-            self.root.get_screen('keyactiongroup').ids.addtoflowpopup_flow.values.append(result.name)
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
         
     def ApplyCreateWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
-        for value in self.root.get_screen('keyactiongroup').ids.createflowpopup_flow.values:
-            elf.root.get_screen('keyactiongroup').ids.createflowpopup_flow.values.remove(value)
+        if len(self.root.get_screen('keyactiongroup').pop_up.content.spinner.values) != 0:
+            for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
+                self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
         
         #Get Filter Values
-        wf = self.root.get_screen('keyactiongroup').ids.cwp_workflow.text
-        ts = self.root.get_screen('keyactiongroup').ids.cwp_testscript.text
-        cl = self.root.get_screen('keyactiongroup').ids.cwp_client.text
-        pr = self.root.get_screen('keyactiongroup').ids.cwp_project.text
+        wf = self.root.get_screen('keyactiongroup').pop_up.content.cwp_workflow.text
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.cwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
         
         #Get Result Set from Filter Manager
         num_scripts = session.query(TestScript).count()
@@ -925,11 +936,11 @@ class TestScriptBuilderApp(App):
             num_scripts = 0
         else:
             num_scripts = num_scripts - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_scripts)
+        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
         
         #Load Result Set Into Spinner
         for result in results:
-            self.root.get_screen('keyactiongroup').ids.createflowpopup_flow.values.append(result.name)
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
         
     def AddToWorkflowPopup(self, *args):
         Logger.debug('WF: Add to Workflow Popup')
@@ -943,11 +954,11 @@ class TestScriptBuilderApp(App):
             num_flows = 0
         else:
             num_flows = num_flows - 5
-        results = session.query(Workflow).order_by(Workflow.id)[5, num_flows].all()
+        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
         
         #Populate values in spinner
         for result in results:
-            self.root.get_screen('keyactiongroup').ids.addtoflowpopup_flow.values.append(result.name)
+            popup.content.spinner.values.append(result.name)
         
     def CreateWorkflowPopup(self, *args):
         Logger.debug('WF: Add to Workflow Popup')
@@ -957,15 +968,18 @@ class TestScriptBuilderApp(App):
         
         #Get the latest 5 Test Scripts
         num_scripts = session.query(TestScript).count()
+        Logger.debug('Num Scripts %s' % (num_scripts))
         if num_scripts - 5 < 0:
             num_scripts = 0
         else:
             num_scripts = num_scripts - 5
-        results = session.query(TestScript).order_by(TestScript.id)[5, num_scripts].all()
+        results = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+        Logger.debug('Num Results %s' % (len(results)))
         
         #Populate values in spinner
         for result in results:
-            self.root.get_screen('keyactiongroup').ids.createflowpopup_flow.values.append(result.name)
+           popup.content.spinner.values.append(result.name)
+           Logger.debug('Result %s appended' % (result.name))
     
     #----------------------------------------------------------
     #-------------------Filtering Methods----------------------
