@@ -1,0 +1,81 @@
+#: kivy 1.9.0
+
+<ProductPanel>
+	BoxLayout:
+		size_hint: 1, 1
+		orientation: 'vertical'
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Product'
+			TextInput:
+				id: product_text
+		Label:
+			text: 'Filter Settings'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Columns'
+			TextInput:
+				id: numcols_text
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Rows'
+			TextInput:
+				id: numrows_text
+		Button:
+			text: 'Save'
+			size_hint: 1, 0.2
+			on_press: SaveProductPanel(self, args[0])
+		Button:
+			text: 'Save As Default'
+			size_hint: 1, 0.1
+			on_press: SaveProductPanelDefaults(self, args[0])
+				
+<ConnectionsPanel>
+	BoxLayout:
+		size_hint: 1, 1
+		orientation: 'vertical'
+		Label:
+			text: 'Database Info'
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Database Name'
+			TextInput:
+				id: database_text
+		Button:
+			text: 'Find Database'
+			size_hint: 1, 0.15
+			on_press: app.FindDatabaseFile(self, args[0])
+		Button:
+			on_press: app.LoadDatabase(self, args[0])
+			size_hint: 1, 0.15
+			text: 'Load Database'
+		Button:
+			text: 'Save'
+			size_hint: 1, 0.25
+			on_press: SaveConnectionsPanel(self, args[0])
+		Button:
+			text: 'Save As Default'
+			size_hint: 1, 0.15
+			on_press: SaveConnectionsPanelDefaults(self, args[0])
+
+<KeyActionTabbedPanel>
+	size_hint: 1, 1
+	do_default_tab: False
+	TabbedPanelItem:
+		text: 'Product & Filter'
+		ProductPanel:
+			id: ka_prodpanel
+	TabbedPanelItem:
+		text: 'Connections'
+		ConnectionsPanel:
+			id: conn_panel

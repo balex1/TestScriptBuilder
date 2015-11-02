@@ -667,7 +667,14 @@ class FilterManager():
 #------------------------------------------------------------
 
 #Load the .kv file
-Builder.load_file('testscriptbuilder_v3.kv')
+Builder.load_file('kv/TestScriptOptionsPopup.kv')
+Builder.load_file('kv/AddToWorkflowPopup.kv')
+Builder.load_file('kv/CreateWorkflowPopup.kv')
+Builder.load_file('kv/KeyActionGroupScreen.kv')
+Builder.load_file('kv/KeyActionsTabbedPanel.kv')
+Builder.load_file('kv/LoadWorkflowPopup.kv')
+Builder.load_file('kv/SelectableButton.kv')
+Builder.load_file('kv/WorkflowScreen.kv')
 Logger.info('KV: KV File Loaded')
 
 #Create the filter manager
@@ -783,18 +790,6 @@ class TestScriptBuilderApp(App):
         popup = Popup(title='Export Options', content=ExportPopup(), size_hint=(0.5, 0.75))
         popup.open()
         
-    def FindConfigurationFile(self, *args):
-        Logger.debug('WF: Find Configuration File')
-        
-    def LoadConfigurationFile(self, *args):
-        Logger.debug('WF: Load Configuration File')
-        
-    def FindExportFile(self, *args):
-        Logger.debug('WF: Find Export File')
-        
-    def ExportTestScript(self, *args):
-        Logger.debug('WF: Export Test Scripts')
-        
     def WFQuickActionPopup(self, *args):
         Logger.debug('WF: Quick Action Popup')
         popup = Popup(title='Quick Key Action', content=KeyActionCarouselItem(), size_hint=(0.5, 0.75))
@@ -826,6 +821,12 @@ class TestScriptBuilderApp(App):
     
     def CreateNewSubflow(self, *args):
         Logger.debug('WF: Create New Subflow')
+        
+    def SaveConnectionsPanel(self, *args):
+        Logger.debug('Save Connections Panel')
+        
+    def SaveConnectionsPanelDefaults(self, *args):
+        Logger.debug('Save Connections Panel Defaults')
   
     #This is a critical method as it is called when a draggable is released on
     #the flowchart, to add a flowchart node.  This takes the label from the original

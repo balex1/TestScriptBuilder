@@ -1,0 +1,83 @@
+#: kivy 1.9.0
+
+<WorkflowScreen>
+	drag_grid: node_editor
+	grid_layout: grid_layout
+	float_layout: float_layout
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		ActionBar:
+			size_hint: 1, 0.075
+			ActionView:
+				ActionPrevious:
+					title: 'Workflows'
+					app_icon: 'image/AO_Small_White.png'
+					with_previous: False
+				ActionOverflow:
+				ActionGroup:
+					id: filedropdown_kag
+					text: 'Options'
+					ActionButton:
+						text: 'Test Script Options'
+						on_press: app.TestScriptPopup_WF(self, args[0])
+					ActionButton:
+						on_press: app.WFQuickActionPopup(self, args[0])
+						text: 'Quick Action'
+				ActionGroup:
+					text: 'Navigation'
+					ActionButton:
+						text: 'Key Actions'
+						id: workflownav_kag
+						on_press: app.GoToKeyActionGroupPage(self, args[0])
+					ActionButton:
+						text: 'Analysis'
+						id: analysisnav_kag
+						on_press: app.GoToAnalysisPage(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.925
+			BoxLayout:
+				orientation: 'vertical'
+				size_hint: 0.2, 1
+				id: box_layout
+				FloatLayout:
+					size_hint: 1, 1
+					BoxLayout:
+					GridLayout:
+						id: grid_layout
+						rows: int(self.height / 20)
+					FloatLayout:
+						id: float_layout
+			DragGrid:
+				size_hint: 0.6, 1
+				rows: 8
+				id: node_editor
+			BoxLayout:
+				size_hint: 0.2, 1
+				orientation: 'vertical'
+				Button:
+					size_hint: 1, 0.1
+					text: 'Load Flow'
+					on_press: app.LoadWorkflowPopup(self, args[0])
+				Button:
+					size_hint: 1, 0.1
+					text: 'New Subflow'
+					on_press: app.CreateNewSubflow(self, args[0])
+				Label:
+					size_hint: 1, 0.1
+					text: 'Current Workflow'
+				TextInput:
+					size_hint: 1, 0.1
+					id: current_wf
+					on_text_validate: app.UpdateWorkflowName(self, args[0])
+				WFCarouselItem:
+					id: wf_carousel
+					size_hint: 1, 0.45
+				Button: 
+					text: 'Save Flow'
+					size_hint: 1, 0.075
+					on_press: app.SaveWorkflow(self, args[0])
+				Button: 
+					text: 'Save Action'
+					size_hint: 1, 0.075
+					on_press: app.SaveAction(self, args[0])

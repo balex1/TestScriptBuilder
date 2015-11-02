@@ -1,0 +1,52 @@
+#: kivy 1.9.0
+
+<TestScriptOptionsPopup>
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		Label:
+			id: current_client
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Client'
+			Spinner:
+				id: load_client
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Client'
+			id: new_client
+		Label:
+			id: current_project
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Project'
+			Spinner:
+				id: load_project
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Project'
+			id: new_project
+		Label:
+			id: current_testscript
+			size_hint: 1, 0.1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.1
+			Label:
+				text: 'Load Testscript'
+			Spinner:
+				id: load_testscript
+		TextInput:
+			size_hint: 1, 0.1
+			hint_text: 'New Testscript'
+			id: new_testscript
+		Button:
+			text: 'Save'
+			size_hint: 1, 0.1
+			on_press: app.SaveTestScriptPopup(self, args[0])

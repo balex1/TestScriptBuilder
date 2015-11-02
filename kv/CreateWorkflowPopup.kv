@@ -1,0 +1,56 @@
+#: kivy 1.9.0
+
+<CreateWorkflowPopup>
+	new_flow: new_workflow_name_text
+	spinner: createflowpopup_flow
+	cwp_workflow: cwp_workflow
+	cwp_testscript: cwp_testscript
+	cwp_client: cwp_client
+	cwp_project: cwp_project
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		TextInput:
+			hint_text: 'Workflow Name'
+			id: new_workflow_name_text
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.3
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Workflow'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: cwp_workflow
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Testscript'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: cwp_testscript
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.3
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Client'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: cwp_client
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Project'
+				on_text_validate: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: cwp_project
+		GridLayout:
+			cols: 3
+			id: create_workflow_popup_results
+			size_hint: 1, 0.4
+			Spinner:
+				text: 'TestScript'
+				id: createflowpopup_flow
+			Button:
+				text: 'Add'
+				on_press: app.CreateFlow(self, args[0])
+				size_hint: 1, 0.1

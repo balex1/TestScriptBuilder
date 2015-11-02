@@ -1,0 +1,145 @@
+#: kivy 1.9.0
+
+<KeyActionGroupScreen>:
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		ActionBar:
+			size_hint: 1, 0.075
+			ActionView:
+				ActionPrevious:
+					title: 'Key Actions'
+					app_icon: 'image/AO_Small_White.png'
+					with_previous: False
+				ActionOverflow:
+				ActionGroup:
+					id: filedropdown_kag
+					text: 'Options'
+					ActionButton:
+						text: 'Advanced Options'
+						on_press: app.AdvancedOptionsPopup_KAG(self, args[0])
+					ActionButton:
+						text: 'Quit'
+						id: quit_kag
+						on_press: app.Quit(self, args[0])
+				ActionGroup:
+					id: navigationdropdown_kag
+					text: 'Navigation'
+					ActionButton:
+						text: 'Flow Editor'
+						id: workflownav_kag
+						on_press: app.GoToWorkflowPage(self, args[0])
+					ActionButton:
+						text: 'Analysis'
+						id: analysisnav_kag
+						on_press: app.GoToAnalysisPage(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.1
+			GridLayout:
+				size_hint: 0.195, 1
+				rows: 2
+				Label:
+					text: 'Custom'
+				GridLayout:
+					cols: 2
+					Switch:
+						id: custswitch
+					CheckBox:
+						id: customfilter
+			TextInput:
+				hint_text: 'Module'
+				id: modulefilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'image/TextInput_Unselected.png'
+				background_active: 'image/TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			TextInput:
+				hint_text: 'System Area'
+				id: safilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'image/TextInput_Unselected.png'
+				background_active: 'image/TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			TextInput:
+				hint_text: 'Key Action'
+				id: kafilter_kag
+				size_hint: 0.225, 1
+				background_normal: 'image/TextInput_Unselected.png'
+				background_active: 'image/TextInput_Selected.png'
+				multiline: False
+				on_text_validate: app.ApplyFilterKAG(self, args[0])
+			Button:
+				on_press: app.ApplyFilterKAG(self, args[0])
+				size_hint: 0.065, 1
+				background_down: 'image/Filter_Button_Down.png'
+				background_normal: 'image/Filter_Button_Up.png'
+			Button:
+				on_press: app.ClearFilterKAG(self, args[0])
+				size_hint: 0.065, 1
+				background_down: 'image/Clear_Button_Down.png'
+				background_normal: 'image/Clear_Button_Up.png'
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint:1, 0.825
+			BoxLayout:
+				size_hint:0.75, 1
+				orientation: 'vertical'
+				SelectableGrid:
+					size_hint:1, 0.9
+					cols: 4
+					rows: 5
+					id: selection_layout
+				ActionBar:
+					size_hint: 1, 0.1
+					ActionView:
+						ActionPrevious:
+							app_icon: 'image/double_note_down.png'
+							with_previous: False
+						ActionOverflow:
+						ActionButton:
+							text: 'Last Page'
+							on_press: app.LoadPrevPageKAG(self, args[0])
+							background_down: 'image/PrevPage_Down.png'
+							background_normal: 'image/PrevPage_Up.png'
+						ActionButton:
+							text: 'Next Page'
+							on_press: app.LoadNextPageKAG(self, args[0])
+							background_down: 'image/NextPage_Down.png'
+							background_normal: 'image/NextPage_Up.png'
+						ActionButton:
+							on_press: app.ClearQuickAction(self, args[0])
+							text: 'Quick Action'
+						ActionGroup:
+							text: 'Key Action'
+							ActionButton:
+								text: 'Edit Selected'
+								on_press: app.LoadQuickAction(self, args[0])
+							ActionButton:
+								text: 'Duplicate'
+								id: duplkeyaction_kag
+								on_press: app.DuplicateKeyAction(self, args[0])
+							ActionButton:
+								text: 'Delete'
+								id: deletekeyaction_kag
+								on_press: app.DeleteKeyAction(self, args[0])
+					
+			BoxLayout:
+				size_hint: 0.25, 1
+				orientation: 'vertical'
+				Button:
+					size_hint: 1, 0.1
+					text: 'Create Flow'
+					on_press: app.CreateWorkflowPopup(self, args[0])
+				Button:
+					size_hint: 1, 0.1
+					text: 'Add To Flow'
+					on_press: app.AddToWorkflowPopup(self, args[0])
+				Carousel:
+					size_hint: 1, 0.7
+					id: carousel_ka
+				Button:
+					size_hint: 1, 0.1
+					text: 'Save'
+					on_press: app.SaveQuickKeyAction(self, args[0])
