@@ -687,7 +687,7 @@ class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
 
 class WorkflowScreen(Screen):
-    drag_screen=ObjectProperty(None)
+    drag_grid=ObjectProperty(None)
     grid_layout=ObjectProperty(None)
     float_layout=ObjectProperty(None)
 
@@ -718,6 +718,13 @@ class AddToWorkflowPopup(BoxLayout):
     atwp_testscript=ObjectProperty(None)
     atwp_client=ObjectProperty(None)
     atwp_project=ObjectProperty(None)
+    
+class LoadWorkflowPopup(BoxLayout):
+    spinner=ObjectProperty(None)
+    lwp_workflow=ObjectProperty(None)
+    lwp_testscript=ObjectProperty(None)
+    lwp_client=ObjectProperty(None)
+    lwp_project=ObjectProperty(None)
     
 class CreateWorkflowPopup(BoxLayout):
     new_flow=ObjectProperty(None)
@@ -788,12 +795,6 @@ class TestScriptBuilderApp(App):
     def ExportTestScript(self, *args):
         Logger.debug('WF: Export Test Scripts')
         
-    def LoadPrevPageWF(self, *args):
-        Logger.debug('WF: Load Previous Page')
-        
-    def LoadNextPageWF(self, *args):
-        Logger.debug('WF: Load Next Page Workflow')
-        
     def WFQuickActionPopup(self, *args):
         Logger.debug('WF: Quick Action Popup')
         popup = Popup(title='Quick Key Action', content=KeyActionCarouselItem(), size_hint=(0.5, 0.75))
@@ -805,12 +806,6 @@ class TestScriptBuilderApp(App):
         
     def WFSaveQuickActionPopup(self, *args):
         Logger.debug('WF: Save Action Popup')
-        
-    def WFDuplicateKeyAction(self, *args):
-        Logger.debug('WF: Duplicate Key Action')
-        
-    def WFDeleteKeyAction(self, *args):
-        Logger.debug('WF: Delete Key Action')
         
     def TestScriptPopup_WF(self, *args):
         Logger.debug('WF: Test Script Popup')
@@ -826,24 +821,175 @@ class TestScriptBuilderApp(App):
     def SaveWorkflow(self, *args):
         Logger.debug('WF: Save Workflow')
         
-    def CreateNewWorkflow(self, *args):
-        Logger.debug('WF: Create New Workflow')
+    def SaveAction(self, *args):
+        Logger.debug('WF: Save Action')
     
     def CreateNewSubflow(self, *args):
         Logger.debug('WF: Create New Subflow')
-        
-    def GenerateLinearFlow(self, *args):
-        Logger.debug('WF: Generate Linear Flow')
   
+    #This is a critical method as it is called when a draggable is released on
+    #the flowchart, to add a flowchart node.  This takes the label from the original
+    #Draggable, puts it into a new draggable wrapper and then into the flowchart node  
     def add_flowchart_node(self, cell, image):
         Logger.debug('Add flowchart node with image %s and cell %s' % (image, cell))
-        drag_label = DraggableImage(img=image, app=self, grid=self.root.get_screen('workflow').drag_grid, cell=self.root.get_screen('workflow').drag_grid.cells[0])
-        drag = FlowChartNode(app=self, grid=self.root.get_screen('workflow').drag_grid, cell=self.root.get_screen('workflow').drag_grid.cells[0], label=drag_label)
+        drag_label = DraggableImage(img=image, app=self, grid=self.root.get_screen('workflow').drag_grid, cell=cell)
+        drag = FlowChartNode(app=self, grid=self.root.get_screen('workflow').drag_grid, cell=cell, label=drag_label)
         drag_label.node = drag
+        #Bind the double press to load the key action into the side editor
+        drag_label.bind(on_double_press=self.LoadSideEditor)
         cell.add_widget(drag)
         cell.nodes.append(drag)
         self.root.get_screen('workflow').drag_grid.nodes.append(drag)
+        
+    def LoadSideEditor(self, node):
+        #Loop through the nodes in the grid and find the one that has been double pressed
+        Logger.debug('Load Side Editor with action %s' % (node.img.text))
+        #for node in self.root.get_screen('workflow').drag_grid.nodes:
+            #if node.label.is_double_pressed:
     
+        #Query the DB for the details of the action with the name from the label
+        ka = session.query(KeyAction).filter(KeyAction.name==node.img.text).one()
+        ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == node.img.text).all()
+        wfa = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name == node.img.text).one()
+        wps = session.query(WorkflowParameter).join(WorkflowAction).join(KeyAction).filter(KeyAction.name == node.img.text).all()
+        #Load the double clicked node into the side editor
+        self.root.get_screen('workflow').ids.wf_carousel.name = node.img.text
+        if wfa.expectedresult is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.er = wfa.expectedresult
+            
+        if len(ips) == 0:
+            ip1 = InputParameter(keyactionid=ka.id)
+            ip2 = InputParameter(keyactionid=ka.id)
+            ip3 = InputParameter(keyactionid=ka.id)
+            session.add(ip1)
+            session.add(ip2)
+            session.add(ip3)
+            session.commit()
+        elif len(ips) == 1:
+            ip1 = InputParameter(keyactionid=ka.id)
+            ip2 = InputParameter(keyactionid=ka.id)
+            ip3 = ips[0]
+            session.add(ip1)
+            session.add(ip2)
+            session.commit()
+        elif len(ips) == 2:
+            ip1 = InputParameter(keyactionid=ka.id)
+            ip2 = ips[0]
+            ip3 = ips[1]
+            session.add(ip1)
+            session.commit()
+        else:
+            ip1 = ips[0]
+            ip2 = ips[1]
+            ip3 = ips[2]
+            
+        if ip1.name is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip1_name = ip1.name
+        if ip2.name is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip2_name = ip2.name
+        if ip3.name is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip3_name = ip3.name
+            
+        if len(wps) == 0:
+            wp1 = WorkflowParameter(keyactionid=wfa.id)
+            wp2 = WorkflowParameter(keyactionid=wfa.id)
+            wp3 = WorkflowParameter(keyactionid=wfa.id)
+            session.add(wp1)
+            session.add(wp2)
+            session.add(wp3)
+            session.commit()
+        elif len(wps) == 1:
+            wp1 = WorkflowParameter(keyactionid=wfa.id)
+            wp2 = WorkflowParameter(keyactionid=wfa.id)
+            wp3 = wps[0]
+            session.add(wp1)
+            session.add(wp2)
+            session.commit()
+        elif len(wps) == 2:
+            wp1 = WorkflowParameter(keyactionid=wfa.id)
+            wp2 = wps[0]
+            wp3 = wps[1]
+            session.add(wp1)
+            session.commit()
+        else:
+            wp1 = wps[0]
+            wp2 = wps[1]
+            wp3 = wps[2]
+            
+        if wp1.value is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip = wp1.value
+        if wp2.value is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip2 = wp2.value
+        if wp3.value is not None:
+            self.root.get_screen('workflow').ids.wf_carousel.ip3 = wp3.value
+        
+    def ApplyLoadWorkflowPopupFilter(self, *args):
+        Logger.debug('Apply workflow filter popup')
+        
+        #Clear the Spinner
+        for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
+        
+        #Get Filter Values
+        wf = self.root.get_screen('keyactiongroup').pop_up.content.lwp_workflow.text
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
+        
+        #Get Result Set from Filter Manager
+        num_flows = session.query(Workflow).count()
+        if num_flows - 5 < 0:
+            num_flows = 0
+        else:
+            num_flows = num_flows - 5
+        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+        
+        #Load Result Set Into Spinner
+        for result in results:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+            
+    def LoadWorkflowPopup(self, *args):
+        Logger.debug('WF: Load Workflow Popup')
+        popup = Popup(title='Load Workflow', content=LoadWorkflowPopup(), size_hint=(0.4, 0.5))
+        popup.open()
+        self.root.get_screen('keyactiongroup').pop_up = popup
+        
+        #Populate the latest 5 workflows into the spinner
+        num_flows = session.query(Workflow).count()
+        if num_flows - 5 < 0:
+            num_flows = 0
+        else:
+            num_flows = num_flows - 5
+        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
+        
+        #Populate values in spinner
+        for result in results:
+            popup.content.spinner.values.append(result.name)
+            
+    def LoadFlow(self, *args):
+        Logger.debug('Add To Workflow')
+        
+        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        
+        #Load the Key Actions for the flow
+        keyactions = session.query(KeyAction).join(WorkflowAction).\
+            join(Workflow).filter(Workflow.name==current_workflow).all()
+        
+        #Put each element into the draggable list
+        for action in keyactions:
+            lbl = Label(text=action.name)
+            
+            drag_option = DraggableOption(img=lbl, app=self,\
+                grid=self.root.get_screen('workflow').drag_grid,\
+                    grid_layout=self.root.get_screen('workflow').grid_layout,\
+                        float_layout=self.root.get_screen('workflow').float_layout)
+                        
+            self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
+            
+        self.root.get_screen('keyactiongroup').pop_up.dismiss()
+        self.root.get_screen('workflow').ids.current_wf.text = current_workflow
+        
+            
 #----------------------------------------------------------
 #-------------------Key Action Page Callbacks--------------
 #----------------------------------------------------------

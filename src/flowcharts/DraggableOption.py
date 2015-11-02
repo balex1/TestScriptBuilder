@@ -50,7 +50,7 @@ class DraggableOption(Magnet):
             #Grab the widget and remove the image from it
             touch.grab(self)
             self.remove_widget(self.img)
-            self.app.root.add_widget(self.img)
+            self.app.root.get_screen('workflow').add_widget(self.img)
             self.img.center = touch.pos
             return True
 
@@ -96,7 +96,7 @@ class DraggableOption(Magnet):
 
     def on_touch_up(self, touch, *args):
         add_image=True
-        self.app.root.remove_widget(self.img)
+        self.app.root.get_screen('workflow').remove_widget(self.img)
         #If the widget is grabbed
         if touch.grab_current == self:
             #If the touch collides with the drag grid

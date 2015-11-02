@@ -34,6 +34,7 @@ class DraggableImage(Magnet):
     
     #A Property to expose the on_double_press event
     double_press=ListProperty([0,0])
+    is_double_pressed=BooleanProperty(False)
     
     def on_img(self, *args):
         self.clear_widgets()
@@ -44,14 +45,18 @@ class DraggableImage(Magnet):
         if self.collide_point(*touch.pos):
             if touch.is_double_tap:
                 self.double_press=touch.pos
+                is_double_pressed = True
+                self.app.LoadSideEditor(self)
                 Logger.debug('Draggable double pressed at %s' % (self.double_press))
             else:
                 #Grab the widget and pull the image out of the flowchart node
                 touch.grab(self)
                 self.remove_widget(self.img)
-                self.app.root.add_widget(self.img)
+                self.app.root.get_screen('workflow').add_widget(self.img)
                 self.img.center = touch.pos
             return True
+        else:
+            is_double_pressed = False
 
         return super(DraggableImage, self).on_touch_down(touch, *args)
 
@@ -68,21 +73,21 @@ class DraggableImage(Magnet):
                 for cel in self.grid.cells:
                     if cel.collide_point(*touch.pos):
                         self.node.parent.clear_widgets()
-                        self.app.root.remove_widget(self.img)
+                        self.app.root.get_screen('workflow').remove_widget(self.img)
                         self.cell=cel
                         self.node.cell=cel
                         self.cell.add_widget(self.node)
                         self.add_widget(self.img)
                         touch.ungrab(self)
                         return True
-                self.app.root.remove_widget(self.img)
+                self.app.root.get_screen('workflow').remove_widget(self.img)
                 self.cell=1
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
             else:
                 self.node.parent.clear_widgets()
-                self.app.root.remove_widget(self.img)
+                self.app.root.get_screen('workflow').remove_widget(self.img)
                 self.cell.add_widget(self.node)
                 self.add_widget(self.img)
                 touch.ungrab(self)
