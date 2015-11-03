@@ -34,6 +34,7 @@ from src.flowcharts.FlowChartNode2 import FlowChartNode, DraggableImage
 from src.flowcharts.DraggableOption import DraggableOption
 
 import os.path
+import platform
 
 #------------------------------------------------------------
 #----------------ORM-----------------------------------------
@@ -199,6 +200,16 @@ class WorkflowParameter(Base):
 #------------------------------------------------------------
 #----------------SQLAlchemy Connections----------------------
 #------------------------------------------------------------
+
+#Figure out whether we are running on windows or unix
+#Connect to the DB
+#echo=True turns on query logging
+#echo="debug" turns on query + result logging
+#echo=False turns off query logging
+if platform.system() == 'Windows':
+	engine = create_engine('sqlite:///test.db', echo=True)
+else:
+	engine = create_engine('sqlite:///test.db', echo=True)
 
 #Connect to the DB
 #echo=True turns on query logging
