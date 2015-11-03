@@ -4,6 +4,7 @@
 	drag_grid: node_editor
 	grid_layout: grid_layout
 	float_layout: float_layout
+	current_wf: current_wf
 	BoxLayout:
 		orientation: 'vertical'
 		size: root.size
@@ -16,6 +17,17 @@
 					with_previous: False
 				ActionOverflow:
 				ActionGroup:
+					text: 'Logic Nodes'
+					ActionButton:
+						text: 'And'
+						on_press: app.AddAndNode(self, args[0])
+					ActionButton:
+						text: 'Or'
+						on_press: app.AddOrNode(self, args[0])
+					ActionButton:
+						text: 'For-In'
+						on_press: app.ShowForPopup(self, args[0])
+				ActionGroup:
 					id: filedropdown_kag
 					text: 'Options'
 					ActionButton:
@@ -24,9 +36,6 @@
 					ActionButton:
 						on_press: app.WFQuickActionPopup(self, args[0])
 						text: 'Quick Action'
-					ActionButton:
-						on_press: app.WFLoadActionPopup(self, args[0])
-						text: 'Edit Action'
 				ActionGroup:
 					text: 'Navigation'
 					ActionButton:
@@ -53,7 +62,6 @@
 						id: float_layout
 			DragGrid:
 				size_hint: 0.6, 1
-				rows: 8
 				id: node_editor
 			BoxLayout:
 				size_hint: 0.2, 1

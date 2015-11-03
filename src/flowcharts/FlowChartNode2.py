@@ -46,6 +46,11 @@ class DraggableImage(Magnet):
             if touch.is_double_tap:
                 self.double_press=touch.pos
                 is_double_pressed = True
+                
+                #Set all other nodes to is_double_pressed = False
+                for node in self.grid.nodes:
+                    node.label.is_double_pressed=False
+                
                 self.app.LoadSideEditor(self)
                 Logger.debug('Draggable double pressed at %s' % (self.double_press))
             else:
@@ -55,8 +60,6 @@ class DraggableImage(Magnet):
                 self.app.root.get_screen('workflow').add_widget(self.img)
                 self.img.center = touch.pos
             return True
-        else:
-            is_double_pressed = False
 
         return super(DraggableImage, self).on_touch_down(touch, *args)
 

@@ -215,7 +215,7 @@ else:
 #echo=True turns on query logging
 #echo="debug" turns on query + result logging
 #echo=False turns off query logging
-engine = create_engine('sqlite:///test.db', echo=True)
+engine = create_engine('sqlite:///test.db', echo="debug")
 Logger.info('SQLAlchemy: Engine Created')
 
 #Database analyzed & created if necessary
@@ -694,7 +694,8 @@ Builder.load_file('kv/KeyActionsTabbedPanel.kv')
 Builder.load_file('kv/LoadWorkflowPopup.kv')
 Builder.load_file('kv/SelectableButton.kv')
 Builder.load_file('kv/WorkflowScreen.kv')
-Logger.info('KV: KV File Loaded')
+Builder.load_file('kv/ForInPopup.kv')
+Logger.info('KV: KV Files Loaded')
 
 #Create the filter manager
 filter = FilterManager()
@@ -717,6 +718,7 @@ class WorkflowScreen(Screen):
     drag_grid=ObjectProperty(None)
     grid_layout=ObjectProperty(None)
     float_layout=ObjectProperty(None)
+    current_wf=ObjectProperty(None)
 
 class SelectableGrid(GridLayout):
     pass
@@ -733,6 +735,12 @@ class KeyActionAdvancedOptionsPopup(BoxLayout):
 class KeyActionTabbedPanel(TabbedPanel):
     pass
 
+class ForInPopup(BoxLayout):
+    app=ObjectProperty(None)
+    keyaction_spinner=ObjectProperty(None)
+    inputparameter_spinner=ObjectProperty(None)
+    in_textinput=ObjectProperty(None)
+
 class TestScriptOptionsPopup(BoxLayout):
     current_client = ObjectProperty(None)
     load_client = ObjectProperty(None)
@@ -743,6 +751,7 @@ class TestScriptOptionsPopup(BoxLayout):
     current_testscript = ObjectProperty(None)
     load_testscript = ObjectProperty(None)
     new_testscript = ObjectProperty(None)
+    app = ObjectProperty(None)
 
 class ExportPopup(BoxLayout):
     pass
@@ -811,6 +820,41 @@ class TestScriptBuilderApp(App):
 #------------------WF Callbacks----------------------------
 #----------------------------------------------------------
 
+    def AddAndNode(self, *args):
+        Logger.debug('WF: Add And Node')
+        
+    def AddOrNode(self, *args):
+        Logger.debug('WF: Add Or Node')
+        
+    def ShowForPopup(self, *args):
+        Logger.debug('WF: Show For Popup')
+        current_workflow=self.root.get_screen('workflow').current_wf.text
+        popup = Popup(title='For-In', content=ForInPopup(), size_hint=(0.5, 0.4))
+        self.root.get_screen('workflow').pop_up = popup
+        popup.open()
+        
+        #Load The Key Actions
+        keyactions = session.query(KeyAction).join(WorkflowAction).join(Workflow).filter(Workflow.name==current_workflow).all()
+        for action in keyactions:
+            popup.content.keyaction_spinner.values.append(action.name)
+        
+    def AddForNode(self, *args):
+        Logger.debug('WF: Add For Node')
+        popup=self.root.get_screen('workflow').pop_up
+        
+    def UpdateIPSpinner(self, *args):
+        Logger.debug('WF: Update IP Spinner')
+        current_workflow=self.root.get_screen('workflow').current_wf.text
+        popup=self.root.get_screen('workflow').pop_up
+        
+        #Clear the IP Spinner
+        for value in popup.content.inputparameter_spinner.values:
+            popup.content.inputparameter_spinner.values.remove(value)
+            
+        ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name==popup.content.keyaction_spinner.text).all()
+        for ip in ips:
+            popup.content.inputparameter_spinner.values.append(ip.name)
+        
     def AdvancedOptionsPopup_WF(self, *args):
         Logger.debug('WF: Advanced Options Popup')
         popup = Popup(title='Export Options', content=ExportPopup(), size_hint=(0.5, 0.75))
@@ -824,21 +868,57 @@ class TestScriptBuilderApp(App):
         #popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
         popup.open()
         
-    def WFLoadActionPopup(self):
-        Logger.debug('WF: Load Action Popup')
-        Logger.debug('WF: Quick Action Popup')
-        popup = Popup(title='Quick Key Action', content=KeyActionPopup(app=self), size_hint=(0.5, 0.75))
-        self.root.get_screen('workflow').pop_up = popup
-        #popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
-        popup.open()
-        #Load the Action into the Popup
-        
     def WFSaveQuickActionPopup(self, *args):
         Logger.debug('WF: Save Action Popup')
         
+        popup = self.root.get_screen('workflow').pop_up
+        
+        #Check if the module exists
+        mod = session.query(Module).filter(Module.name==popup.module_in.text).one()
+        if mod is None:
+            module = Module(name=popup.module_in.text)
+            session.add(module)
+        else:
+            module = mod
+        
+        #Check if the system area exists
+        sa = session.query(SystemArea).filter(SystemArea.name==popup.sa_in.text).one()
+        if sa is None:
+            sysarea = SystemArea(name=popup.sa_in.text)
+            session.add(sysarea)
+        else:
+            sysarea = sa
+        
+        #Check if the key action exists
+        ka = session.query(KeyAction).filter(KeyAction.name==popup.ka_in.text).one()
+        if ka is None:
+            keyaction = KeyAction(name=popup.ka_in.text)
+            session.add(keyaction)
+        else:
+            keyaction = ka
+            
+        #Assign the keyaction to the system area and module
+        keyaction.systemareaid = sysarea.id
+        sysarea.moduleid = module.id
+        
+        #Assign the description & custom
+        keyaction.description = popup.content.desc_in.text
+        if popup.content.custom_in.active:
+            keyaction.custom = True
+        else:
+            keyaction.custom = False
+            
+        #TO-DO: Input Parameters
+            
+        #TO-DO: Add to workflow
+            
+        #Save
+        session.commit()
+            
+    #Load the Test Script Popup
     def TestScriptPopup_WF(self, *args):
         Logger.debug('WF: Test Script Popup')
-        popup = Popup(title='Test Script Options', content=TestScriptOptionsPopup(), size_hint=(0.5, 0.75))
+        popup = Popup(title='Test Script Options', content=TestScriptOptionsPopup(app=self), size_hint=(0.5, 0.75))
         self.root.get_screen('workflow').pop_up = popup
         popup.open()
         
@@ -848,10 +928,89 @@ class TestScriptBuilderApp(App):
         popup.content.current_testscript = current_script
         
         #Populate the Spinners
+        clients = session.query(Client).all()
+        for client in clients:
+            popup.content.load_client.values.append(client.name)
+            
+        projects = session.query(Project).all()
+        for project in projects:
+            popup.content.load_project.values.append(project.name)
+            
+        scripts = session.query(TestScript).all()
+        for script in scripts:
+            popup.content.load_testscript.values.append(script.name)
+            
+    #Update the project and test script spinners in the test script popup
+    def UpdateProjectAndTestScript(self, *args):
+        Logger.debug('WF: Test Script Popup')
+        popup = self.root.get_screen('workflow').pop_up
         
+        #Clear the spinners
+        for value in popup.content.load_project.values:
+            popup.content.load_project.values.remove(value)
+            
+        for value in popup.content.load_testscript.values:
+            popup.content.load_testscript.values.remove(value)
+        
+        #Query based on the updated client
+        projects = session.query(Project).join(Client).filter(Client.name == popup.content.load_client.text).all()
+        for project in projects:
+            popup.content.load_project.values.append(project.name)
+            
+        scripts = session.query(TestScript).join(Project).join(Client).filter(Client.name == popup.content.load_client.text).all()
+        for script in scripts:
+            popup.content.load_testscript.values.append(script.name)
+        
+    #Update the test script spinner in the test script popup
+    def UpdateTestScript(self, *args):
+        Logger.debug('WF: Test Script Popup')
+        popup = self.root.get_screen('workflow').pop_up
+        
+        for value in popup.content.load_testscript.values:
+            popup.content.load_testscript.values.remove(value)
+            
+        scripts = session.query(TestScript).join(Project).filter(Project.name == popup.content.load_project.text).all()
+        for script in scripts:
+            popup.content.load_testscript.values.append(script.name)
         
     def SaveTestScriptPopup(self, *args):
         Logger.debug('WF: Save Test Script Popup')
+        popup = self.root.get_screen('workflow').pop_up
+        
+        #If-Else Block to determine whether we're creating new values or using 
+        #old ones, or a combination of the two
+        
+        #New client, project, and test script
+        if (popup.content.new_client.text is not None and popup.content.new_client.text != "")\
+            and (popup.content.new_project.text is not None and popup.content.new_project.text != "")\
+                and (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Client, Project & Test Script')
+            
+        #New client and project
+        elif (popup.content.new_client.text is not None and popup.content.new_client.text != "")\
+            and (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Client & Project')
+            
+        #new project and test script
+        elif (popup.content.new_project.text is not None and popup.content.new_project.text != "")\
+            and (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Project & Test Script')
+            
+        #New client
+        elif (popup.content.new_client.text is not None and popup.content.new_client.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Client')
+            
+        #New Project
+        elif (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Project')
+            
+        #New Test Script
+        elif (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
+            Logger.debug('WF: Save Test Script Popup - New Test Script')
+            
+        #Load All From DB
+        else:
+            Logger.debug('WF: Save Test Script Popup - Existing Client, Project, Test Script')
         
     def UpdateWorkflowName(self, *args):
         Logger.debug('WF: Update Workflow Name')

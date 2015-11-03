@@ -1,0 +1,27 @@
+#: kivy 1.9.0
+
+<ForInPopup>
+	keyaction_spinner:keyaction_spinner
+	inputparameter_spinner: inputparameter_spinner
+	in_textinput: in_textinput
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Spinner:
+				id: keyaction_spinner
+				text: 'Key Action'
+				on_text: app.UpdateIPSpinner(self, args[0])
+			Spinner:
+				id: inputparameter_spinner
+				text: 'Parameter'
+		TextInput:
+			size_hint: 1, 0.6
+			hint_text: 'IN'
+			id: in_textinput
+		Button:
+			size_hint: 1, 0.2
+			text: 'Save'
+			on_press: app.AddForNode(self, args[0])

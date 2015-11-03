@@ -45,7 +45,7 @@ class DragGrid(GridLayout):
     nodes=ListProperty([])
     
     #The size (length and width) of the drag grid
-    size=NumericProperty(3)
+    size=NumericProperty(8)
     
     #A list of connections
     #The first row is the front node, the next row is the back node

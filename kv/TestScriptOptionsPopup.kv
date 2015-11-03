@@ -23,6 +23,7 @@
 				text: 'Load Client'
 			Spinner:
 				id: load_client
+				on_text: app.UpdateProjectAndTestScript(self, args[0])
 		TextInput:
 			size_hint: 1, 0.1
 			hint_text: 'New Client'
@@ -37,6 +38,7 @@
 				text: 'Load Project'
 			Spinner:
 				id: load_project
+				on_text: app.UpdateTestScript(self, args[0])
 		TextInput:
 			size_hint: 1, 0.1
 			hint_text: 'New Project'
