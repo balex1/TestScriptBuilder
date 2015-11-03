@@ -26,6 +26,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 from src.KeyActionCarouselItem import KeyActionCarouselItem
+from src.KeyActionPopup import KeyActionPopup
 from src.WFCarouselItem import WFCarouselItem
 
 from src.flowcharts.DragGrid import DragGrid, DragGridCell
@@ -195,7 +196,14 @@ class WorkflowParameter(Base):
     def __repr_(self):
         return "<Workflow Parameter: ID = '%s', Input Parameter ID = '%s', Key Action ID = '%s', Value = '%s'>" % (self.id, self.inputparamid, self.keyactionid, self.value)
 
+#------------------------------------------------------------
+#----------------SQLAlchemy Connections----------------------
+#------------------------------------------------------------
+
 #Connect to the DB
+#echo=True turns on query logging
+#echo="debug" turns on query + result logging
+#echo=False turns off query logging
 engine = create_engine('sqlite:///test.db', echo=True)
 Logger.info('SQLAlchemy: Engine Created')
 
@@ -694,6 +702,7 @@ class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
 
 class WorkflowScreen(Screen):
+    pop_up=ObjectProperty(None)
     drag_grid=ObjectProperty(None)
     grid_layout=ObjectProperty(None)
     float_layout=ObjectProperty(None)
@@ -714,7 +723,15 @@ class KeyActionTabbedPanel(TabbedPanel):
     pass
 
 class TestScriptOptionsPopup(BoxLayout):
-    pass
+    current_client = ObjectProperty(None)
+    load_client = ObjectProperty(None)
+    new_client = ObjectProperty(None)
+    current_project = ObjectProperty(None)
+    load_project = ObjectProperty(None)
+    new_project = ObjectProperty(None)
+    current_testscript = ObjectProperty(None)
+    load_testscript = ObjectProperty(None)
+    new_testscript = ObjectProperty(None)
 
 class ExportPopup(BoxLayout):
     pass
@@ -785,19 +802,25 @@ class TestScriptBuilderApp(App):
 
     def AdvancedOptionsPopup_WF(self, *args):
         Logger.debug('WF: Advanced Options Popup')
-        #This popup should allow for loading a script configuration file (HTML & SQL)
-        #It should also allow for exporting the script and choosing export format
         popup = Popup(title='Export Options', content=ExportPopup(), size_hint=(0.5, 0.75))
+        self.root.get_screen('workflow').pop_up = popup
         popup.open()
         
     def WFQuickActionPopup(self, *args):
         Logger.debug('WF: Quick Action Popup')
-        popup = Popup(title='Quick Key Action', content=KeyActionCarouselItem(), size_hint=(0.5, 0.75))
-        popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
+        popup = Popup(title='Quick Key Action', content=KeyActionPopup(app=self), size_hint=(0.5, 0.75))
+        self.root.get_screen('workflow').pop_up = popup
+        #popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
         popup.open()
         
-    def WFLoadActionPopup(self, *args):
+    def WFLoadActionPopup(self):
         Logger.debug('WF: Load Action Popup')
+        Logger.debug('WF: Quick Action Popup')
+        popup = Popup(title='Quick Key Action', content=KeyActionPopup(app=self), size_hint=(0.5, 0.75))
+        self.root.get_screen('workflow').pop_up = popup
+        #popup.bind(on_dismiss=self.WFSaveQuickActionPopup)
+        popup.open()
+        #Load the Action into the Popup
         
     def WFSaveQuickActionPopup(self, *args):
         Logger.debug('WF: Save Action Popup')
@@ -805,7 +828,16 @@ class TestScriptBuilderApp(App):
     def TestScriptPopup_WF(self, *args):
         Logger.debug('WF: Test Script Popup')
         popup = Popup(title='Test Script Options', content=TestScriptOptionsPopup(), size_hint=(0.5, 0.75))
+        self.root.get_screen('workflow').pop_up = popup
         popup.open()
+        
+        #Populate the currently selected values into the popup
+        popup.content.current_client = current_client
+        popup.content.current_project = current_project
+        popup.content.current_testscript = current_script
+        
+        #Populate the Spinners
+        
         
     def SaveTestScriptPopup(self, *args):
         Logger.debug('WF: Save Test Script Popup')
