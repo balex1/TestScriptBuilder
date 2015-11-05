@@ -234,7 +234,7 @@ Logger.info('SQLAlchemy: Session Created')
 
 
 class FilterManager():
-    #TO-DO: Add Optional Custom Filtering
+    #Class to manage filtering within the application
 
     def __init__(self):
         self.page = 1
@@ -282,29 +282,6 @@ class FilterManager():
         limit = ((self.page - 1) * self.pageLength)
         offset = self.pageLength + ((self.page - 1) * self.pageLength)
         return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset)
-    
-    def NextPage_WF(self, workflow, module, sysarea, keyaction, custom):
-        Logger.debug('Filter: Next Page')
-        self.page = self.page + 1
-        limit = ((self.page - 1) * self.pageLength)
-        offset = self.pageLength + ((self.page - 1) * self.pageLength)
-        res = self.GetWorkflowResults(workflow, module, sysarea, keyaction, custom, limit, offset)
-        Logger.debug('Filter: Filter Applied')
-        if len(res) == 0:
-            self.page = 1
-            limit = ((self.page - 1) * self.pageLength)
-            offset = self.pageLength + ((self.page - 1) * self.pageLength)
-            return self.GetWorkflowResults(workflow, module, sysarea, keyaction, custom, limit, offset)
-        else:
-            return res
-
-    def PrevPage_WF(self, workflow, module, sysarea, keyaction, custom):
-        Logger.debug('Filter: Previous Page')
-        if self.page != 1:
-            self.page = self.page - 1
-        limit = ((self.page - 1) * self.pageLength)
-        offset = self.pageLength + ((self.page - 1) * self.pageLength)
-        return self.GetWorkflowResults(workflow, module, sysarea, keyaction, custom, limit, offset)
             
     #Utility Method
     def FirstPage(self):
@@ -682,6 +659,109 @@ class FilterManager():
         return results
 
 #------------------------------------------------------------
+#----------------DB Writer-----------------------------------
+#------------------------------------------------------------
+
+class DatabaseWriter():
+    #Class to abstract away saving of key objects to the database
+    
+    def __init__(self):
+        Logger.info('DBWriter: Database Writer Created')
+        
+    def SaveInputParameter(ip_name, ka_name):
+        #Check if the input parameter exists
+        ip = session.query(InputParameter).join(KeyAction).\
+            filter(KeyAction.name==ka_name).filter(InputParameter.name==ip_name).all()
+        if len(ip) == 0:
+            ka = session.query(KeyAction).filter(KeyAction.name==ka_name).all()
+            inputparameter = InputParameter(name=ip_name, ka[0].id)
+            session.add(inputparameter)
+        else:
+            inputparameter = ip[0]
+            
+        session.commit()
+        
+    def SaveWorkflowParameter(ip_name, action_name, flow_name, param_value):
+        ip = session.query(InputParameter).join(KeyAction).\
+            filter(KeyAction.name==action_name).filter(InputParameter.name==ip_name).all()
+            
+        ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
+        wf = session.query(Workflow).filter(Workflow.name==flow_name)
+        
+        wfp = session.query(WorkflowParameter).join(WorkflowAction).join(Workflow).\
+            filter(Workflow.name==flow_name).filter(WorkflowParameter.inputparamid=ip.id).all()
+            
+        if len(wfp) == 0:
+            param = WorkflowParameter(inputparamid=ip.id, keyactionid=ka.id, value = param_value)
+            session.add(param)
+        else:
+            param = wfp
+            
+        session.commit()
+
+    def SaveKeyAction(module, sysarea, name, desc, custom, ip_list):
+        #Check if the module exists
+        mod = session.query(Module).filter(Module.name==module).one()
+        if mod is None:
+            module = Module(name=popup.module_in.text)
+            session.add(module)
+        else:
+            module = mod
+        
+        #Check if the system area exists
+        sa = session.query(SystemArea).filter(SystemArea.name==sysarea).one()
+        if sa is None:
+            sysarea = SystemArea(name=popup.sa_in.text)
+            session.add(sysarea)
+        else:
+            sysarea = sa
+        
+        #Check if the key action exists
+        ka = session.query(KeyAction).filter(KeyAction.name==name).one()
+        if ka is None:
+            keyaction = KeyAction(name=popup.ka_in.text)
+            session.add(keyaction)
+        else:
+            keyaction = ka
+            
+        session.commit()
+            
+        #Assign the keyaction to the system area and module
+        keyaction.systemareaid = sysarea.id
+        sysarea.moduleid = module.id
+        
+        #Assign the description & custom
+        keyaction.description = desc
+        if custom == True or custom == 'True' or custom == 'true':
+            keyaction.custom = True
+        else:
+            keyaction.custom = False
+            
+        #Input Parameters
+        for ip in ip_list:
+            self.SaveInputParameter(name, ip)
+            
+    def SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list):
+        ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
+        wf = session.query(Workflow).filter(Workflow.name==flow_name).one()
+        ips = session.query(InputParameters).join(KeyAction).filter(KeyAction.name = action_name).all()
+        i = 0
+        
+        #Check if the workflow action exists
+        wfa = session.query(WorkflowAction).join(Workflow).\
+            filter(Workflow.name==flow_name).filter(WorkflowAction.keyactionid==ka.id).all()
+        
+        if len(wfa) == 0:
+            action = WorkflowAction(keyactionid=ka.id, workflowid=wf.id)
+            session.add(action)
+        else:
+            action = wfa
+            
+        for ip_value in ip_value_list:
+            self.SaveWorkflowParameter(ips[0].name, action_name, flow_name, ip_value)
+            i+=1
+            
+#------------------------------------------------------------
 #----------------Main App------------------------------------
 #------------------------------------------------------------
 
@@ -823,8 +903,68 @@ class TestScriptBuilderApp(App):
     def AddAndNode(self, *args):
         Logger.debug('WF: Add And Node')
         
+        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+            
+        #--UI--
+        #Create a Label
+        lbl = Label(text='AND')
+            
+        #Create an Add Option in the Draggable List
+        drag_option = DraggableOption(img=lbl, app=self,\
+            grid=self.root.get_screen('workflow').drag_grid,\
+                grid_layout=self.root.get_screen('workflow').grid_layout,\
+                    float_layout=self.root.get_screen('workflow').float_layout)
+                        
+        self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
+        
+        #--DB--
+        #Find a key action
+        ka = session.query(KeyAction).filter(KeyAction.name=='AND').all()
+        #Find the workflow
+        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        if len(ka) == 0:
+            keyaction = KeyAction(name='AND')
+            session.add(keyaction)
+            session.commit()
+        else:
+            keyaction = ka[0]
+        #Add the workflow action
+        wfa = WorkflowAction(keyactionid=keyaction.id, workflowid=wf.id)
+        session.add(wfa)
+        session.commit()
+        
     def AddOrNode(self, *args):
         Logger.debug('WF: Add Or Node')
+        
+        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        
+        #--UI--
+        #Create a Label
+        lbl = Label(text='OR')
+            
+        #Create an Add Option in the Draggable List
+        drag_option = DraggableOption(img=lbl, app=self,\
+            grid=self.root.get_screen('workflow').drag_grid,\
+                grid_layout=self.root.get_screen('workflow').grid_layout,\
+                    float_layout=self.root.get_screen('workflow').float_layout)
+                        
+        self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
+        
+        #--DB--
+        #Find a key action
+        ka = session.query(KeyAction).filter(KeyAction.name=='OR').all()
+        #Find the workflow
+        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        if len(ka) == 0:
+            keyaction = KeyAction(name='OR')
+            session.add(keyaction)
+            session.commit()
+        else:
+            keyaction = ka[0]
+        #Add the workflow action
+        wfa = WorkflowAction(keyactionid=keyaction.id, workflowid=wf.id)
+        session.add(wfa)
+        session.commit()
         
     def ShowForPopup(self, *args):
         Logger.debug('WF: Show For Popup')
@@ -841,6 +981,49 @@ class TestScriptBuilderApp(App):
     def AddForNode(self, *args):
         Logger.debug('WF: Add For Node')
         popup=self.root.get_screen('workflow').pop_up
+        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        
+        #--UI--
+        #Create a Label
+        lbl = Label(text='FOR')
+            
+        #Create an Add Option in the Draggable List
+        drag_option = DraggableOption(img=lbl, app=self,\
+            grid=self.root.get_screen('workflow').drag_grid,\
+                grid_layout=self.root.get_screen('workflow').grid_layout,\
+                    float_layout=self.root.get_screen('workflow').float_layout)
+                        
+        self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
+        
+        #--DB--
+        #Find a key action
+        ka = session.query(KeyAction).filter(KeyAction.name=='FOR').all()
+        #Find the workflow
+        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        if len(ka) == 0:
+            keyaction = KeyAction(name='FOR')
+            session.add(keyaction)
+            session.commit()
+        else:
+            keyaction = ka[0]
+        #Add the workflow action
+        wfa = WorkflowAction(keyactionid=keyaction.id, workflowid=wf.id)
+        session.add(wfa)
+        session.commit()
+        
+        #Add an input parameter
+        ip = InputParameter(keyactionid=keyaction.id, name='In')
+        session.add(ip)
+        session.commit()
+        
+        ip2 = InputParameter(keyactionid=keyaction.id, name='Final Key Action')
+        session.add(ip2)
+        session.commit()
+        
+        wp = WorkflowParameter(inputparamid=ip.id, keyactionid=wfa.id, value=popup.content.in_textinput.text)
+        session.add(wp)
+        session.commit()
+        popup.dismiss()
         
     def UpdateIPSpinner(self, *args):
         Logger.debug('WF: Update IP Spinner')
