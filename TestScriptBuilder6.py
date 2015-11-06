@@ -668,20 +668,19 @@ class DatabaseWriter():
     def __init__(self):
         Logger.info('DBWriter: Database Writer Created')
         
-    def SaveInputParameter(ip_name, ka_name):
+    def SaveInputParameter(self, ip_name, ka_name):
         #Check if the input parameter exists
-        ip = session.query(InputParameter).join(KeyAction).\
-            filter(KeyAction.name==ka_name).filter(InputParameter.name==ip_name).all()
+        ip = session.query(InputParameter).join(KeyAction).filter(KeyAction.name==ka_name).filter(InputParameter.name==ip_name).all()
         if len(ip) == 0:
-            ka = session.query(KeyAction).filter(KeyAction.name==ka_name).all()
-            inputparameter = InputParameter(name=ip_name, ka[0].id)
+            keyaction = session.query(KeyAction).filter(KeyAction.name==ka_name).all()
+            inputparameter = InputParameter(name=ip_name, keyactionid=keyaction[0].id)
             session.add(inputparameter)
         else:
             inputparameter = ip[0]
             
         session.commit()
         
-    def SaveWorkflowParameter(ip_name, action_name, flow_name, param_value):
+    def SaveWorkflowParameter(self, ip_name, action_name, flow_name, param_value):
         ip = session.query(InputParameter).join(KeyAction).\
             filter(KeyAction.name==action_name).filter(InputParameter.name==ip_name).all()
             
@@ -689,7 +688,7 @@ class DatabaseWriter():
         wf = session.query(Workflow).filter(Workflow.name==flow_name)
         
         wfp = session.query(WorkflowParameter).join(WorkflowAction).join(Workflow).\
-            filter(Workflow.name==flow_name).filter(WorkflowParameter.inputparamid=ip.id).all()
+            filter(Workflow.name==flow_name).filter(WorkflowParameter.inputparamid==ip[0].id).all()
             
         if len(wfp) == 0:
             param = WorkflowParameter(inputparamid=ip.id, keyactionid=ka.id, value = param_value)
@@ -699,30 +698,30 @@ class DatabaseWriter():
             
         session.commit()
 
-    def SaveKeyAction(module, sysarea, name, desc, custom, ip_list):
+    def SaveKeyAction(self, module, sysarea, name, desc, custom, ip_list):
         #Check if the module exists
-        mod = session.query(Module).filter(Module.name==module).one()
-        if mod is None:
-            module = Module(name=popup.module_in.text)
+        mod = session.query(Module).filter(Module.name==module).all()
+        if len(mod) == 0:
+            module = Module(name=module)
             session.add(module)
         else:
-            module = mod
+            module = mod[0]
         
         #Check if the system area exists
-        sa = session.query(SystemArea).filter(SystemArea.name==sysarea).one()
-        if sa is None:
-            sysarea = SystemArea(name=popup.sa_in.text)
+        sa = session.query(SystemArea).filter(SystemArea.name==sysarea).all()
+        if len(sa) == 0:
+            sysarea = SystemArea(name=sysarea)
             session.add(sysarea)
         else:
-            sysarea = sa
+            sysarea = sa[0]
         
         #Check if the key action exists
-        ka = session.query(KeyAction).filter(KeyAction.name==name).one()
-        if ka is None:
-            keyaction = KeyAction(name=popup.ka_in.text)
+        ka = session.query(KeyAction).filter(KeyAction.name==name).all()
+        if len(ka) == 0:
+            keyaction = KeyAction(name=name)
             session.add(keyaction)
         else:
-            keyaction = ka
+            keyaction = ka[0]
             
         session.commit()
             
@@ -738,27 +737,28 @@ class DatabaseWriter():
             keyaction.custom = False
             
         #Input Parameters
+        #Assumes that ip_list is passed in as a list of text inputs
         for ip in ip_list:
-            self.SaveInputParameter(name, ip)
+            self.SaveInputParameter(ip.text, keyaction.name)
             
-    def SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list):
+    def SaveWorkflowAction(self, action_name, flow_name, expected_results, ip_value_list):
         ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
         wf = session.query(Workflow).filter(Workflow.name==flow_name).one()
-        ips = session.query(InputParameters).join(KeyAction).filter(KeyAction.name = action_name).all()
+        ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action_name).all()
         i = 0
         
         #Check if the workflow action exists
         wfa = session.query(WorkflowAction).join(Workflow).\
-            filter(Workflow.name==flow_name).filter(WorkflowAction.keyactionid==ka.id).all()
+            filter(Workflow.name==flow_name).filter(WorkflowAction.keyactionid==ka[0].id).all()
         
         if len(wfa) == 0:
-            action = WorkflowAction(keyactionid=ka.id, workflowid=wf.id)
+            action = WorkflowAction(keyactionid=ka[0].id, workflowid=wf.id)
             session.add(action)
         else:
             action = wfa
             
         for ip_value in ip_value_list:
-            self.SaveWorkflowParameter(ips[0].name, action_name, flow_name, ip_value)
+            self.SaveWorkflowParameter(ips[i].name, action_name, flow_name, ip_value)
             i+=1
             
 #------------------------------------------------------------
@@ -779,6 +779,8 @@ Logger.info('KV: KV Files Loaded')
 
 #Create the filter manager
 filter = FilterManager()
+#Create the DB Writer
+writer = DatabaseWriter()
 current_product = 'Default'
 current_client = 'Default'
 current_project = 'Default'
@@ -1056,47 +1058,28 @@ class TestScriptBuilderApp(App):
         
         popup = self.root.get_screen('workflow').pop_up
         
-        #Check if the module exists
-        mod = session.query(Module).filter(Module.name==popup.module_in.text).one()
-        if mod is None:
-            module = Module(name=popup.module_in.text)
-            session.add(module)
-        else:
-            module = mod
-        
-        #Check if the system area exists
-        sa = session.query(SystemArea).filter(SystemArea.name==popup.sa_in.text).one()
-        if sa is None:
-            sysarea = SystemArea(name=popup.sa_in.text)
-            session.add(sysarea)
-        else:
-            sysarea = sa
-        
-        #Check if the key action exists
-        ka = session.query(KeyAction).filter(KeyAction.name==popup.ka_in.text).one()
-        if ka is None:
-            keyaction = KeyAction(name=popup.ka_in.text)
-            session.add(keyaction)
-        else:
-            keyaction = ka
-            
-        #Assign the keyaction to the system area and module
-        keyaction.systemareaid = sysarea.id
-        sysarea.moduleid = module.id
-        
-        #Assign the description & custom
-        keyaction.description = popup.content.desc_in.text
+        #Custom
         if popup.content.custom_in.active:
-            keyaction.custom = True
+            cust = True
         else:
-            keyaction.custom = False
+            cust = False
+
+        #Save Key Action
+        writer.SaveKeyAction(popup.content.module_in.text, popup.content.sa_in.text, popup.content.ka_in.text, popup.content.desc_in.text, cust, popup.content.ips)
             
-        #TO-DO: Input Parameters
-            
-        #TO-DO: Add to workflow
-            
-        #Save
-        session.commit()
+        #Add to workflow
+        ip = []
+        writer.SaveWorkflowAction(popup.content.ka_in.text, self.root.get_screen('workflow').current_wf.text, '', ip)
+        
+        #Add node in list
+        lbl = Label(text=popup.content.ka_in.text)
+        
+        drag_option = DraggableOption(img=lbl, app=self,\
+            grid=self.root.get_screen('workflow').drag_grid,\
+                grid_layout=self.root.get_screen('workflow').grid_layout,\
+                    float_layout=self.root.get_screen('workflow').float_layout)
+                        
+        self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
             
     #Load the Test Script Popup
     def TestScriptPopup_WF(self, *args):

@@ -27,6 +27,7 @@ class KeyActionPopup(BoxLayout):
     systemarea = StringProperty('')
     keyaction = StringProperty('')
     description = StringProperty('')
+    ips = ListProperty([])
     ip1 = StringProperty('')
     ip2 = StringProperty('')
     ip3 = StringProperty('')
@@ -63,10 +64,13 @@ class KeyActionPopup(BoxLayout):
         self.desc_in = desctext
         iptext = TextInput(hint_text='Input Parameter')
         self.ip_in = iptext
+        self.ips.append(iptext)
         ip2text = TextInput(hint_text='Input Parameter')
         self.ip2_in = ip2text
+        self.ips.append(ip2text)
         ip3text = TextInput(hint_text='Input Parameter')
         self.ip3_in = ip3text
+        self.ips.append(ip3text)
         custlabel = Label(text='Custom')
         custcheck = CheckBox()
         self.custom_in = custcheck
