@@ -1151,28 +1151,62 @@ class TestScriptBuilderApp(App):
             and (popup.content.new_project.text is not None and popup.content.new_project.text != "")\
                 and (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Client, Project & Test Script')
+			client = Client(name=popup.content.new_client.text)
+			session.add(client)
+			session.commit()
+			
+			project = Project(name=popup.content.new_project.text, clientid=client.id)
+			session.add(project)
+			session.commit()
+			
+			script = TestScript(name=popup.content.new_testscript.text, projectid=project.id)
+			session.add(script)
+			session.commit()
             
         #New client and project
         elif (popup.content.new_client.text is not None and popup.content.new_client.text != "")\
             and (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Client & Project')
+			#Invalid
             
         #new project and test script
         elif (popup.content.new_project.text is not None and popup.content.new_project.text != "")\
             and (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Project & Test Script')
+			
+			client = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
+			
+			project = Project(name=popup.content.new_project.text, clientid=client.id)
+			session.add(project)
+			session.commit()
+			
+			script = TestScript(name=popup.content.new_testscript.text, projectid=project.id)
+			session.add(script)
+			session.commit()
             
         #New client
         elif (popup.content.new_client.text is not None and popup.content.new_client.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Client')
+			#Invalid
             
         #New Project
         elif (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Project')
+			#invalid
             
         #New Test Script
         elif (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Test Script')
+			
+			client = Client(name=popup.content.new_client.text)
+			session.add(client)
+			session.commit()
+			
+			project = Project(name=popup.content.new_project.text, clientid=client.id)
+			session.add(project)
+			session.commit()
+			
+			script = session.query(TestScript).filter(TestScript.name==opup.content.load_client.text, projectid=project.id)
             
         #Load All From DB
         else:
