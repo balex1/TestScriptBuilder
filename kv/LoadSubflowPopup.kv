@@ -1,0 +1,56 @@
+#: kivy 1.9.0
+			
+<LoadSubflowPopup>
+	new_name: new_name
+	spinner: loadflowpopup_flow
+	lwp_workflow: lwp_workflow
+	lwp_testscript: lwp_testscript
+	lwp_client: lwp_client
+	lwp_project: lwp_project
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		TextInput:
+			size_hint: 1, 0.2
+			hint_text: 'Subflow Name'
+			id: new_name
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.3
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Workflow'
+				on_text_validate:app.ApplyLoadWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: lwp_workflow
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Testscript'
+				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: lwp_testscript
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.3
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Client'
+				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: lwp_client
+			TextInput:
+				size_hint: 0.5, 1
+				hint_text: 'Project'
+				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
+				multiline: False
+				id: lwp_project
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.4
+			Spinner:
+				text: 'Flow'
+				id: loadflowpopup_flow
+			Button:
+				text: 'Add'
+				on_press: app.LoadSubflow(self, args[0])
+				size_hint: 1, 0.1

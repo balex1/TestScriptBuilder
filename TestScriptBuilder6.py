@@ -691,10 +691,11 @@ class DatabaseWriter():
             filter(Workflow.name==flow_name).filter(WorkflowParameter.inputparamid==ip[0].id).all()
             
         if len(wfp) == 0:
-            param = WorkflowParameter(inputparamid=ip.id, keyactionid=ka.id, value = param_value)
+            param = WorkflowParameter(inputparamid=ip[0].id, keyactionid=ka[0].id, value = param_value)
             session.add(param)
         else:
-            param = wfp
+            param = wfp[0]
+            param.value = param_value
             
         session.commit()
 
@@ -741,6 +742,8 @@ class DatabaseWriter():
         for ip in ip_list:
             self.SaveInputParameter(ip.text, keyaction.name)
             
+        session.commit()
+            
     def SaveWorkflowAction(self, action_name, flow_name, expected_results, ip_value_list):
         ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
         wf = session.query(Workflow).filter(Workflow.name==flow_name).one()
@@ -752,14 +755,43 @@ class DatabaseWriter():
             filter(Workflow.name==flow_name).filter(WorkflowAction.keyactionid==ka[0].id).all()
         
         if len(wfa) == 0:
-            action = WorkflowAction(keyactionid=ka[0].id, workflowid=wf.id)
+            action = WorkflowAction(keyactionid=ka[0].id, workflowid=wf.id, expectedresult=expected_results)
             session.add(action)
         else:
-            action = wfa
+            action = wfa[0]
+            action.expectedresult = expected_results
             
         for ip_value in ip_value_list:
             self.SaveWorkflowParameter(ips[i].name, action_name, flow_name, ip_value)
             i+=1
+            
+        session.commit()
+            
+    def SaveConnectionsList(self, con_list, workflow, testscript, project, client):
+        start = con_list[0]
+        end = con_list[1]
+        i=0
+        #Iterate through the lists
+        for celement in con_list[0]:
+            #A celement of index i from con_list[0] is the start connector
+            #A celement of index i from con_list[1] is the end connector
+            
+            #Check if the next action exists within the workflow
+            nxa = session.query(WorkflowNextAction).filter(WorkflowNextAction.keyactionid==celement.label.img.text).filter(WorkflowNextAction.nextactionid==end[i].label.img.text).all()
+            
+            if len(nxa) == 0:
+                #Find the key action and next key action
+                ka = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==celement.label.img.text).all()
+                na = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==end[i].label.img.text).all()
+                #Create a new workflow next action
+                next_action = WorkflowNextAction(keyactionid=ka[0].id, nextactionid=na[0].id)
+                session.add(next_action)
+                session.commit()
+            else:
+                next_action = nxa
+            i+=1
+            
+        session.commit()
             
 #------------------------------------------------------------
 #----------------Main App------------------------------------
@@ -772,6 +804,7 @@ Builder.load_file('kv/CreateWorkflowPopup.kv')
 Builder.load_file('kv/KeyActionGroupScreen.kv')
 Builder.load_file('kv/KeyActionsTabbedPanel.kv')
 Builder.load_file('kv/LoadWorkflowPopup.kv')
+Builder.load_file('kv/LoadSubflowPopup.kv')
 Builder.load_file('kv/SelectableButton.kv')
 Builder.load_file('kv/WorkflowScreen.kv')
 Builder.load_file('kv/ForInPopup.kv')
@@ -801,6 +834,10 @@ class WorkflowScreen(Screen):
     grid_layout=ObjectProperty(None)
     float_layout=ObjectProperty(None)
     current_wf=ObjectProperty(None)
+    current_workflowname=StringProperty(None)
+    current_script=StringProperty(None)
+    current_project=StringProperty(None)
+    current_client=StringProperty(None)
 
 class SelectableGrid(GridLayout):
     pass
@@ -846,6 +883,14 @@ class AddToWorkflowPopup(BoxLayout):
     atwp_project=ObjectProperty(None)
     
 class LoadWorkflowPopup(BoxLayout):
+    spinner=ObjectProperty(None)
+    lwp_workflow=ObjectProperty(None)
+    lwp_testscript=ObjectProperty(None)
+    lwp_client=ObjectProperty(None)
+    lwp_project=ObjectProperty(None)
+    
+class LoadSubflowPopup(BoxLayout):
+    new_name=ObjectProperty(None)
     spinner=ObjectProperty(None)
     lwp_workflow=ObjectProperty(None)
     lwp_testscript=ObjectProperty(None)
@@ -901,6 +946,97 @@ class TestScriptBuilderApp(App):
 #----------------------------------------------------------
 #------------------WF Callbacks----------------------------
 #----------------------------------------------------------
+    
+    def ClearWorkflow(self):
+        #Clear the current workflow information and input box
+        current_client = 'Default'
+        current_project = 'Default'
+        current_script = 'Default'
+        self.root.get_screen('workflow').current_workflowname = 'Default'
+        self.root.get_screen('workflow').current_wf.text = 'Default'
+        
+        #Clear the Drag Grid, Draggable List
+        self.root.get_screen('workflow').drag_grid.clear_cells()
+        self.root.get_screen('workflow').grid_layout.clear_widgets()
+        self.root.get_screen('workflow').float_layout.clear_widgets()
+
+    def CreateNewSubflow(self, *args):
+        Logger.debug('WF: Create New Subflow')
+        popup = Popup(title='Load Workflow', content=LoadSubflowPopup(), size_hint=(0.4, 0.5))
+        popup.open()
+        self.root.get_screen('workflow').pop_up = popup
+        
+        #Populate the latest 5 workflows into the spinner
+        num_flows = session.query(Workflow).count()
+        if num_flows - 5 < 0:
+            num_flows = 0
+        else:
+            num_flows = num_flows - 5
+        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
+        
+        #Populate values in spinner
+        for result in results:
+            popup.content.spinner.values.append(result.name)
+            
+    def LoadSubflow(self, *args):
+        Logger.debug('Load Subflow')
+        
+        current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
+        new_workflow=self.root.get_screen('workflow').pop_up.content.new_name.text
+        
+        #Copy the current workflow into a new workflow
+        
+        #Check if the new workflow already exists
+        wf = session.query(Workflow).filter(Workflow.name==new_workflow).all()
+        if len(wf)==0:
+            ts = session.query(TestScript).filter(TestScript.name==current_script).all()
+            script = ts[0]
+            flow = Workflow(name=new_workflow, testscriptid=script.id)
+            session.add(flow)
+            session.commit()
+        else:
+            flow = wf[0]
+            
+        #Copy the workflow actions
+        actions = session.query(KeyAction).join(WorkflowAction).join(Workflow).filter(Workflow.name==current_workflow).all()
+        for action in actions:
+            wfa = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==action.name).all()
+            flowaction = wfa[0]
+            ips = session.query(InputParameter).join(WorkflowParameter).join(WorkflowAction).join(KeyAction).filter(KeyAction.name==action.name).all()
+            ip_value_list = []
+            for ip in ips:
+                ip_value_list.append(ip.name)
+            writer.SaveWorkflowAction(action.name, flow.name, flowaction.expectedresult, ip_value_list)
+        
+        #Clear the current elements in the UI
+        self.ClearWorkflow()
+        
+        #Load the Key Actions from the new subflow into the editor
+        keyactions = session.query(KeyAction).join(WorkflowAction).\
+            join(Workflow).filter(Workflow.name==new_workflow).all()
+        
+        #Put each element into the draggable list
+        for action in keyactions:
+            lbl = Label(text=action.name)
+            
+            drag_option = DraggableOption(img=lbl, app=self,\
+                grid=self.root.get_screen('workflow').drag_grid,\
+                    grid_layout=self.root.get_screen('workflow').grid_layout,\
+                        float_layout=self.root.get_screen('workflow').float_layout)
+                        
+            self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
+            
+        self.root.get_screen('keyactiongroup').pop_up.dismiss()
+        self.root.get_screen('workflow').ids.current_wf.text = new_workflow
+        self.root.get_screen('workflow').current_workflowname = new_workflow
+        
+    def SaveConnectionsPanel(self, *args):
+        Logger.debug('Save Connections Panel')
+        #Phase 2
+        
+    def SaveConnectionsPanelDefaults(self, *args):
+        Logger.debug('Save Connections Panel Defaults')
+        #Phase 2
 
     def AddAndNode(self, *args):
         Logger.debug('WF: Add And Node')
@@ -1174,7 +1310,8 @@ class TestScriptBuilderApp(App):
             and (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Project & Test Script')
             
-            client = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
+            cl = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
+            client = cl[0]
             
             project = Project(name=popup.content.new_project.text, clientid=client.id)
             session.add(project)
@@ -1198,37 +1335,60 @@ class TestScriptBuilderApp(App):
         elif (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
             Logger.debug('WF: Save Test Script Popup - New Test Script')
             
-            client = Client(name=popup.content.new_client.text)
-            session.add(client)
-            session.commit()
+            cl = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
+            client = cl[0]
             
-            project = Project(name=popup.content.new_project.text, clientid=client.id)
-            session.add(project)
-            session.commit()
+            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            project = pj[0]
             
-            script = session.query(TestScript).filter(TestScript.name==opup.content.load_client.text, projectid=project.id)
+            script = TestScript(name=popup.content.new_testscript.text, projectid=project.id)
+            session.add(script)
+            session.commit()
             
         #Load All From DB
         else:
             Logger.debug('WF: Save Test Script Popup - Existing Client, Project, Test Script')
+            
+            cl = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
+            client = cl[0]
+            
+            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            project = pj[0]
+            
+            sc = session.query(TestScript).join(Project).join(Client).filter(TestScript.name==popup.content.load_testscript.text).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            script = sc[0]
+            
+        #Clear the current elements in the UI
+        self.ClearWorkflow()
+
+        #Assign the current script        
+        current_script = script.name
+        current_project = project.name
+        current_client = client.name
         
     def UpdateWorkflowName(self, *args):
+        #When Enter is pressed on the current workflow text input, update the workflow name
         Logger.debug('WF: Update Workflow Name')
+        wf = session.query(Workflow).filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).all()
+        flow = wf[0]
+        flow.name = self.root.get_screen('workflow').current_wf.text
+        session.commit()
         
     def SaveWorkflow(self, *args):
         Logger.debug('WF: Save Workflow')
         
+        writer.SaveConnectionsList(self.root.get_screen('workflow').drag_grid.connections, self.root.get_screen('workflow').current_workflowname, self.root.get_screen('workflow').current_script, self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
+        
     def SaveAction(self, *args):
         Logger.debug('WF: Save Action')
-    
-    def CreateNewSubflow(self, *args):
-        Logger.debug('WF: Create New Subflow')
+        #Pull side editor values
+        action_name = self.root.get_screen('workflow').ids.wf_carousel.name_in.text
+        flow_name = self.root.get_screen('workflow').current_workflowname
+        expected_results = self.root.get_screen('workflow').ids.wf_carousel.er_in.text
+        ip_value_list = [self.root.get_screen('workflow').ids.wf_carousel.ip_in.text, self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text, self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text]
         
-    def SaveConnectionsPanel(self, *args):
-        Logger.debug('Save Connections Panel')
-        
-    def SaveConnectionsPanelDefaults(self, *args):
-        Logger.debug('Save Connections Panel Defaults')
+        #Write values to the DB
+        writer.SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list)
   
     #This is a critical method as it is called when a draggable is released on
     #the flowchart, to add a flowchart node.  This takes the label from the original
@@ -1374,6 +1534,9 @@ class TestScriptBuilderApp(App):
         
         current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         
+        #Clear the current elements in the UI
+        self.ClearWorkflow()
+        
         #Load the Key Actions for the flow
         keyactions = session.query(KeyAction).join(WorkflowAction).\
             join(Workflow).filter(Workflow.name==current_workflow).all()
@@ -1391,6 +1554,7 @@ class TestScriptBuilderApp(App):
             
         self.root.get_screen('keyactiongroup').pop_up.dismiss()
         self.root.get_screen('workflow').ids.current_wf.text = current_workflow
+        self.root.get_screen('workflow').current_workflowname = current_workflow
         
             
 #----------------------------------------------------------
@@ -1400,9 +1564,9 @@ class TestScriptBuilderApp(App):
     def CreateFlow(self, *args):
         Logger.debug('Create New Flow')
         
-        current_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        new_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         
-        test_script=session.query(TestScript).filter(TestScript.name==current_script).one()
+        test_script=session.query(TestScript).filter(TestScript.name==new_script).one()
         
         workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('keyactiongroup').pop_up.content.new_flow.text)
         session.add(workflow)

@@ -80,6 +80,7 @@
 				TextInput:
 					size_hint: 1, 0.1
 					id: current_wf
+					multiline: False
 					on_text_validate: app.UpdateWorkflowName(self, args[0])
 				WFCarouselItem:
 					id: wf_carousel

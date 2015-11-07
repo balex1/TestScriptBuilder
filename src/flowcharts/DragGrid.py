@@ -73,10 +73,16 @@ class DragGrid(GridLayout):
                 return cell
         return 0
         
-    #Clear all the widgets from every cell in the 
+    #Clear all the widgets from every cell in the grid
     def clear_cells(self):
         for cell in self.cells:
             cell.clear_widgets()
+            
+        #Clear the nodes list
+        del self.nodes[:]
+        
+        #Clear the connections list
+        del self.connections[:]
             
     #Get the next cell, based on the origin.
     #The method looks for the closest empty cell in the grid to the origin position

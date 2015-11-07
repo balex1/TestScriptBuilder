@@ -41,6 +41,7 @@ class WFCarouselItem(BoxLayout):
         nametext = Label(size_hint=(1, 0.1))
         self.name_in = nametext
         ertext = TextInput(hint_text='Expected Results', size_hint=(1, 0.35))
+        self.er_in = ertext
         iptext = TextInput()
         self.ip_in = iptext
         ip2text = TextInput()
