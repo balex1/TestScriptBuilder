@@ -792,6 +792,82 @@ class DatabaseWriter():
             i+=1
             
         session.commit()
+        
+    def SaveKeyActionByID(self, child, id):
+        #Module
+        rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == id).all()
+        if len(rows) > 1:
+            raise KeyError('Business Key Violation in table module')
+        elif len(rows) == 1:
+            rows[0].name = child.module_in.text
+        session.commit()
+        Logger.debug('QKA: Module Committed %s' % (child.module_in.text))
+        
+        #System Area
+        sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == id).all()
+        if len(sa_rows) > 1:
+            raise KeyError('Business Key Violation in table system area')
+        elif len(sa_rows) == 1:
+            sa_rows[0].name == child.sa_in.text
+        sa_rows[0].moduleid = rows[0].id
+        session.commit()
+        Logger.debug('QKA: System Area Committed %s' % (child.sa_in.text))
+
+        #Key Action
+        ka_rows = session.query(KeyAction).filter(KeyAction.id == id).all()
+        if len(ka_rows) > 1:
+            raise KeyError('Business Key Violation in table key action')
+        elif len(ka_rows) == 1:
+                ka_rows[0].id == child.ka_in.text
+        ka_rows[0].systemareaid = sa_rows[0].id
+        ka_rows[0].description = child.desc_in.text
+        ka_rows[0].custom = child.custom_in.active
+        session.commit()
+        Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
+        return ka_rows
+        
+    def ValidateInputParameter(self, input_list, ip_list, id):
+        #Input List gives a list of text inputs
+        #IP List gives a list of IP Name Strings to check against
+        
+        #Filter for matches between the lists
+        #If no match is encountered, leave the values in the input list
+        #If a match is encountered, remove the values from the input list
+        for inp in input_list:
+            for ip in ip_list:
+                if inp.text == ip:
+                    input_list.remove(inp)
+                    
+        #The input list now contains only the values that differ from the values
+        #in the input list
+                    
+        #Filter for blank inputs
+        for inp in input_list:
+            for ip in ip_list:
+                if inp.text == '' or inp.text is None:
+                    input_list.remove(inp)
+        
+        #The input list now only contains the values that need to be written back to the DB
+        #How many existing parameters do we have on the action?
+        inputparams = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == id).all()
+        
+        #Fill the existing parameters first
+        i=0
+        for param in inputparams:
+            param.name = input_list[i].text
+            i+=1
+        
+        #Add any new parameters
+        for j in range(i, len(input_list)):
+            par = InputParameter(name=input_list[j].text, keyactionid=id)
+            session.add(par)
+            
+        session.commit()
+        
+    def SaveInputParameters(self, child, ka_rows, id):
+        #Input Parameters
+        
+        self.ValidateInputParameter(child.iplist, ka_rows, id)
             
 #------------------------------------------------------------
 #----------------Main App------------------------------------
@@ -1605,6 +1681,12 @@ class TestScriptBuilderApp(App):
 #----------------------------------------------------------
 #-------------------Key Action Page Callbacks--------------
 #----------------------------------------------------------
+            
+    def AddInputParamToGrid(self, *args):
+        Logger.debug('Add Input Parameter To Grid')
+        ip_input = TextInput(hint_text='Input Parameter')
+        self.root.get_screen('keyactiongroup').ids.carousel_ka.current_slide.ipgrid_in.add_widget(ip_input)
+        self.root.get_screen('keyactiongroup').ids.carousel_ka.current_slide.iplist.append(ip_input)
     
     def CreateFlow(self, *args):
         Logger.debug('Create New Flow')
@@ -1857,13 +1939,13 @@ class TestScriptBuilderApp(App):
         if numSelected > 1:
             for action in selected:
                 #Create the Key Action Carousel Item
-                keyaction = KeyActionCarouselItem()
+                keyaction = KeyActionCarouselItem(app=self)
                     
                 #Set the Module & System Area
                 sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                keyaction.systemarea = sa_rows[0].name
+                keyaction.sa_in.text = sa_rows[0].name
                 mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                keyaction.module = mod_rows[0].name
+                keyaction.module_in.text = mod_rows[0].name
                 
                 #Create a new Key Action
                 ka = KeyAction()
@@ -1872,72 +1954,38 @@ class TestScriptBuilderApp(App):
                 rows = session.query(KeyAction).filter(KeyAction.name == action)
                 
                 #Set the Key Action attributes
-                keyaction.keyaction = "New %s" % (rows[0].name)
+                keyaction.ka_in.text = "New %s" % (rows[0].name)
                 ka.name = "New %s" % (rows[0].name)
-                keyaction.description = rows[0].description
+                keyaction.desc_in.text = rows[0].description
                 ka.description = rows[0].description
-                keyaction.custom = rows[0].custom
+                keyaction.custom_in.active = rows[0].custom
                 ka.custom = rows[0].custom
                 ka.systemareaid = rows[0].systemareaid
                 session.commit()
                     
                 #Set the Input Parameters
                 ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                if len(ip_rows) >= 3:
-                    keyaction.ip1 = ip_rows[0].name
-                    keyaction.ip2 = ip_rows[1].name
-                    keyaction.ip3 = ip_rows[2].name
+                
+                #Add Text Inputs to IP Grid
+                for ip in ip_rows:
+                    self.AddInputParamToGrid(args)
                     
-                    ip_a = InputParameter()
-                    session.add(ip_a)
-                    ip_a.name = ip_rows[0].name
-                    ip_a.keyactionid = ka.id
-                    
-                    ip_b = InputParameter()
-                    session.add(ip_b)
-                    ip_b.name = ip_rows[1].name
-                    ip_b.keyactionid = ka.id
-                    
-                    ip_c = InputParameter()
-                    session.add(ip_c)
-                    ip_c.name = ip_rows[2].name
-                    ip_b.keyactionid = ka.id
-                    
-                elif len(ip_rows) == 2:
-                    keyaction.ip1 = ip_rows[0].name
-                    keyaction.ip2 = ip_rows[1].name
-                    ip_a = InputParameter()
-                    session.add(ip_a)
-                    ip_a.name = ip_rows[0].name
-                    ip_a.keyactionid = ka.id
-                    
-                    ip_b = InputParameter()
-                    session.add(ip_b)
-                    ip_b.name = ip_rows[1].name
-                    ip_b.keyactionid = ka.id
-                    
-                elif len(ip_rows) == 1:
-                    keyaction.ip1 = ip_rows[0].name
-                    ip_a = InputParameter()
-                    session.add(ip_a)
-                    ip_a.name = ip_rows[0].name
-                    ip_a.keyactionid = ka.id
-                    
-                keyaction.bind(on_save=self.SaveQuickKeyAction)
-                keyaction.bind(on_validate=self.ValidateQuickKeyAction)
+                #Set the values of the IP Grid
+                for input, ip in zip(keyaction.iplist, ip_rows):
+                    input.text = ip.name
         
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
         elif numSelected == 1:
             action = selected[0]
             #Create the Key Action Carousel Item
-            keyaction = KeyActionCarouselItem()
+            keyaction = KeyActionCarouselItem(app=self)
                 
             #Set the Module & System Area
             sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-            keyaction.systemarea = sa_rows[0].name
+            keyaction.sa_in.text = sa_rows[0].name
             mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-            keyaction.module = mod_rows[0].name
+            keyaction.module_in.text = mod_rows[0].name
             
             #Create a new Key Action
             ka = KeyAction()
@@ -1946,59 +1994,25 @@ class TestScriptBuilderApp(App):
             rows = session.query(KeyAction).filter(KeyAction.name == action)
             
             #Set the Key Action attributes
-            keyaction.keyaction = "New %s" % (rows[0].name)
+            keyaction.ka_in.text = "New %s" % (rows[0].name)
             ka.name = "New %s" % (rows[0].name)
-            keyaction.description = rows[0].description
+            keyaction.desc_in.text = rows[0].description
             ka.description = rows[0].description
-            keyaction.custom = rows[0].custom
+            keyaction.custom_in.active = rows[0].custom
             ka.custom = rows[0].custom
             ka.systemareaid = rows[0].systemareaid
             session.commit()
                 
             #Set the Input Parameters
             ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-            if len(ip_rows) >= 3:
-                keyaction.ip1 = ip_rows[0].name
-                keyaction.ip2 = ip_rows[1].name
-                keyaction.ip3 = ip_rows[2].name
+            
+            #Add Text Inputs to IP Grid
+            for ip in ip_rows:
+                self.AddInputParamToGrid(args)
                 
-                ip_a = InputParameter()
-                session.add(ip_a)
-                ip_a.name = ip_rows[0].name
-                ip_a.keyactionid = ka.id
-                
-                ip_b = InputParameter()
-                session.add(ip_b)
-                ip_b.name = ip_rows[1].name
-                ip_b.keyactionid = ka.id
-                
-                ip_c = InputParameter()
-                session.add(ip_c)
-                ip_c.name = ip_rows[2].name
-                ip_b.keyactionid = ka.id
-                
-            elif len(ip_rows) == 2:
-                keyaction.ip1 = ip_rows[0].name
-                keyaction.ip2 = ip_rows[1].name
-                ip_a = InputParameter()
-                session.add(ip_a)
-                ip_a.name = ip_rows[0].name
-                ip_a.keyactionid = ka.id
-                    
-                ip_b = InputParameter()
-                session.add(ip_b)
-                ip_b.name = ip_rows[1].name
-                ip_b.keyactionid = ka.id
-                
-            elif len(ip_rows) == 1:
-                keyaction.ip1 = ip_rows[0].name
-                ip_a = InputParameter()
-                session.add(ip_a)
-                ip_a.name = ip_rows[0].name
-                ip_a.keyactionid = ka.id
-            session.commit()
-            keyaction.bind(on_save=self.SaveQuickKeyAction)
-            keyaction.bind(on_validate=self.ValidateQuickKeyAction)
+            #Set the values of the IP Grid
+            for input, ip in zip(keyaction.iplist, ip_rows):
+                input.text = ip.name
     
             #Add the base widget to the screen in the carousel
             self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
@@ -2048,8 +2062,7 @@ class TestScriptBuilderApp(App):
         del selected_ids[:]
         
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
-        keyaction = KeyActionCarouselItem()
-        keyaction.bind(on_validate=self.ValidateQuickKeyAction)
+        keyaction = KeyActionCarouselItem(app=self)
         
         #Add the base widget to the screen in the carousel
         self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
@@ -2065,8 +2078,8 @@ class TestScriptBuilderApp(App):
             Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
             for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
                 
-                keyactions = self.SaveKeyAction(child, i)
-                self.SaveInputParameters(child, keyactions, i)
+                keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
+                writer.SaveInputParameters(child, keyactions, selected_ids[i])
                 i += 1
                 
         #If there is only one child, save it
@@ -2074,8 +2087,8 @@ class TestScriptBuilderApp(App):
             Logger.debug('QKA: Selected IDs Length 1')
             child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
 
-            keyactions = self.SaveKeyAction(child, i)
-            self.SaveInputParameters(child, keyactions, i)
+            keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
+            writer.SaveInputParameters(child, keyactions, selected_ids[i])
         else:
             #Save the key action as a new key action
             Logger.debug('QKA: Selected IDs Length 0')
@@ -2133,21 +2146,12 @@ class TestScriptBuilderApp(App):
                 Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
                 
                 #Input Parameters
-                if child.ip_in.text != '' and child.ip_in.text is not None:
-                    inpparam = InputParameter(name=child.ip_in.text)
-                    session.add(inpparam)
-                    inpparam.keyactionid = keyaction.id
-                    Logger.debug('QKA: Input Parameter Committed %s' % (child.ip_in.text))
-                if child.ip2_in.text != '' and child.ip2_in.text is not None:
-                    inpparam2 = InputParameter(name=child.ip2_in.text)
-                    session.add(inpparam2)
-                    inpparam2.keyactionid = keyaction.id
-                    Logger.debug('QKA: Input Parameter Committed %s' % (child.ip2_in.text))
-                if child.ip3_in.text != '' and child.ip3_in.text is not None:
-                    inpparam3 = InputParameter(name=child.ip3_in.text)
-                    session.add(inpparam3)
-                    inpparam3.keyactionid = keyaction.id
-                    Logger.debug('QKA: Input Parameter Committed %s' % (child.ip3_in.text))
+                for input in child.iplist:
+                    if input.text != '' and input.text is not None:
+                        inpparam = InputParameter(name=input.text)
+                        session.add(inpparam)
+                        inpparam.keyactionid = keyaction.id
+                        Logger.debug('QKA: Input Parameter Committed %s' % (child.ip_in.text))
                 session.commit()
         self.ApplyFilterKAG(args)
             
@@ -2172,7 +2176,7 @@ class TestScriptBuilderApp(App):
                     selected_ids.append(rows[0].id)
                     
                     #Create the Key Action Carousel Item
-                    keyaction = KeyActionCarouselItem()
+                    keyaction = KeyActionCarouselItem(app=self)
                     
                     #Set the Module & System Area
                     sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
@@ -2187,17 +2191,15 @@ class TestScriptBuilderApp(App):
                     
                     #Set the Input Parameters
                     ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                    if len(ip_rows) >= 3:
-                        keyaction.ip1 = ip_rows[0].name
-                        keyaction.ip2 = ip_rows[1].name
-                        keyaction.ip3 = ip_rows[2].name
-                    elif len(ip_rows) == 2:
-                        keyaction.ip1 = ip_rows[0].name
-                        keyaction.ip2 = ip_rows[1].name
-                    elif len(ip_rows) == 1:
-                        keyaction.ip1 = ip_rows[0].name
-                    keyaction.bind(on_validate=self.ValidateQuickKeyAction)
-        
+                    
+                    #Add Text Inputs to IP Grid
+                    for ip in ip_rows:
+                        self.AddInputParamToGrid(args)
+                        
+                    #Set the values of the IP Grid
+                    for input, ip in zip(keyaction.iplist, ip_rows):
+                        input.text = ip.name
+                    
                     #Add the base widget to the screen in the carousel
                     self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
                 else:
@@ -2212,7 +2214,7 @@ class TestScriptBuilderApp(App):
                 raise KeyError('Business Key Violation in table key action')
             elif len(rows) == 1:
                 #Exactly one business key is found
-                keyaction = KeyActionCarouselItem()
+                keyaction = KeyActionCarouselItem(app=self)
                 
                 #Add the key action to the list of id's in the carousel
                 selected_ids.append(rows[0].id)
@@ -2230,300 +2232,20 @@ class TestScriptBuilderApp(App):
                 
                 #Set the Input Parameters
                 ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                if len(ip_rows) >= 3:
-                    keyaction.ip1 = ip_rows[0].name
-                    keyaction.ip2 = ip_rows[1].name
-                    keyaction.ip3 = ip_rows[2].name
-                elif len(ip_rows) == 2:
-                    keyaction.ip1 = ip_rows[0].name
-                    keyaction.ip2 = ip_rows[1].name
-                elif len(ip_rows) == 1:
-                    keyaction.ip1 = ip_rows[0].name
-                keyaction.bind(on_validate=self.ValidateQuickKeyAction)
+                
+                #Add Text Inputs to IP Grid
+                for ip in ip_rows:
+                    self.AddInputParamToGrid(args)
+                    
+                #Set the values of the IP Grid
+                for input, ip in zip(keyaction.iplist, ip_rows):
+                    input.text = ip.name
     
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
             else:
                 #No matching business keys are found
                 raise KeyError('Business Key Called from UI that does not exist in DB')
-    
-    #----------------------------------------------------------
-    #----------------Internal Methods for Saving---------------
-    #----------called in the SaveQuickKeyAction method---------
-    
-    def SaveKeyAction(self, child, i):
-        #Module
-        rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-        if len(rows) > 1:
-            raise KeyError('Business Key Violation in table module')
-        elif len(rows) == 1:
-            rows[0].name = child.module_in.text
-        session.commit()
-        Logger.debug('QKA: Module Committed %s' % (child.module_in.text))
-        
-        #System Area
-        sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-        if len(sa_rows) > 1:
-            raise KeyError('Business Key Violation in table system area')
-        elif len(sa_rows) == 1:
-            sa_rows[0].name == child.sa_in.text
-        sa_rows[0].moduleid = rows[0].id
-        session.commit()
-        Logger.debug('QKA: System Area Committed %s' % (child.sa_in.text))
-
-        #Key Action
-        ka_rows = session.query(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-        if len(ka_rows) > 1:
-            raise KeyError('Business Key Violation in table key action')
-        elif len(ka_rows) == 1:
-                ka_rows[0].id == child.ka_in.text
-        ka_rows[0].systemareaid = sa_rows[0].id
-        ka_rows[0].description = child.desc_in.text
-        ka_rows[0].custom = child.custom_in.active
-        session.commit()
-        Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
-        return ka_rows
-        
-    def SaveInputParameters(self, child, ka_rows, i):
-        #Input Parameters
-            
-        rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == selected_ids[i]).all()
-                
-        #No existing input parameters for key action
-        if len(rows) == 0:
-            inpparam = InputParameter(name=child.ip_in.text)
-            session.add(inpparam)
-            inpparam.keyactionid = ka_rows[0].id
-            inpparam2 = InputParameter(name=child.ip2_in.text)
-            session.add(inpparam2)
-            inpparam2.keyactionid = ka_rows[0].id
-            inpparam3 = InputParameter(name=child.ip3_in.text)
-            session.add(inpparam3)
-            inpparam3.keyactionid = ka_rows[0].id
-            session.commit()
-            Logger.debug('QKA: No existing input parameters for key action')
-                    
-        #Single Existing input parameter for key action
-        elif len(rows) == 1:
-            Logger.debug('QKA: Single existing input parameter for key action')
-            if rows[0].name == child.ip_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                inpparam2 = InputParameter(name=child.ip2_in.text)
-                session.add(inpparam2)
-                inpparam2.keyactionid = ka_rows[0].id
-                inpparam3 = InputParameter(name=child.ip3_in.text)
-                session.add(inpparam3)
-                inpparam3.keyactionid = ka_rows[0].id
-            elif rows[0].name == child.ip2_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                inpparam = InputParameter(name=child.ip_in.text)
-                session.add(inpparam)
-                inpparam.keyactionid = ka_rows[0].id
-                inpparam3 = InputParameter(name=child.ip3_in.text)
-                session.add(inpparam3)
-                inpparam3.keyactionid = ka_rows[0].id
-            elif rows[0].name == child.ip3_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                inpparam = InputParameter(name=child.ip_in.text)
-                session.add(inpparam)
-                inpparam.keyactionid = ka_rows[0].id
-                inpparam2 = InputParameter(name=child.ip2_in.text)
-                session.add(inpparam2)
-                inpparam2.keyactionid = ka_rows[0].id
-            else:
-                Logger.debug('QKA: No match encountered')
-                rows[0].name = child.ip_in.text
-                inpparam2 = InputParameter(name=child.ip2_in.text)
-                session.add(inpparam2)
-                inpparam2.keyactionid = ka_rows[0].id
-                inpparam3 = InputParameter(name=child.ip3_in.text)
-                session.add(inpparam3)
-                inpparam3.keyactionid = ka_rows[0].id
-                    
-            session.commit()
-                    
-        #2 Existing input parameters for key action
-        elif len(rows) == 2:
-            Logger.debug('QKA: Two existing input parameters for key action')
-            if rows[0].name == child.ip_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                if rows[1].name == child.ip2_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    if child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        inpparam3 = InputParameter(name=child.ip3_in.text)
-                        session.add(inpparam3)
-                        inpparam3.keyactionid = ka_rows[0].id
-                elif rows[1].name == child.ip3_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    if child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        inpparam2 = InputParameter(name=child.ip2_in.text)
-                        session.add(inpparam2)
-                        inpparam2.keyactionid = ka_rows[0].id
-                else:
-                    Logger.debug('QKA: The parameters in the UI dont match those in the DB')
-                    #The input parameters in the UI don't match those in the DB
-                    rows[1].name=child.ip2_in.text
-                    if child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        inpparam3 = InputParameter(name=child.ip3_in.text)
-                        session.add(inpparam3)
-                        inpparam3.keyactionid = ka_rows[0].id
-                        
-            elif rows[0].name == child.ip2_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                if rows[1].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        inpparam3 = InputParameter(name=child.ip3_in.text)
-                        session.add(inpparam3)
-                        inpparam3.keyactionid = ka_rows[0].id
-                elif rows[1].name == child.ip3_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    if child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        inpparam1 = InputParameter(name=child.ip_in.text)
-                        session.add(inpparam1)
-                        inpparam1.keyactionid = ka_rows[0].id
-                else:
-                    #The input parameters in the UI don't match those in the DB
-                    Logger.debug('QKA: The input parameters in the UI dont match those in the DB')
-                    inpparam1 = InputParameter(name=child.ip_in.text)
-                    session.add(inpparam1)
-                    inpparam1.keyactionid = ka_rows[0].id
-                    rows[1].name=child.ip3_in.text
-                    
-            elif rows[0].name == child.ip3_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                if rows[1].name == child.ip2_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    if child.ip_in.text != '' and child.ip_in.text is not None:
-                        inpparam2 = InputParameter(name=child.ip_in.text)
-                        session.add(inpparam2)
-                        inpparam2.keyactionid = ka_rows[0].id
-                elif rows[1].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        inpparam2 = InputParameter(name=child.ip2_in.text)
-                        session.add(inpparam2)
-                        inpparam2.keyactionid = ka_rows[0].id
-                else:
-                    Logger.debug('QKA: The input parameters in the UI dont match those in the DB')
-                    #The input parameters in the UI don't match those in the DB
-                    rows[1].name=child.ip_in.text
-                    inpparam2 = InputParameter(name=child.ip2_in.text)
-                    session.add(inpparam2)
-                    inpparam2.keyactionid = ka_rows[0].id
-                    
-            else:
-                Logger.debug('QKA: The input parameters dont match those in the DB')
-                #The input parameters in the UI don't match those in the DB
-                rows[0].name=child.ip_in.text
-                rows[1].name=child.ip2_in.text
-                if child.ip3_in.text != '' and child.ip3_in.text is not None:
-                    inpparam3 = InputParameter(name=child.ip3_in.text)
-                    session.add(inpparam3)
-                    inpparam3.keyactionid = ka_rows[0].id
-                        
-            session.commit()
-                    
-        #3 or more Existing Input Parameters for Key Action
-        else:
-            Logger.debug('QKA: Three existing input parameters for key action')
-            if rows[0].name == child.ip_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                if rows[1].name == child.ip2_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        Logger.debug('QKA: No match on %s' % (child.ip3_in.text))
-                        rows[2].name=child.ip3_in.text
-                elif rows[1].name == child.ip3_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        Logger.debug('QKA: No match on %s' % (child.ip2_in.text))
-                        rows[2].name=child.ip2_in.text
-                elif rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    rows[1].name=child.ip3_in.text
-                elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    rows[1].name=child.ip2_in.text
-                else:
-                    Logger.debug('QKA: No match')
-                    rows[1].name=child.ip2_in.text
-                    rows[2].name=child.ip3_in.text
-            elif rows[0].name == child.ip2_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                if rows[1].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if rows[2].name != child.ip3_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        Logger.debug('QKA: No match on %s' % (child.ip3_in.text))
-                        rows[2].name=child.ip3_in.text
-                elif rows[1].name == child.ip3_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
-                        Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                        rows[2].name=child.ip_in.text
-                elif rows[2].name == child.ip_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    rows[1].name=child.ip3_in.text
-                elif rows[2].name == child.ip3_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                    rows[1].name=child.ip_in.text
-                else:
-                    Logger.debug('QKA: No match')
-                    rows[1].name=child.ip_in.text
-                    rows[2].name=child.ip3_in.text
-            elif rows[0].name == child.ip3_in.text:
-                Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                if rows[1].name == child.ip2_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    if rows[2].name != child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
-                        Logger.debug('QKA: No match on %s' % (child.ip_in.text))
-                        rows[2].name=child.ip_in.text
-                elif rows[1].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if rows[2].name != child.ip2_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        Logger.debug('QKA: No match on %s' % (child.ip2_in.text))
-                        rows[2].name=child.ip2_in.text
-                elif rows[2].name == child.ip2_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                    rows[1].name=child.ip_in.text
-                elif rows[2].name == child.ip_in.text and child.ip_in.text != '' and child.ip_in.text is not None:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    rows[1].name=child.ip2_in.text
-                else:
-                    Logger.debug('QKA: No match')
-                    rows[1].name=child.ip_in.text
-                    rows[2].name=child.ip2_in.text
-            else:
-                Logger.debug('QKA: No match on first result')
-                if rows[1].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if rows[2].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                        rows[0].name=child.ip3_in.text
-                    elif rows[2].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                        rows[0].name=child.ip2_in.text
-                    else:
-                        Logger.debug('QKA: No match')
-                        rows[0].name=child.ip2_in.text
-                        rows[2].name=child.ip3_in.text
-                elif rows[2].name == child.ip_in.text:
-                    Logger.debug('QKA: Match on %s' % (child.ip_in.text))
-                    if rows[1].name == child.ip2_in.text and child.ip3_in.text != '' and child.ip3_in.text is not None:
-                        Logger.debug('QKA: Match on %s' % (child.ip2_in.text))
-                        rows[0].name=child.ip3_in.text
-                    elif rows[1].name == child.ip3_in.text and child.ip2_in.text != '' and child.ip2_in.text is not None:
-                        Logger.debug('QKA: Match on %s' % (child.ip3_in.text))
-                        rows[0].name=child.ip2_in.text
-                    else:
-                        Logger.debug('QKA: No match')
-                        rows[0].name=child.ip2_in.text
-                        rows[1].name=child.ip3_in.text
-                else:
-                    Logger.debug('QKA: All parameters replaced')
-                    rows[0].name=child.ip_in.text
-                    rows[1].name=child.ip2_in.text
-                    rows[2].name=child.ip3_in.text
     
 if __name__ == '__main__':
     TestScriptBuilderApp().run()
