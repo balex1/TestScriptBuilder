@@ -17,6 +17,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
+from kivy.clock import Clock
 
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
@@ -2154,6 +2155,9 @@ class TestScriptBuilderApp(App):
                         Logger.debug('QKA: Input Parameter Committed %s' % (child.ip_in.text))
                 session.commit()
         self.ApplyFilterKAG(args)
+        del selected_ids[:]
+        del selected[:]
+        self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
             
     def LoadQuickAction(self, *args):
         Logger.debug('Load Quick Action')
@@ -2180,21 +2184,17 @@ class TestScriptBuilderApp(App):
                     
                     #Set the Module & System Area
                     sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                    keyaction.systemarea = sa_rows[0].name
+                    keyaction.sa_in.text = sa_rows[0].name
                     mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                    keyaction.module = mod_rows[0].name
+                    keyaction.module_in.text = mod_rows[0].name
                     
                     #Set the Key Action attributes
-                    keyaction.keyaction = rows[0].name
-                    keyaction.description = rows[0].description
-                    keyaction.custom = rows[0].custom
+                    keyaction.ka_in.text = rows[0].name
+                    keyaction.desc_in.text = rows[0].description
+                    keyaction.custom_in.active = rows[0].custom
                     
                     #Set the Input Parameters
                     ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                    
-                    #Add Text Inputs to IP Grid
-                    for ip in ip_rows:
-                        self.AddInputParamToGrid(args)
                         
                     #Set the values of the IP Grid
                     for input, ip in zip(keyaction.iplist, ip_rows):
@@ -2202,6 +2202,12 @@ class TestScriptBuilderApp(App):
                     
                     #Add the base widget to the screen in the carousel
                     self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+                    #Add Text Inputs to IP Grid
+                    for ip in ip_rows:
+                        self.AddInputParamToGrid(args)
+                        
+                    for ip, inp in zip(ip_rows, keyaction.iplist):
+                        inp.text = ip.name
                 else:
                     #No matching business keys are found
                     raise KeyError('Business Key Called from UI that does not exist in DB')
@@ -2221,28 +2227,28 @@ class TestScriptBuilderApp(App):
                 
                 #Set the Module & System Area
                 sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                keyaction.systemarea = sa_rows[0].name
+                keyaction.sa_in.text = sa_rows[0].name
                 mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
-                keyaction.module = mod_rows[0].name
+                keyaction.module_in.text = mod_rows[0].name
                 
                 #Set the Key Action attributes
-                keyaction.keyaction = rows[0].name
-                keyaction.description = rows[0].description
-                keyaction.custom = rows[0].custom
+                keyaction.ka_in.text = rows[0].name
+                keyaction.desc_in.text = rows[0].description
+                keyaction.custom_in.text = rows[0].custom
                 
                 #Set the Input Parameters
                 ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
                 
-                #Add Text Inputs to IP Grid
-                for ip in ip_rows:
-                    self.AddInputParamToGrid(args)
-                    
                 #Set the values of the IP Grid
                 for input, ip in zip(keyaction.iplist, ip_rows):
                     input.text = ip.name
     
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+                #Add Text Inputs to IP Grid
+                for ip in ip_rows:
+                    self.AddInputParamToGrid(args)
+                    
             else:
                 #No matching business keys are found
                 raise KeyError('Business Key Called from UI that does not exist in DB')
