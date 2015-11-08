@@ -966,13 +966,17 @@ class TestScriptBuilderApp(App):
         popup.open()
         self.root.get_screen('workflow').pop_up = popup
         
-        #Populate the latest 5 workflows into the spinner
-        num_flows = session.query(Workflow).count()
+        #Populate the latest 5 workflows into the spinner from the current testscript
+        num_flows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                filter(Client.name==current_client).count()
         if num_flows - 5 < 0:
             num_flows = 0
         else:
             num_flows = num_flows - 5
-        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
+        results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                filter(Client.name==current_client).order_by(Workflow.id)[num_flows:num_flows+5]
         
         #Populate values in spinner
         for result in results:
@@ -983,13 +987,17 @@ class TestScriptBuilderApp(App):
         
         current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
         new_workflow=self.root.get_screen('workflow').pop_up.content.new_name.text
-        
+        self.root.get_screen('workflow').pop_up.dismiss()
         #Copy the current workflow into a new workflow
         
         #Check if the new workflow already exists
-        wf = session.query(Workflow).filter(Workflow.name==new_workflow).all()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                filter(Client.name==current_client).filter(Workflow.name==new_workflow).all()
         if len(wf)==0:
-            ts = session.query(TestScript).filter(TestScript.name==current_script).all()
+            ts = session.query(TestScript).join(Project).join(Client).\
+            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                filter(Client.name==current_client).all()
             script = ts[0]
             flow = Workflow(name=new_workflow, testscriptid=script.id)
             session.add(flow)
@@ -998,11 +1006,17 @@ class TestScriptBuilderApp(App):
             flow = wf[0]
             
         #Copy the workflow actions
-        actions = session.query(KeyAction).join(WorkflowAction).join(Workflow).filter(Workflow.name==current_workflow).all()
+        actions = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
+            join(TestScript).join(Project).join(Client).filter(Workflow.name==current_workflow).\
+                filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                    filter(Client.name==current_client).all()
         for action in actions:
-            wfa = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==action.name).all()
+            wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).join(TestScript).\
+                join(Project).join(Client).filter(KeyAction.name==action.name).\
+                    filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                        filter(Client.name==current_client).all()
             flowaction = wfa[0]
-            ips = session.query(InputParameter).join(WorkflowParameter).join(WorkflowAction).join(KeyAction).filter(KeyAction.name==action.name).all()
+            ips = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==flowaction.id).all()
             ip_value_list = []
             for ip in ips:
                 ip_value_list.append(ip.name)
@@ -1013,7 +1027,9 @@ class TestScriptBuilderApp(App):
         
         #Load the Key Actions from the new subflow into the editor
         keyactions = session.query(KeyAction).join(WorkflowAction).\
-            join(Workflow).filter(Workflow.name==new_workflow).all()
+            join(Workflow).join(TestScript).join(Project).Client().\
+                filter(Workflow.name==new_workflow).filter(TestScript.name == current_script).\
+                    filter(Project.name==current_project).filter(Client.name==current_client).all()
         
         #Put each element into the draggable list
         for action in keyactions:
@@ -1041,7 +1057,7 @@ class TestScriptBuilderApp(App):
     def AddAndNode(self, *args):
         Logger.debug('WF: Add And Node')
         
-        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        current_workflow=self.root.get_screen('workflow').current_workflowname
             
         #--UI--
         #Create a Label
@@ -1059,7 +1075,9 @@ class TestScriptBuilderApp(App):
         #Find a key action
         ka = session.query(KeyAction).filter(KeyAction.name=='AND').all()
         #Find the workflow
-        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
+                    filter(Project.name==current_project).filter(Client.name==current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='AND')
             session.add(keyaction)
@@ -1074,7 +1092,7 @@ class TestScriptBuilderApp(App):
     def AddOrNode(self, *args):
         Logger.debug('WF: Add Or Node')
         
-        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        current_workflow=self.root.get_screen('workflow').current_workflowname
         
         #--UI--
         #Create a Label
@@ -1092,7 +1110,9 @@ class TestScriptBuilderApp(App):
         #Find a key action
         ka = session.query(KeyAction).filter(KeyAction.name=='OR').all()
         #Find the workflow
-        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
+                    filter(Project.name==current_project).filter(Client.name==current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='OR')
             session.add(keyaction)
@@ -1106,7 +1126,7 @@ class TestScriptBuilderApp(App):
         
     def ShowForPopup(self, *args):
         Logger.debug('WF: Show For Popup')
-        current_workflow=self.root.get_screen('workflow').current_wf.text
+        current_workflow=self.root.get_screen('workflow').current_workflowname
         popup = Popup(title='For-In', content=ForInPopup(), size_hint=(0.5, 0.4))
         self.root.get_screen('workflow').pop_up = popup
         popup.open()
@@ -1119,7 +1139,7 @@ class TestScriptBuilderApp(App):
     def AddForNode(self, *args):
         Logger.debug('WF: Add For Node')
         popup=self.root.get_screen('workflow').pop_up
-        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
         
         #--UI--
         #Create a Label
@@ -1137,7 +1157,9 @@ class TestScriptBuilderApp(App):
         #Find a key action
         ka = session.query(KeyAction).filter(KeyAction.name=='FOR').all()
         #Find the workflow
-        wf = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
+                    filter(Project.name==current_project).filter(Client.name==current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='FOR')
             session.add(keyaction)
@@ -1169,8 +1191,7 @@ class TestScriptBuilderApp(App):
         popup=self.root.get_screen('workflow').pop_up
         
         #Clear the IP Spinner
-        for value in popup.content.inputparameter_spinner.values:
-            popup.content.inputparameter_spinner.values.remove(value)
+        del popup.content.inputparameter_spinner.values[:]
             
         ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name==popup.content.keyaction_spinner.text).all()
         for ip in ips:
@@ -1201,7 +1222,8 @@ class TestScriptBuilderApp(App):
             cust = False
 
         #Save Key Action
-        writer.SaveKeyAction(popup.content.module_in.text, popup.content.sa_in.text, popup.content.ka_in.text, popup.content.desc_in.text, cust, popup.content.ips)
+        writer.SaveKeyAction(popup.content.module_in.text, popup.content.sa_in.text,\
+            popup.content.ka_in.text, popup.content.desc_in.text, cust, popup.content.ips)
             
         #Add to workflow
         ip = []
@@ -1248,18 +1270,16 @@ class TestScriptBuilderApp(App):
         popup = self.root.get_screen('workflow').pop_up
         
         #Clear the spinners
-        for value in popup.content.load_project.values:
-            popup.content.load_project.values.remove(value)
-            
-        for value in popup.content.load_testscript.values:
-            popup.content.load_testscript.values.remove(value)
+        del popup.content.load_project.values[:]
+        del popup.content.load_testscript.values[:]
         
         #Query based on the updated client
         projects = session.query(Project).join(Client).filter(Client.name == popup.content.load_client.text).all()
         for project in projects:
             popup.content.load_project.values.append(project.name)
             
-        scripts = session.query(TestScript).join(Project).join(Client).filter(Client.name == popup.content.load_client.text).all()
+        scripts = session.query(TestScript).join(Project).join(Client).\
+            filter(Client.name == popup.content.load_client.text).all()
         for script in scripts:
             popup.content.load_testscript.values.append(script.name)
         
@@ -1268,10 +1288,11 @@ class TestScriptBuilderApp(App):
         Logger.debug('WF: Test Script Popup')
         popup = self.root.get_screen('workflow').pop_up
         
-        for value in popup.content.load_testscript.values:
-            popup.content.load_testscript.values.remove(value)
+        del popup.content.load_testscript.values[:]
             
-        scripts = session.query(TestScript).join(Project).filter(Project.name == popup.content.load_project.text).all()
+        scripts = session.query(TestScript).join(Project).join(Client).\
+            filter(Client.name == popup.content.load_client.text).\
+                filter(Project.name==popup.content.load_project.text).all()
         for script in scripts:
             popup.content.load_testscript.values.append(script.name)
         
@@ -1338,7 +1359,8 @@ class TestScriptBuilderApp(App):
             cl = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
             client = cl[0]
             
-            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).\
+                filter(Client.name==popup.content.load_client.text).all()
             project = pj[0]
             
             script = TestScript(name=popup.content.new_testscript.text, projectid=project.id)
@@ -1352,10 +1374,14 @@ class TestScriptBuilderApp(App):
             cl = session.query(Client).filter(Client.name==popup.content.load_client.text).all()
             client = cl[0]
             
-            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            pj = session.query(Project).join(Client).filter(Project.name==popup.content.load_project.text).\
+                filter(Client.name==popup.content.load_client.text).all()
             project = pj[0]
             
-            sc = session.query(TestScript).join(Project).join(Client).filter(TestScript.name==popup.content.load_testscript.text).filter(Project.name==popup.content.load_project.text).filter(Client.name==popup.content.load_client.text).all()
+            sc = session.query(TestScript).join(Project).join(Client).\
+                filter(TestScript.name==popup.content.load_testscript.text).\
+                    filter(Project.name==popup.content.load_project.text).\
+                        filter(Client.name==popup.content.load_client.text).all()
             script = sc[0]
             
         #Clear the current elements in the UI
@@ -1369,7 +1395,10 @@ class TestScriptBuilderApp(App):
     def UpdateWorkflowName(self, *args):
         #When Enter is pressed on the current workflow text input, update the workflow name
         Logger.debug('WF: Update Workflow Name')
-        wf = session.query(Workflow).filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).all()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
+                filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                    filter(Client.name==current_client).all()
         flow = wf[0]
         flow.name = self.root.get_screen('workflow').current_wf.text
         session.commit()
@@ -1377,7 +1406,9 @@ class TestScriptBuilderApp(App):
     def SaveWorkflow(self, *args):
         Logger.debug('WF: Save Workflow')
         
-        writer.SaveConnectionsList(self.root.get_screen('workflow').drag_grid.connections, self.root.get_screen('workflow').current_workflowname, self.root.get_screen('workflow').current_script, self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
+        writer.SaveConnectionsList(self.root.get_screen('workflow').drag_grid.connections,\
+            self.root.get_screen('workflow').current_workflowname, self.root.get_screen('workflow').current_script,\
+                self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
         
     def SaveAction(self, *args):
         Logger.debug('WF: Save Action')
@@ -1409,16 +1440,30 @@ class TestScriptBuilderApp(App):
         Logger.debug('Load Side Editor with action %s' % (node.img.text))
         #for node in self.root.get_screen('workflow').drag_grid.nodes:
             #if node.label.is_double_pressed:
+        
+        #Clear the elements of the side editor
+        self.root.get_screen('workflow').ids.wf_carousel.er_in.text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip_in.hint_text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip2_in.hint_text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip3_in.hint_text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip_in.text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text = ''
     
         #Query the DB for the details of the action with the name from the label
         ka = session.query(KeyAction).filter(KeyAction.name==node.img.text).one()
         ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == node.img.text).all()
-        wfa = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name == node.img.text).one()
-        wps = session.query(WorkflowParameter).join(WorkflowAction).join(KeyAction).filter(KeyAction.name == node.img.text).all()
+        w = session.query(WorkflowAction).join(Workflow).join(TestScript).join(Project).join(Client).\
+            join(KeyAction).filter(KeyAction.name == node.img.text).\
+                filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
+                    filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                        filter(Client.name==current_client).all()
+        wfa = w[0]
+        wps = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==wfa.id).all()
         #Load the double clicked node into the side editor
         self.root.get_screen('workflow').ids.wf_carousel.name = node.img.text
         if wfa.expectedresult is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.er = wfa.expectedresult
+            self.root.get_screen('workflow').ids.wf_carousel.er_in.text = wfa.expectedresult
             
         if len(ips) == 0:
             ip1 = InputParameter(keyactionid=ka.id)
@@ -1447,11 +1492,11 @@ class TestScriptBuilderApp(App):
             ip3 = ips[2]
             
         if ip1.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip1_name = ip1.name
+            self.root.get_screen('workflow').ids.wf_carousel.ip_in.hint_text = ip1.name
         if ip2.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip2_name = ip2.name
+            self.root.get_screen('workflow').ids.wf_carousel.ip2_in.hint_text = ip2.name
         if ip3.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip3_name = ip3.name
+            self.root.get_screen('workflow').ids.wf_carousel.ip3_in.hint_text = ip3.name
             
         if len(wps) == 0:
             wp1 = WorkflowParameter(keyactionid=wfa.id)
@@ -1480,18 +1525,17 @@ class TestScriptBuilderApp(App):
             wp3 = wps[2]
             
         if wp1.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip = wp1.value
+            self.root.get_screen('workflow').ids.wf_carousel.ip_in.text = wp1.value
         if wp2.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip2 = wp2.value
+            self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text = wp2.value
         if wp3.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip3 = wp3.value
+            self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text = wp3.value
         
     def ApplyLoadWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
-        for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
         wf = self.root.get_screen('keyactiongroup').pop_up.content.lwp_workflow.text
@@ -1530,6 +1574,7 @@ class TestScriptBuilderApp(App):
             popup.content.spinner.values.append(result.name)
             
     def LoadFlow(self, *args):
+        #TO-DO - Workflows with the same name in different testscripts/projects/clients
         Logger.debug('Add To Workflow')
         
         current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
@@ -1608,8 +1653,7 @@ class TestScriptBuilderApp(App):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
-        for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
         wf = self.root.get_screen('keyactiongroup').pop_up.content.atwp_workflow.text
@@ -1633,9 +1677,7 @@ class TestScriptBuilderApp(App):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
-        if len(self.root.get_screen('keyactiongroup').pop_up.content.spinner.values) != 0:
-            for value in self.root.get_screen('keyactiongroup').pop_up.content.spinner.values:
-                self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.remove(value)
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
         wf = self.root.get_screen('keyactiongroup').pop_up.content.cwp_workflow.text
@@ -1707,11 +1749,8 @@ class TestScriptBuilderApp(App):
         cust = self.root.get_screen('keyactiongroup').ids.customfilter.active
         filter.setCustomFilteringEnabled(self.root.get_screen('keyactiongroup').ids.custswitch.active)
         
-        for i in selected_ids:
-            selected_ids.remove(i)
-        
-        for j in selected:
-            selected.remove(j)
+        del selected_ids[:]
+        del selected[:]
         
         results = filter.NextPage_KA(str(mod), str(sa), str(ka), str(cust))
         i = 0
@@ -1730,11 +1769,8 @@ class TestScriptBuilderApp(App):
         cust = self.root.get_screen('keyactiongroup').ids.customfilter.active
         filter.setCustomFilteringEnabled(self.root.get_screen('keyactiongroup').ids.custswitch.active)
         
-        for i in selected_ids:
-            selected_ids.remove(i)
-        
-        for j in selected:
-            selected.remove(j)
+        del selected_ids[:]
+        del selected[:]
         
         results = filter.PrevPage_KA(str(mod), str(sa), str(ka), str(cust))
         i = 0
@@ -1754,11 +1790,8 @@ class TestScriptBuilderApp(App):
         cust = self.root.get_screen('keyactiongroup').ids.customfilter.active
         filter.setCustomFilteringEnabled(self.root.get_screen('keyactiongroup').ids.custswitch.active)
         
-        for i in selected_ids:
-            selected_ids.remove(i)
-        
-        for j in selected:
-            selected.remove(j)
+        del selected_ids[:]
+        del selected[:]
         
         results = filter.ApplyFilter(str(mod), str(sa), str(ka), str(cust))
         i = 0
@@ -2012,8 +2045,7 @@ class TestScriptBuilderApp(App):
         Logger.debug('QKA: Clear Quick Action')
         
         #Remove all selected id's from the master list
-        for item in selected_ids:
-            selected_ids.remove(item)
+        del selected_ids[:]
         
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
         keyaction = KeyActionCarouselItem()
@@ -2124,8 +2156,7 @@ class TestScriptBuilderApp(App):
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
         numSelected = len(selected)
         
-        for item in selected_ids:
-            selected_ids.remove(item)
+        del selected_ids[:]
         
         if numSelected > 1:
             for action in selected:

@@ -82,7 +82,9 @@ class DragGrid(GridLayout):
         del self.nodes[:]
         
         #Clear the connections list
-        del self.connections[:]
+
+        del self.connections[0][:]
+        del self.connections[1][:]
             
     #Get the next cell, based on the origin.
     #The method looks for the closest empty cell in the grid to the origin position
