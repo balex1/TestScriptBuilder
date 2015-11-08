@@ -827,48 +827,35 @@ class DatabaseWriter():
         Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
         return ka_rows
         
-    def ValidateInputParameter(self, input_list, ip_list, id):
+    def ValidateInputParameter(self, input_list, ip_list, id, orig_ip_list):
         #Input List gives a list of text inputs
         #IP List gives a list of IP Name Strings to check against
-        
-        #Filter for matches between the lists
-        #If no match is encountered, leave the values in the input list
-        #If a match is encountered, remove the values from the input list
-        for inp in input_list:
-            for ip in ip_list:
-                if inp.text == ip:
-                    input_list.remove(inp)
-                    
-        #The input list now contains only the values that differ from the values
-        #in the input list
-                    
-        #Filter for blank inputs
-        for inp in input_list:
-            for ip in ip_list:
-                if inp.text == '' or inp.text is None:
-                    input_list.remove(inp)
-        
-        #The input list now only contains the values that need to be written back to the DB
+		#ID is the Key ActionID
+		#Origin IP List gives a list of the input parameter ID's in the sameorder as the ip list
+
         #How many existing parameters do we have on the action?
         inputparams = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == id).all()
         
         #Fill the existing parameters first
         i=0
         for param in inputparams:
-            param.name = input_list[i].text
-            i+=1
+			for i in range(0, len(orig_ip_list)):
+				if param.id == orig_ip_list[i]:
+            		param.name = ip_list[i]
+            	i+=1
+			i=0
         
         #Add any new parameters
-        for j in range(i, len(input_list)):
+        for j in range(len(inputparams), len(input_list)):
             par = InputParameter(name=input_list[j].text, keyactionid=id)
             session.add(par)
             
         session.commit()
         
-    def SaveInputParameters(self, child, ka_rows, id):
+    def SaveInputParameters(self, child, ka_rows, id, orig_ip_list):
         #Input Parameters
         
-        self.ValidateInputParameter(child.iplist, ka_rows, id)
+        self.ValidateInputParameter(child.iplist, ka_rows, id, orig_ip_list)
             
 #------------------------------------------------------------
 #----------------Main App------------------------------------
@@ -1964,19 +1951,26 @@ class TestScriptBuilderApp(App):
                 ka.systemareaid = rows[0].systemareaid
                 session.commit()
                     
-                #Set the Input Parameters
+                #Get the Input Parameters
                 ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                
-                #Add Text Inputs to IP Grid
-                for ip in ip_rows:
-                    self.AddInputParamToGrid(args)
                     
-                #Set the values of the IP Grid
-                for input, ip in zip(keyaction.iplist, ip_rows):
-                    input.text = ip.name
-        
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+					
+                #Add Text Inputs to IP Grid
+                for ip in ip_rows:
+                    ip_input = TextInput(hint_text='Input Parameter')
+        			keyaction.ipgrid_in.add_widget(ip_input)
+        			keyaction.iplist.append(ip_input)
+						
+				#Set the IP attributes
+				i=0
+				for ip in ip_rows:
+					keyaction.name_list.append(ip.name)
+					keyaction.id_list.append(ip.id)
+					keyaction.iplist[i].text = ip.name
+					i+=1
+
         elif numSelected == 1:
             action = selected[0]
             #Create the Key Action Carousel Item
@@ -2004,20 +1998,25 @@ class TestScriptBuilderApp(App):
             ka.systemareaid = rows[0].systemareaid
             session.commit()
                 
-            #Set the Input Parameters
+            #Get the Input Parameters
             ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-            
-            #Add Text Inputs to IP Grid
-            for ip in ip_rows:
-                self.AddInputParamToGrid(args)
-                
-            #Set the values of the IP Grid
-            for input, ip in zip(keyaction.iplist, ip_rows):
-                input.text = ip.name
-    
+                    
             #Add the base widget to the screen in the carousel
             self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-            self.ApplyFilterKAG(args)
+					
+            #Add Text Inputs to IP Grid
+            for ip in ip_rows:
+                ip_input = TextInput(hint_text='Input Parameter')
+        		keyaction.ipgrid_in.add_widget(ip_input)
+        		keyaction.iplist.append(ip_input)
+						
+			#Set the IP attributes
+			i=0
+			for ip in ip_rows:
+				keyaction.name_list.append(ip.name)
+				keyaction.id_list.append(ip.id)
+				keyaction.iplist[i].text = ip.name
+				i+=1
     
     def DeleteKeyAction(self, *args):
         Logger.debug('Delete Key Action')
@@ -2078,18 +2077,23 @@ class TestScriptBuilderApp(App):
         if len(selected_ids)>1:
             Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
             for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
+			
+				orig_id_list = child.id_list
+				name_list = child.name_list
                 
                 keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
-                writer.SaveInputParameters(child, keyactions, selected_ids[i])
+                writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
                 i += 1
                 
         #If there is only one child, save it
         elif len(selected_ids) == 1:
             Logger.debug('QKA: Selected IDs Length 1')
             child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
+			orig_id_list = child.id_list
+			name_list = child.name_list
 
             keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
-            writer.SaveInputParameters(child, keyactions, selected_ids[i])
+            writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
         else:
             #Save the key action as a new key action
             Logger.debug('QKA: Selected IDs Length 0')
@@ -2193,21 +2197,25 @@ class TestScriptBuilderApp(App):
                     keyaction.desc_in.text = rows[0].description
                     keyaction.custom_in.active = rows[0].custom
                     
-                    #Set the Input Parameters
+                    #Get the Input Parameters
                     ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                        
-                    #Set the values of the IP Grid
-                    for input, ip in zip(keyaction.iplist, ip_rows):
-                        input.text = ip.name
                     
                     #Add the base widget to the screen in the carousel
                     self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+					
                     #Add Text Inputs to IP Grid
                     for ip in ip_rows:
-                        self.AddInputParamToGrid(args)
-                        
-                    for ip, inp in zip(ip_rows, keyaction.iplist):
-                        inp.text = ip.name
+                        ip_input = TextInput(hint_text='Input Parameter')
+        				keyaction.ipgrid_in.add_widget(ip_input)
+        				keyaction.iplist.append(ip_input)
+						
+					#Set the IP attributes
+					i=0
+					for ip in ip_rows:
+						keyaction.name_list.append(ip.name)
+						keyaction.id_list.append(ip.id)
+						keyaction.iplist[i].text = ip.name
+						i+=1
                 else:
                     #No matching business keys are found
                     raise KeyError('Business Key Called from UI that does not exist in DB')
@@ -2234,20 +2242,27 @@ class TestScriptBuilderApp(App):
                 #Set the Key Action attributes
                 keyaction.ka_in.text = rows[0].name
                 keyaction.desc_in.text = rows[0].description
-                keyaction.custom_in.text = rows[0].custom
-                
-                #Set the Input Parameters
+                keyaction.custom_in.active = rows[0].custom
+                    
+                #Get the Input Parameters
                 ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                
-                #Set the values of the IP Grid
-                for input, ip in zip(keyaction.iplist, ip_rows):
-                    input.text = ip.name
-    
+                   
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
+					
                 #Add Text Inputs to IP Grid
                 for ip in ip_rows:
-                    self.AddInputParamToGrid(args)
+                    ip_input = TextInput(hint_text='Input Parameter')
+        			keyaction.ipgrid_in.add_widget(ip_input)
+        			keyaction.iplist.append(ip_input)
+						
+				#Set the IP attributes
+				i=0
+				for ip in ip_rows:
+					keyaction.name_list.append(ip.name)
+					keyaction.id_list.append(ip.id)
+					keyaction.iplist[i].text = ip.name
+					i+=1
                     
             else:
                 #No matching business keys are found

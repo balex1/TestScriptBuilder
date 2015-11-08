@@ -27,6 +27,10 @@ class KeyActionCarouselItem(BoxLayout):
     
     #App property
     app = ObjectProperty(None)
+	
+	#Name & ID List
+	name_list = ListProperty([])
+	id_list = ListProperty([])
     
     #Internal Object Properties
     module_in = ObjectProperty(None)
