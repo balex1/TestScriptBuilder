@@ -830,8 +830,8 @@ class DatabaseWriter():
     def ValidateInputParameter(self, input_list, ip_list, id, orig_ip_list):
         #Input List gives a list of text inputs
         #IP List gives a list of IP Name Strings to check against
-		#ID is the Key ActionID
-		#Origin IP List gives a list of the input parameter ID's in the sameorder as the ip list
+        #ID is the Key ActionID
+        #Origin IP List gives a list of the input parameter ID's in the sameorder as the ip list
 
         #How many existing parameters do we have on the action?
         inputparams = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == id).all()
@@ -839,11 +839,11 @@ class DatabaseWriter():
         #Fill the existing parameters first
         i=0
         for param in inputparams:
-			for i in range(0, len(orig_ip_list)):
-				if param.id == orig_ip_list[i]:
-            		param.name = ip_list[i]
-            	i+=1
-			i=0
+            for i in range(0, len(orig_ip_list)):
+                if param.id == orig_ip_list[i]:
+                    param.name = ip_list[i]
+                i+=1
+            i=0
         
         #Add any new parameters
         for j in range(len(inputparams), len(input_list)):
@@ -856,9 +856,11 @@ class DatabaseWriter():
         #Input Parameters
         
         self.ValidateInputParameter(child.iplist, ka_rows, id, orig_ip_list)
-            
+
+#------------------------------------------------------------         
 #------------------------------------------------------------
 #----------------Main App------------------------------------
+#------------------------------------------------------------
 #------------------------------------------------------------
 
 #Load the .kv file
@@ -1480,8 +1482,10 @@ class TestScriptBuilderApp(App):
         action_name = self.root.get_screen('workflow').ids.wf_carousel.name_in.text
         flow_name = self.root.get_screen('workflow').current_workflowname
         expected_results = self.root.get_screen('workflow').ids.wf_carousel.er_in.text
-        ip_value_list = [self.root.get_screen('workflow').ids.wf_carousel.ip_in.text, self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text, self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text]
-        
+        ip_value_list = []
+        for child in self.root.get_screen('workflow').ids.wf_carousel.ipgrid_in.children:
+            ip_value_list.append(child.text)
+            
         #Write values to the DB
         writer.SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list)
   
@@ -1507,12 +1511,7 @@ class TestScriptBuilderApp(App):
         
         #Clear the elements of the side editor
         self.root.get_screen('workflow').ids.wf_carousel.er_in.text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip_in.hint_text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip2_in.hint_text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip3_in.hint_text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip_in.text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text = ''
-        self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text = ''
+        self.root.get_screen('workflow').ids.wf_carousel.ipgrid_in.clear_widgets()
     
         #Query the DB for the details of the action with the name from the label
         ka = session.query(KeyAction).filter(KeyAction.name==node.img.text).one()
@@ -1523,77 +1522,21 @@ class TestScriptBuilderApp(App):
                     filter(TestScript.name == current_script).filter(Project.name==current_project).\
                         filter(Client.name==current_client).all()
         wfa = w[0]
-        wps = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==wfa.id).all()
         #Load the double clicked node into the side editor
         self.root.get_screen('workflow').ids.wf_carousel.name = node.img.text
         if wfa.expectedresult is not None:
             self.root.get_screen('workflow').ids.wf_carousel.er_in.text = wfa.expectedresult
             
-        if len(ips) == 0:
-            ip1 = InputParameter(keyactionid=ka.id)
-            ip2 = InputParameter(keyactionid=ka.id)
-            ip3 = InputParameter(keyactionid=ka.id)
-            session.add(ip1)
-            session.add(ip2)
-            session.add(ip3)
-            session.commit()
-        elif len(ips) == 1:
-            ip1 = InputParameter(keyactionid=ka.id)
-            ip2 = InputParameter(keyactionid=ka.id)
-            ip3 = ips[0]
-            session.add(ip1)
-            session.add(ip2)
-            session.commit()
-        elif len(ips) == 2:
-            ip1 = InputParameter(keyactionid=ka.id)
-            ip2 = ips[0]
-            ip3 = ips[1]
-            session.add(ip1)
-            session.commit()
-        else:
-            ip1 = ips[0]
-            ip2 = ips[1]
-            ip3 = ips[2]
-            
-        if ip1.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip_in.hint_text = ip1.name
-        if ip2.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip2_in.hint_text = ip2.name
-        if ip3.name is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip3_in.hint_text = ip3.name
-            
-        if len(wps) == 0:
-            wp1 = WorkflowParameter(keyactionid=wfa.id)
-            wp2 = WorkflowParameter(keyactionid=wfa.id)
-            wp3 = WorkflowParameter(keyactionid=wfa.id)
-            session.add(wp1)
-            session.add(wp2)
-            session.add(wp3)
-            session.commit()
-        elif len(wps) == 1:
-            wp1 = WorkflowParameter(keyactionid=wfa.id)
-            wp2 = WorkflowParameter(keyactionid=wfa.id)
-            wp3 = wps[0]
-            session.add(wp1)
-            session.add(wp2)
-            session.commit()
-        elif len(wps) == 2:
-            wp1 = WorkflowParameter(keyactionid=wfa.id)
-            wp2 = wps[0]
-            wp3 = wps[1]
-            session.add(wp1)
-            session.commit()
-        else:
-            wp1 = wps[0]
-            wp2 = wps[1]
-            wp3 = wps[2]
-            
-        if wp1.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip_in.text = wp1.value
-        if wp2.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip2_in.text = wp2.value
-        if wp3.value is not None:
-            self.root.get_screen('workflow').ids.wf_carousel.ip3_in.text = wp3.value
+        #Load the input parameters
+            #TO-DO: Filter by current script, project, client
+        for ip in ips:
+            wp = session.query(WorkflowParameter).join(InputParameter).join(WorkflowAction).\
+                join(Workflow).join(TestScript).join(Project).join(Client).\
+                    filter(InputParameter.id == ip.id).filter(Workflow.id == w.id).all()
+            lbl = TextInput(hint_text=ip.name)
+            if len(wp) != 0:
+                lbl.text = wp[0].value
+            self.root.get_screen('workflow').ids.wf_carousel.ipgrid_in.add_widget(lbl)
         
     def ApplyLoadWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
@@ -1956,20 +1899,20 @@ class TestScriptBuilderApp(App):
                     
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-					
+                    
                 #Add Text Inputs to IP Grid
                 for ip in ip_rows:
                     ip_input = TextInput(hint_text='Input Parameter')
-        			keyaction.ipgrid_in.add_widget(ip_input)
-        			keyaction.iplist.append(ip_input)
-						
-				#Set the IP attributes
-				i=0
-				for ip in ip_rows:
-					keyaction.name_list.append(ip.name)
-					keyaction.id_list.append(ip.id)
-					keyaction.iplist[i].text = ip.name
-					i+=1
+                    keyaction.ipgrid_in.add_widget(ip_input)
+                    keyaction.iplist.append(ip_input)
+                        
+                #Set the IP attributes
+                i=0
+                for ip in ip_rows:
+                    keyaction.name_list.append(ip.name)
+                    keyaction.id_list.append(ip.id)
+                    keyaction.iplist[i].text = ip.name
+                    i+=1
 
         elif numSelected == 1:
             action = selected[0]
@@ -2003,20 +1946,20 @@ class TestScriptBuilderApp(App):
                     
             #Add the base widget to the screen in the carousel
             self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-					
+                    
             #Add Text Inputs to IP Grid
             for ip in ip_rows:
                 ip_input = TextInput(hint_text='Input Parameter')
-        		keyaction.ipgrid_in.add_widget(ip_input)
-        		keyaction.iplist.append(ip_input)
-						
-			#Set the IP attributes
-			i=0
-			for ip in ip_rows:
-				keyaction.name_list.append(ip.name)
-				keyaction.id_list.append(ip.id)
-				keyaction.iplist[i].text = ip.name
-				i+=1
+                keyaction.ipgrid_in.add_widget(ip_input)
+                keyaction.iplist.append(ip_input)
+                        
+            #Set the IP attributes
+            i=0
+            for ip in ip_rows:
+                keyaction.name_list.append(ip.name)
+                keyaction.id_list.append(ip.id)
+                keyaction.iplist[i].text = ip.name
+                i+=1
     
     def DeleteKeyAction(self, *args):
         Logger.debug('Delete Key Action')
@@ -2077,9 +2020,9 @@ class TestScriptBuilderApp(App):
         if len(selected_ids)>1:
             Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
             for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
-			
-				orig_id_list = child.id_list
-				name_list = child.name_list
+            
+                orig_id_list = child.id_list
+                name_list = child.name_list
                 
                 keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
                 writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
@@ -2089,8 +2032,8 @@ class TestScriptBuilderApp(App):
         elif len(selected_ids) == 1:
             Logger.debug('QKA: Selected IDs Length 1')
             child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
-			orig_id_list = child.id_list
-			name_list = child.name_list
+            orig_id_list = child.id_list
+            name_list = child.name_list
 
             keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
             writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
@@ -2202,20 +2145,20 @@ class TestScriptBuilderApp(App):
                     
                     #Add the base widget to the screen in the carousel
                     self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-					
+                    
                     #Add Text Inputs to IP Grid
                     for ip in ip_rows:
                         ip_input = TextInput(hint_text='Input Parameter')
-        				keyaction.ipgrid_in.add_widget(ip_input)
-        				keyaction.iplist.append(ip_input)
-						
-					#Set the IP attributes
-					i=0
-					for ip in ip_rows:
-						keyaction.name_list.append(ip.name)
-						keyaction.id_list.append(ip.id)
-						keyaction.iplist[i].text = ip.name
-						i+=1
+                        keyaction.ipgrid_in.add_widget(ip_input)
+                        keyaction.iplist.append(ip_input)
+                        
+                    #Set the IP attributes
+                    i=0
+                    for ip in ip_rows:
+                        keyaction.name_list.append(ip.name)
+                        keyaction.id_list.append(ip.id)
+                        keyaction.iplist[i].text = ip.name
+                        i+=1
                 else:
                     #No matching business keys are found
                     raise KeyError('Business Key Called from UI that does not exist in DB')
@@ -2249,20 +2192,20 @@ class TestScriptBuilderApp(App):
                    
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-					
+                    
                 #Add Text Inputs to IP Grid
                 for ip in ip_rows:
                     ip_input = TextInput(hint_text='Input Parameter')
-        			keyaction.ipgrid_in.add_widget(ip_input)
-        			keyaction.iplist.append(ip_input)
-						
-				#Set the IP attributes
-				i=0
-				for ip in ip_rows:
-					keyaction.name_list.append(ip.name)
-					keyaction.id_list.append(ip.id)
-					keyaction.iplist[i].text = ip.name
-					i+=1
+                    keyaction.ipgrid_in.add_widget(ip_input)
+                    keyaction.iplist.append(ip_input)
+                        
+                #Set the IP attributes
+                i=0
+                for ip in ip_rows:
+                    keyaction.name_list.append(ip.name)
+                    keyaction.id_list.append(ip.id)
+                    keyaction.iplist[i].text = ip.name
+                    i+=1
                     
             else:
                 #No matching business keys are found
