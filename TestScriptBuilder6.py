@@ -198,6 +198,17 @@ class WorkflowParameter(Base):
     def __repr_(self):
         return "<Workflow Parameter: ID = '%s', Input Parameter ID = '%s', Key Action ID = '%s', Value = '%s'>" % (self.id, self.inputparamid, self.keyactionid, self.value)
 
+class FlowchartPosition(Base):
+    __tablename__ = 'flowchart'
+    
+    id = Column(Integer, primary_key=True)
+    keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
+    row = Column(Integer)
+    col = Column(Integer)
+    
+    act = relationship("WorkflowAction", backref=backref('flowchart', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+
+    
 #------------------------------------------------------------
 #----------------SQLAlchemy Connections----------------------
 #------------------------------------------------------------
@@ -856,6 +867,23 @@ class DatabaseWriter():
         #Input Parameters
         
         self.ValidateInputParameter(child.iplist, ka_rows, id, orig_ip_list)
+        
+    def SaveFlowchart(self, nodes_list):
+        for node in nodes_list:
+            wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
+                join(TestScript).join(Client).filter(KeyAction.name==node.label.img.text).\
+                    filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                        filter(Client.name==current_client).all()
+                        
+            fl = session.query(FlowchartPosition).filter(FlowchartPosition.keyactionid == wfa.id).all()
+            
+            if len(fl) == 0:
+                flow = FlowchartPosition(keyactionid=wfa.id, row=node.cell.row, col=node.cell.col)
+                session.add(flow)
+            else:
+                flow = fl[0]
+                flow.row = node.cell.row
+                flow.col = node.cell.col
 
 #------------------------------------------------------------         
 #------------------------------------------------------------
@@ -1487,6 +1515,8 @@ class TestScriptBuilderApp(App):
             self.root.get_screen('workflow').current_workflowname, self.root.get_screen('workflow').current_script,\
                 self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
         
+        writer.SaveFlowchart(self.root.get_screen('workflow').drag_grid.nodes)
+        
     def SaveAction(self, *args):
         Logger.debug('WF: Save Action')
         #Pull side editor values
@@ -1604,8 +1634,38 @@ class TestScriptBuilderApp(App):
         #Load the Key Actions for the flow
         keyactions = session.query(KeyAction).join(WorkflowAction).\
             join(Workflow).filter(Workflow.name==current_workflow).all()
+            
+        #Load the Key Actions for the flowchart
+        flowchart_actions = session.query(KeyAction.name, FlowchartPosition).select_from(FlowchartPosition).\
+            join(WorkflowAction).join(KeyAction).join(TestScript).join(Project).join(Client).\
+                filter(Workflow.name==current_workflow).all()
+                    
+        #Load the Next Key Actions for the flowchart
+        next_actions = session.query(WorkflowNextAction).join(WorkflowAction).\
+            join(Workflow).filter(Workflow.name==current_workflow).all()
+                    
+        #Identify the elements in the keyactions list that aren't in the flowchart_actions list
+        for action in keyactions:
+            for node in flowchart_actions:
+                if action.name == node.name:
+                    keyactions.remove(action)
+                    
+        #Populate the flowchart
+                    
+        #Nodes
+        for node in flowchart_actions:
+            image = Label(text=node.name)
+            self.add_flowchart_node(self.root.get_screen('workflow').drag_grid.get_cell(node.col, node.row), image)
         
-        #Put each element into the draggable list
+        #Connections
+        for action in next_action:
+            ka1 = session.query(WorkflowAction).filter(WorkflowAction.id == action.keyactionid)
+            ka2 = session.query(WorkflowAction).filter(WorkflowAction.id == action.nextactionid)
+            
+            for node in self.root.get_screen('workflow').drag_grid.nodes:
+                #TO-DO: Add connections to the grid
+        
+        #Put each remaining element into the draggable list
         for action in keyactions:
             lbl = Label(text=action.name)
             
