@@ -925,6 +925,7 @@ class ForInPopup(BoxLayout):
     keyaction_spinner=ObjectProperty(None)
     inputparameter_spinner=ObjectProperty(None)
     in_textinput=ObjectProperty(None)
+    endaction_spinner=ObjectProperty(None)
 
 class TestScriptOptionsPopup(BoxLayout):
     current_client = ObjectProperty(None)
@@ -1012,6 +1013,12 @@ class TestScriptBuilderApp(App):
 #----------------------------------------------------------
 #------------------WF Callbacks----------------------------
 #----------------------------------------------------------
+    
+    def add_ip_to_popup(self, *args):
+        Logger.debug('WF: Add IP to Popup')
+        ip = TextInput(hint_text='Input Parameter')
+        self.root.get_screen('workflow').pop_up.content.ipgrid_in.add_widget(ip)
+        self.root.get_screen('workflow').pop_up.content.ips.append(ip)
     
     def ClearWorkflow(self):
         #Clear the current workflow information and input box
@@ -1201,11 +1208,12 @@ class TestScriptBuilderApp(App):
         keyactions = session.query(KeyAction).join(WorkflowAction).join(Workflow).filter(Workflow.name==current_workflow).all()
         for action in keyactions:
             popup.content.keyaction_spinner.values.append(action.name)
+            popup.content.endaction_spinner.values.append(action.name)
         
     def AddForNode(self, *args):
         Logger.debug('WF: Add For Node')
         popup=self.root.get_screen('workflow').pop_up
-        current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
+        current_workflow=self.root.get_screen('workflow').current_workflowname
         
         #--UI--
         #Create a Label
@@ -1240,7 +1248,6 @@ class TestScriptBuilderApp(App):
         #Add an input parameter
         ip = InputParameter(keyactionid=keyaction.id, name='In')
         session.add(ip)
-        session.commit()
         
         ip2 = InputParameter(keyactionid=keyaction.id, name='Final Key Action')
         session.add(ip2)
@@ -1248,7 +1255,11 @@ class TestScriptBuilderApp(App):
         
         wp = WorkflowParameter(inputparamid=ip.id, keyactionid=wfa.id, value=popup.content.in_textinput.text)
         session.add(wp)
+        
+        wp = WorkflowParameter(inputparamid=ip2.id, keyactionid=wfa.id, value=popup.content.endaction_spinner.text)
+        session.add(wp)
         session.commit()
+        
         popup.dismiss()
         
     def UpdateIPSpinner(self, *args):
@@ -1528,11 +1539,12 @@ class TestScriptBuilderApp(App):
             self.root.get_screen('workflow').ids.wf_carousel.er_in.text = wfa.expectedresult
             
         #Load the input parameters
-            #TO-DO: Filter by current script, project, client
         for ip in ips:
             wp = session.query(WorkflowParameter).join(InputParameter).join(WorkflowAction).\
                 join(Workflow).join(TestScript).join(Project).join(Client).\
-                    filter(InputParameter.id == ip.id).filter(Workflow.id == w.id).all()
+                    filter(InputParameter.id == ip.id).filter(Workflow.id == w[0].id).\
+                        filter(TestScript.name == current_script).filter(Project.name==current_project).\
+                            filter(Client.name==current_client).all()
             lbl = TextInput(hint_text=ip.name)
             if len(wp) != 0:
                 lbl.text = wp[0].value

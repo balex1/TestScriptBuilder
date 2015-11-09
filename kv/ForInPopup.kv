@@ -4,6 +4,7 @@
 	keyaction_spinner:keyaction_spinner
 	inputparameter_spinner: inputparameter_spinner
 	in_textinput: in_textinput
+	endaction_spinner: endaction_spinner
 	BoxLayout:
 		orientation: 'vertical'
 		size_hint: 1, 1
@@ -18,9 +19,13 @@
 				id: inputparameter_spinner
 				text: 'Parameter'
 		TextInput:
-			size_hint: 1, 0.6
+			size_hint: 1, 0.3
 			hint_text: 'IN'
 			id: in_textinput
+		Spinner:
+			size_hint: 1, 0.3
+			text: 'End Action'
+			id: endaction_spinner
 		Button:
 			size_hint: 1, 0.2
 			text: 'Save'

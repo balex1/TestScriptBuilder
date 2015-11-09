@@ -28,9 +28,6 @@ class KeyActionPopup(BoxLayout):
     keyaction = StringProperty('')
     description = StringProperty('')
     ips = ListProperty([])
-    ip1 = StringProperty('')
-    ip2 = StringProperty('')
-    ip3 = StringProperty('')
     custom = BooleanProperty(False)
     
     #Internal Object Properties
@@ -38,10 +35,8 @@ class KeyActionPopup(BoxLayout):
     sa_in = ObjectProperty(None)
     ka_in = ObjectProperty(None)
     desc_in = ObjectProperty(None)
-    ip_in = ObjectProperty(None)
-    ip2_in = ObjectProperty(None)
-    ip3_in = ObjectProperty(None)
     custom_in = ObjectProperty(None)
+    ipgrid_in = ObjectProperty(None)
  
     #App
     app=ObjectProperty(None)
@@ -52,28 +47,22 @@ class KeyActionPopup(BoxLayout):
         #Layout the basic elements of the element
         self.orientation='vertical'
         topgrid = GridLayout(cols=2, size_hint=(1, 0.1))
-        ipgrid = GridLayout(rows=3, size_hint=(1, 0.3))
+        ipgrid = GridLayout(rows=3, size_hint=(1, 0.5))
+        self.ipgrid_in = ipgrid
         bottomgrid = GridLayout(cols=2, size_hint=(1, 0.1))
+        customgrid = GridLayout(cols=2, size_hint=(0.5, 1))
         modtext = TextInput(hint_text='Module')
         self.module_in = modtext
         satext = TextInput(hint_text='System Area')
         self.sa_in = satext
-        katext = TextInput(hint_text='Key Action', size_hint=(1, 0.2))
+        katext = TextInput(hint_text='Key Action', size_hint=(1, 0.1))
         self.ka_in = katext
         desctext = TextInput(hint_text='Description', size_hint=(1, 0.2))
         self.desc_in = desctext
-        iptext = TextInput(hint_text='Input Parameter')
-        self.ip_in = iptext
-        self.ips.append(iptext)
-        ip2text = TextInput(hint_text='Input Parameter')
-        self.ip2_in = ip2text
-        self.ips.append(ip2text)
-        ip3text = TextInput(hint_text='Input Parameter')
-        self.ip3_in = ip3text
-        self.ips.append(ip3text)
         custlabel = Label(text='Custom')
         custcheck = CheckBox()
         self.custom_in = custcheck
+        addip_button = Button(text='Add IP', on_press=self.app.add_ip_to_popup)
   
         save = Button(text='Save', size_hint=(1, 0.1))
         save.bind(on_press=self.app.WFSaveQuickActionPopup)
@@ -83,41 +72,32 @@ class KeyActionPopup(BoxLayout):
         satext.bind(on_text_validate=self.Validate)
         katext.bind(on_text_validate=self.Validate)
         desctext.bind(on_text_validate=self.Validate)
-        iptext.bind(on_text_validate=self.Validate)
-        ip2text.bind(on_text_validate=self.Validate)
-        ip3text.bind(on_text_validate=self.Validate)
         
         #Bind the Properties
         self.bind(module=self.SetModText)
         self.bind(systemarea=self.SetSAText)
         self.bind(keyaction=self.SetKAText)
         self.bind(description=self.SetDescText)
-        self.bind(ip1=self.SetIPText)
-        self.bind(ip2=self.SetIP2Text)
-        self.bind(ip3=self.SetIP3Text)
         self.bind(custom=self.SetCustCheck)
         
         #Put the widgets together
         
         #Custom Grid
-        bottomgrid.add_widget(custlabel)
-        bottomgrid.add_widget(custcheck)
+        customgrid.add_widget(custlabel)
+        customgrid.add_widget(custcheck)
+        bottomgrid.add_widget(customgrid)
+        bottomgrid.add_widget(addip_button)
         
         #Top Grid
         topgrid.add_widget(modtext)
         topgrid.add_widget(satext)
         
-        #Input Parameter Grid
-        ipgrid.add_widget(iptext)
-        ipgrid.add_widget(ip2text)
-        ipgrid.add_widget(ip3text)
-        
         #Base Layout
         self.add_widget(topgrid)
         self.add_widget(katext)
         self.add_widget(desctext)
-        self.add_widget(ipgrid)
         self.add_widget(bottomgrid)
+        self.add_widget(ipgrid)
         self.add_widget(save)
             
     def Validate(self, *args):
