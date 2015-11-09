@@ -1,0 +1,15 @@
+#: kivy 1.9.0
+
+<DeletePopup>
+	label: label
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		Label:
+			id: label
+			text: 'Are you sure you want to delete the selected actions?'
+			size_hint: 1, 0.8
+		Button:
+			size_hint: 1, 0.2
+			text: 'Delete'
+			on_press: app.DeleteKeyAction(self, args[0])

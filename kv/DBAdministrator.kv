@@ -1,0 +1,48 @@
+#: kivy 1.9.0
+
+<DatabaseWidget>
+	BoxLayout:
+		orientation: 'vertical'
+		size: root.size
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Direction'
+			Spinner:
+				id: direction_spinner
+				values: ('Import', 'Export')
+				on_text: app.UpdateDirection(self, args[0])
+		GridLayout:
+			cols: 2
+			size_hint: 1, 0.2
+			Label:
+				text: 'Translator'
+			Spinner:
+				id: translator_spinner
+				values: ('CSV', 'Excel', 'DB')
+		BoxLayout:
+			size_hint: 1, 0.2
+			TextInput:
+				size_hint: 0.7, 1
+				hint_text: 'Source'
+				id: source_input
+			Button:
+				text: 'Browse'
+				size_hint: 0.3, 1
+				on_press: app.FindSourcePopup(self, args[0])
+		BoxLayout:
+			size_hint: 1, 0.2
+			TextInput:
+				size_hint: 0.7, 1
+				hint_text: 'Destination'
+				id: destination_input
+			Button:
+				text: 'Browse'
+				size_hint: 0.3, 1
+				on_press: app.FindDestinationPopup(self, args[0])
+				
+		Button:
+			text: 'Run'
+			size_hint: 1, 0.2
+			on_press: app.RunMigration(self, args[0])

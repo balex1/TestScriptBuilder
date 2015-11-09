@@ -241,6 +241,54 @@ session = Session()
 Logger.info('SQLAlchemy: Session Created')
 
 #------------------------------------------------------------
+#----------------DB Seed Scripts-----------------------------
+#------------------------------------------------------------
+
+#Find if the seed data already exists
+seed_products = session.query(Product).filter(Product.name=='Default').all()
+seed_clients = session.query(Client).filter(Client.name=='Default').all()
+seed_projects = session.query(Project).filter(Project.name=='Default').all()
+seed_testscripts = session.query(TestScript).filter(TestScript.name=='Default').all()
+seed_workflows = session.query(Workflow).filter(Workflow.name=='Default').all()
+
+#Add the seed data
+if len(seed_products) == 0:
+    seed_product = Product(name='Default')
+    session.add(seed_product)
+else:
+    seed_product = seed_products[0]
+    
+if len(seed_clients) == 0:
+    seed_client = Client(name='Default')
+    session.add(seed_client)
+else:
+    seed_client = seed_clients[0]
+    
+session.commit()
+
+if len(seed_projects) == 0:
+    seed_project = Project(name='Default', clientid=seed_client.id)
+    session.add(seed_project)
+else:
+    seed_project = seed_projects[0]
+    
+session.commit()
+    
+if len(seed_testscripts) == 0:
+    seed_testscript = TestScript(name='Default', projectid=seed_project.id)
+    session.add(seed_testscript)
+else:
+    seed_testscript = seed_testscripts[0]
+    
+session.commit()
+    
+if len(seed_workflows) == 0:
+    seed_workflow = Workflow(name='Default', testscriptid=seed_testscript.id)
+    session.add(seed_workflow)
+else:
+    seed_workflow = seed_workflows[0]
+
+#------------------------------------------------------------
 #----------------Filter Manager------------------------------
 #------------------------------------------------------------
 
@@ -902,6 +950,7 @@ Builder.load_file('kv/LoadSubflowPopup.kv')
 Builder.load_file('kv/SelectableButton.kv')
 Builder.load_file('kv/WorkflowScreen.kv')
 Builder.load_file('kv/ForInPopup.kv')
+Builder.load_file('kv/DeletePopup.kv')
 Logger.info('KV: KV Files Loaded')
 
 #Create the filter manager
@@ -999,6 +1048,9 @@ class CreateWorkflowPopup(BoxLayout):
     cwp_testscript=ObjectProperty(None)
     cwp_client=ObjectProperty(None)
     cwp_project=ObjectProperty(None)
+    
+class DeletePopup(BoxLayout):
+    label=ObjectProperty(None)
 
 class SelectableButton(ToggleButton):
     #Exposes on_selection event
@@ -1664,7 +1716,7 @@ class TestScriptBuilderApp(App):
             
             for node in self.root.get_screen('workflow').drag_grid.nodes:
                 #TO-DO: Add connections to the grid
-        
+                pass
         #Put each remaining element into the draggable list
         for action in keyactions:
             lbl = Label(text=action.name)
@@ -2032,6 +2084,12 @@ class TestScriptBuilderApp(App):
                 keyaction.id_list.append(ip.id)
                 keyaction.iplist[i].text = ip.name
                 i+=1
+                
+    def DeleteKeyActionPopup(self, *args):
+        Logger.debug('Delete Key Action Popup')
+        popup = Popup(title='Delete Key Action', content=DeletePopup(), size_hint=(0.5, 0.4))
+        self.root.get_screen('keyactiongroup').pop_up=popup
+        popup.open()
     
     def DeleteKeyAction(self, *args):
         Logger.debug('Delete Key Action')
@@ -2171,7 +2229,6 @@ class TestScriptBuilderApp(App):
                         inpparam = InputParameter(name=input.text)
                         session.add(inpparam)
                         inpparam.keyactionid = keyaction.id
-                        Logger.debug('QKA: Input Parameter Committed %s' % (child.ip_in.text))
                 session.commit()
         self.ApplyFilterKAG(args)
         del selected_ids[:]
