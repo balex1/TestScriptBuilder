@@ -30,6 +30,7 @@ from src.KeyActionCarouselItem import KeyActionCarouselItem
 from src.KeyActionPopup import KeyActionPopup
 from src.WFCarouselItem import WFCarouselItem
 
+from src.flowcharts.Connector import Connector
 from src.flowcharts.DragGrid import DragGrid, DragGridCell
 from src.flowcharts.FlowChartNode2 import FlowChartNode, DraggableImage
 from src.flowcharts.DraggableOption import DraggableOption
@@ -919,19 +920,21 @@ class DatabaseWriter():
     def SaveFlowchart(self, nodes_list):
         for node in nodes_list:
             wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
-                join(TestScript).join(Client).filter(KeyAction.name==node.label.img.text).\
+                join(TestScript).join(Project).join(Client).filter(KeyAction.name==node.label.img.text).\
                     filter(TestScript.name == current_script).filter(Project.name==current_project).\
                         filter(Client.name==current_client).all()
                         
-            fl = session.query(FlowchartPosition).filter(FlowchartPosition.keyactionid == wfa.id).all()
+            fl = session.query(FlowchartPosition).filter(FlowchartPosition.keyactionid == wfa[0].id).all()
             
             if len(fl) == 0:
-                flow = FlowchartPosition(keyactionid=wfa.id, row=node.cell.row, col=node.cell.col)
+                flow = FlowchartPosition(keyactionid=wfa[0].id, row=node.cell.row, col=node.cell.col)
                 session.add(flow)
             else:
                 flow = fl[0]
                 flow.row = node.cell.row
                 flow.col = node.cell.col
+                
+        session.commit()
 
 #------------------------------------------------------------         
 #------------------------------------------------------------
@@ -1688,35 +1691,44 @@ class TestScriptBuilderApp(App):
             join(Workflow).filter(Workflow.name==current_workflow).all()
             
         #Load the Key Actions for the flowchart
-        flowchart_actions = session.query(KeyAction.name, FlowchartPosition).select_from(FlowchartPosition).\
-            join(WorkflowAction).join(KeyAction).join(TestScript).join(Project).join(Client).\
+        flowchart_actions = session.query(KeyAction.name, FlowchartPosition.col, FlowchartPosition.row).select_from(FlowchartPosition).\
+            join(WorkflowAction).join(Workflow).join(KeyAction).join(TestScript).join(Project).join(Client).\
                 filter(Workflow.name==current_workflow).all()
-                    
-        #Load the Next Key Actions for the flowchart
-        next_actions = session.query(WorkflowNextAction).join(WorkflowAction).\
-            join(Workflow).filter(Workflow.name==current_workflow).all()
-                    
-        #Identify the elements in the keyactions list that aren't in the flowchart_actions list
-        for action in keyactions:
+        if len(flowchart_actions) != 0:            
+            #Load the Next Key Actions for the flowchart
+            next_actions = session.query(WorkflowNextAction).join(WorkflowAction).\
+                join(Workflow).filter(Workflow.name==current_workflow).all()
+                        
+            #Identify the elements in the keyactions list that aren't in the flowchart_actions list
+            for action in keyactions:
+                for node in flowchart_actions:
+                    if action.name == node.name:
+                        keyactions.remove(action)
+                        
+            #Populate the flowchart
+                        
+            #Nodes
             for node in flowchart_actions:
-                if action.name == node.name:
-                    keyactions.remove(action)
-                    
-        #Populate the flowchart
-                    
-        #Nodes
-        for node in flowchart_actions:
-            image = Label(text=node.name)
-            self.add_flowchart_node(self.root.get_screen('workflow').drag_grid.get_cell(node.col, node.row), image)
-        
-        #Connections
-        for action in next_action:
-            ka1 = session.query(WorkflowAction).filter(WorkflowAction.id == action.keyactionid)
-            ka2 = session.query(WorkflowAction).filter(WorkflowAction.id == action.nextactionid)
+                image = Label(text=node.name)
+                self.add_flowchart_node(self.root.get_screen('workflow').drag_grid.get_cell(node.col, node.row), image)
             
-            for node in self.root.get_screen('workflow').drag_grid.nodes:
-                #TO-DO: Add connections to the grid
-                pass
+            #Connections
+            for action in next_actions:
+                ka1 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.keyactionid).all()
+                ka2 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.nextactionid).all()
+                
+                for node in self.root.get_screen('workflow').drag_grid.nodes:
+                    #Find the cnnected node
+                    for node2 in self.root.get_screen('workflow').drag_grid.nodes:
+                        if ka2[0].name == node2.label.img.text:
+                            connected_node = node2
+                    #Add connections to the grid
+                    if ka1[0].name == node.label.img.text:
+                        connector = Connector(line_color=node.connector.connector_color)
+                        node.connector.connections.append(connector)
+                        node.connections.append(connected_node)
+                        node.grid.connections[0].append(node)
+                        node.grid.connections[1].append(connected_node)
         #Put each remaining element into the draggable list
         for action in keyactions:
             lbl = Label(text=action.name)
