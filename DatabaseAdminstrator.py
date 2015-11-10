@@ -16,6 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
+import Queue
 
 import os.path
 import platform
@@ -232,6 +233,9 @@ class data_buffer_list():
     #List of data to be processed
     data = []
     
+    #Error string
+    error = ''
+    
     #Status of the data buffer
     #0 = Unprocessed
     #1 = Translated
@@ -268,32 +272,113 @@ class data_buffer_list():
     def next_status(self):
         if status < 3:
             status+=1
+            
+    def set_error(self, error_message):
+        self.error = error_message
+        self.status = 4
+        
+    def clear_error(self):
+        self.error = ''
+        self.status = 0
 
 
 #------------------------------------------------------------
 #----------------Translator Classes--------------------------
 #------------------------------------------------------------
 
+#Translator classes accept an external file as an output and
+#creates data buffers to be processed in batches & writes the
+#buffers to queues on the data stream
 
+class CSVTranslator():
+    
+    def translate_ka(input_file):
+        pass
+    
+    def translate_wf(input_file):
+        pass
+    
+class ExcelTranslator():
+    
+    def translate_ka(input_file):
+        pass
+    
+    def translate_wf(input_file):
+        pass
+    
+class DBTranslator():
+    
+    def translate_ka(input_file):
+        pass
+    
+    def translate_wf(input_file):
+        pass
 
 #------------------------------------------------------------
 #----------------Validator-----------------------------------
 #------------------------------------------------------------
 
+#The validate function performs validations on the data buffers
 
+def validate(buffer_stream, data_buffer):
+    #Run validations
+    buffer_stream.task_done()
+
+#------------------------------------------------------------
+#----------------Data Stream---------------------------------
+#------------------------------------------------------------
+
+#The data stream contains a queue and applies validations to the
+#top data buffer in the queue until it's empty
+#This uses Batches
+
+class DataStream():
+    buffer_stream = Queue(maxsize=0)
+    error_stream = Queue(maxsize=0)
+    result_stream = Queue(maxsize=0)
+    
+    def stream():
+        while buffer_stream.empty() == False:
+            
+            #Retrieve the top value from the queue
+            data = buffer_stream.get()
+            
+            #Validate the buffer
+            validate(data)
+            
+            #If there is an error on the buffer, move it to the error stream
+            if data.status==3:
+                error_stream.put(data)
+            #Else, put it to the result stream
+            else:
+                result_stream.put(data)
 
 #------------------------------------------------------------
 #----------------DB Writer-----------------------------------
 #------------------------------------------------------------
 
+#DB Writer catches the data stream and writes results to databases
 
+class DBWriter():
+    
+    def write(stream):
+        pass
 
 #------------------------------------------------------------
 #----------------Export Writers------------------------------
 #------------------------------------------------------------
 
+#Export Writers catch the data stream and write results out to external files
 
+class ExcelWriter():
+    
+    def write(stream):
+        pass
 
+class TerminalWriter():
+    
+    def write(stream):
+        pass
 #------------------------------------------------------------
 #----------------Main App------------------------------------
 #------------------------------------------------------------
@@ -315,6 +400,18 @@ class DatabaseApp(App):
      
     def RunMigration(self, *args):
          Logger.debug('Run Migration')
+         
+         #Create Translators
+         
+         #Create Data Stream
+         
+         #Create Writers
+         
+         #Run Translations
+         
+         #Run Validations
+         
+         #Run Writer
          
     def UpdateDirection(self, *args):
          Logger.debug('Update Direction')

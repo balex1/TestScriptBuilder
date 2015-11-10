@@ -1590,7 +1590,9 @@ class TestScriptBuilderApp(App):
     #Draggable, puts it into a new draggable wrapper and then into the flowchart node  
     def add_flowchart_node(self, cell, image):
         Logger.debug('Add flowchart node with image %s and cell %s' % (image, cell))
-        drag_label = DraggableImage(img=image, app=self, grid=self.root.get_screen('workflow').drag_grid, cell=cell)
+        drag_label = DraggableImage(img=image, app=self, grid=self.root.get_screen('workflow').drag_grid,\
+            cell=cell, grid_layout=self.root.get_screen('workflow').grid_layout,\
+                float_layout=self.root.get_screen('workflow').float_layout)
         drag = FlowChartNode(app=self, grid=self.root.get_screen('workflow').drag_grid, cell=cell, label=drag_label)
         drag_label.node = drag
         #Bind the double press to load the key action into the side editor
@@ -1598,6 +1600,14 @@ class TestScriptBuilderApp(App):
         cell.add_widget(drag)
         cell.nodes.append(drag)
         self.root.get_screen('workflow').drag_grid.nodes.append(drag)
+        
+    def add_draggable_node(self, image):
+        Logger.debug('Add draggable option to list')
+        drag_option = DraggableOption(img=image, app=self,\
+            grid=self.root.get_screen('workflow').drag_grid,\
+                grid_layout=self.root.get_screen('workflow').grid_layout,\
+                    float_layout=self.root.get_screen('workflow').float_layout)
+        self.root.get_screen('workflow').grid_layout.add_widget(drag_option)
         
     def LoadSideEditor(self, node):
         #Loop through the nodes in the grid and find the one that has been double pressed

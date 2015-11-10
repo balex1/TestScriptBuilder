@@ -26,6 +26,10 @@ class DraggableImage(Magnet):
     #The Drag Grid
     grid = ObjectProperty(None)
     
+    #Drag List Elements
+    grid_layout = ObjectProperty(None)
+    float_layout = ObjectProperty(None)
+    
     #The cell currently occupied
     cell = ObjectProperty(None)
     
@@ -66,7 +70,9 @@ class DraggableImage(Magnet):
     def on_touch_move(self, touch, *args):
 
         #If the node is grabbed, move the image center to the touch position
+        #If the widget is grabbed
         if touch.grab_current == self:
+            #Move the image to the touch position
             self.img.center = touch.pos
         return super(DraggableImage, self).on_touch_move(touch, *args)
 
@@ -88,6 +94,27 @@ class DraggableImage(Magnet):
                 self.add_widget(self.img)
                 touch.ungrab(self)
                 return True
+            elif self.grid_layout.collide_point(*touch.pos) or self.float_layout.collide_point(*touch.pos):
+                
+                #Eliminate the node from the nodes and connections list
+                self.grid.nodes.remove(self.node)
+                i=0
+                temp_con = []
+                temp_con.append([])
+                temp_con.append([])
+                for action in self.grid.connections[0]:
+                    if self.grid.connections[0][i] != self.node and self.grid.connections[1][i] != self.node:
+                        temp_con[0].append(self.grid.connections[0][i])
+                        temp_con[1].append(self.grid.connections[1][i])
+                self.grid.connections = temp_con
+                
+                #Remove the node from the flowchart
+                self.cell.remove_widget(self.node)
+                self.app.root.get_screen('workflow').remove_widget(self.node.label.img)
+                
+                #Add the image to the grid layout
+                self.app.add_draggable_node(self.node.label.img)
+                
             else:
                 self.node.parent.clear_widgets()
                 self.app.root.get_screen('workflow').remove_widget(self.img)
