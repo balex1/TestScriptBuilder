@@ -156,17 +156,25 @@ class ConnectorForward(ToggleButton):
                     if node != self.node:
                         self.state='normal'
                         node.receiver.state='normal'
-                        connector = Connector(line_color=self.connector_color)
-                        self.connections.append(connector)
-                        self.node.connections.append(node)
-                        self.matching_connection=node
+#                        connector = Connector(line_color=self.connector_color)
+#                        self.connections.append(connector)
+#                        self.node.connections.append(node)
+#                        self.matching_connection=node
                         
                         #Validate for duplicates
                         for con_start, con_end in zip(self.grid.connections[0], self.grid.connections[1]):
                             if self.node == con_start and self.matching_connection == con_end:
                                 match=True
+                                self.grid.connections[0].remove(con_start)
+                                self.grid.connections[1].remove(con_end)
+                                self.node.connections.remove(node)
+                                
                                 
                         if match == False:
+                            connector = Connector(line_color=self.connector_color)
+                            self.connections.append(connector)
+                            self.node.connections.append(node)
+                            self.matching_connection=node
                             self.grid.connections[0].append(self.node)
                             self.grid.connections[1].append(self.matching_connection)
                             Logger.debug('FlowChart: Matching Connector appended: Node 1 %s & Node 2 %s' % (self.node, self.matching_connection))

@@ -8,6 +8,7 @@ from kivy.uix.textinput import TextInput
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.logger import Logger
 from kivy.lang import Builder
+from kivy.uix.popup import Popup
 
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
@@ -16,7 +17,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-import Queue
+from Queue import Queue
+
+from openpyxl import Workbook
+from openpyxl import load_workbook
+import csv
+import sqlite3 as lite
 
 import os.path
 import platform
@@ -228,13 +234,13 @@ Logger.info('SQLAlchemy: Session Created')
 #------------------------------------------------------------
 
 #This class stores data that will be put through the import/export pipeline
-class data_buffer_list():
+class DataBuffer():
     
     #List of data to be processed
     data = []
     
-    #Error string
-    error = ''
+    #Error list
+    error = []
     
     #Status of the data buffer
     #0 = Unprocessed
@@ -258,6 +264,7 @@ class data_buffer_list():
     #10 is input parameter
     #11 is workflow parameter
     #12 is workflow next action
+    #13 is flowchart
     type = 0
     
     def append(self, val):
@@ -291,29 +298,74 @@ class data_buffer_list():
 #buffers to queues on the data stream
 
 class CSVTranslator():
+    #One translator per file
+    last_read=0
     
-    def translate_ka(input_file):
-        pass
+    def __init__(self, inp_file):
+        self.input_file=inp_file
     
-    def translate_wf(input_file):
-        pass
+    def translate(input_file, data_type, output_stream, stream_size):
+        with open(self.input_file, 'rb') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            j=0
+            i=self.last_read
+            for row in reader:
+                Logger.debug('Row returned: %s' % (row))
+                if j - i < stream_size and j >= i:
+                    buf = DataBuffer()
+                    for col in row:
+                        buf.append(col)
+                    buf.type = data_type
+                    output_stream.put(buf)
+                    j+=1
+            self.last_read+=stream_size
     
 class ExcelTranslator():
+    #One translator per sheet
+    last_read=0
+    alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    sheet_name=''
     
-    def translate_ka(input_file):
-        pass
+    def __init__(self, input_file):
+        self.wb = wb = load_workbook(filename = input_file)
+        
+    def get_sheets(self):
+        return self.wb.get_sheet_names()
+        
+    def set_sheet(self, sheet):
+        self.sheet_name = sheet
     
-    def translate_wf(input_file):
-        pass
+    def translate(input_file, data_type, data_length, output_stream, stream_size):
+        reader = self.wb.get_sheet_by_name(self.sheet_name)
+        i = self.last_read
+        j = 0
+        for i in range(self.last_read, self.last_read+stream_size):
+            Logger.debug('Row returned: %s' % (j))
+            buf = DataBuffer()
+            for j in range(0, data_length):
+                buf.append(reader['%s%s' % (alphabet_list[j], i)])
+            buf.type = data_type
+            output_stream.put(buf)
     
 class DBTranslator():
+    #One translator per DB
+    last_read=0
     
-    def translate_ka(input_file):
-        pass
+    def __init__(self, db_path):
+        con = lite.connect(db_path)
     
-    def translate_wf(input_file):
-        pass
-
+    def translate(data_type, table_name, order_by_column_name, output_stream, stream_size):
+        with self.con:
+            cur = self.con.cursor()
+            cur.execute("SELECT * FROM ? ORDER_BY ? LIMIT ? OFFSET ?", (table_name, order_by_column_name, stream_size, last_read))
+            rows = cur.fetchall()
+            for row in rows:
+                buf = DataBuffer()
+                for col in row:
+                    buf.append(col)
+                buf.type = data_type
+                output_stream.put(buf)
+            
 #------------------------------------------------------------
 #----------------Validator-----------------------------------
 #------------------------------------------------------------
@@ -347,7 +399,7 @@ class DataStream():
             validate(data)
             
             #If there is an error on the buffer, move it to the error stream
-            if data.status==3:
+            if data.status==4:
                 error_stream.put(data)
             #Else, put it to the result stream
             else:
@@ -384,9 +436,20 @@ class TerminalWriter():
 #------------------------------------------------------------
     
 Builder.load_file('kv/DBAdministrator.kv')
+Builder.load_file('kv/FileChooserPopup.kv')
+
+class FileChooserPopup(BoxLayout):
+    text_input = ObjectProperty(None)
+    file_chooser = ObjectProperty(None)
+    app = ObjectProperty(None)
+    
+class DestinationFileChooserPopup(BoxLayout):
+    text_input = ObjectProperty(None)
+    file_chooser = ObjectProperty(None)
+    app = ObjectProperty(None)
 
 class DatabaseWidget(BoxLayout):
-    pass
+    pop_up = ObjectProperty(None)
 
 class DatabaseApp(App):
     def build(self):
@@ -394,9 +457,27 @@ class DatabaseApp(App):
      
     def FindSourcePopup(self, *args):
          Logger.debug('Find Source Popup')
+         popup = Popup(title='Source', content=FileChooserPopup(app=self), size_hint=(0.5, 0.75))
+         self.root.pop_up = popup
+         popup.open()
+         
+    def FillInput(self, *args):
+        Logger.debug('Fill Source Popup')
+        selected_file = self.root.pop_up.content.file_chooser.selection[0]
+        self.root.ids.source_input.text = selected_file
+        self.root.pop_up.dismiss()
+    
+    def FillDestinationInput(self, *args):
+        Logger.debug('Fill Destination Popup')
+        selected_file = self.root.pop_up.content.file_chooser.selection[0]
+        self.root.ids.destination_input.text = selected_file
+        self.root.pop_up.dismiss()
      
     def FindDestinationPopup(self, *args):
          Logger.debug('Find Destination Popup')
+         popup = Popup(title='Source', content=DestinationFileChooserPopup(app=self), size_hint=(0.5, 0.75))
+         self.root.pop_up = popup
+         popup.open()
      
     def RunMigration(self, *args):
          Logger.debug('Run Migration')

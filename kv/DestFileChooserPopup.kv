@@ -1,0 +1,20 @@
+#: kivy 1.9.0
+
+<DestinationFileChooserPopup>
+	text_input: text_input
+	file_chooser: file_chooser
+	BoxLayout:
+		orientation: 'vertical'
+		size_hint: 1, 1
+		FileChooserListView:
+			id: file_chooser
+			size_hint: 1, 0.8
+		BoxLayout:
+			size_hint: 1, 0.2
+			TextInput:
+				id: text_input
+				size_hint: 0.8, 1
+			Button:
+				text: 'Select'
+				size_hint: 0.2, 1
+				on_press: self.app.FillDestinationInput(self, args[0])
