@@ -285,7 +285,7 @@ class DataBuffer():
         self.status = 4
         
     def clear_error(self):
-        self.error = ''
+        del self.error[:]
         self.status = 0
 
 
@@ -327,7 +327,7 @@ class ExcelTranslator():
     sheet_name=''
     
     def __init__(self, input_file):
-        self.wb = wb = load_workbook(filename = input_file)
+        self.wb = load_workbook(filename = input_file)
         
     def get_sheets(self):
         return self.wb.get_sheet_names()
@@ -347,17 +347,21 @@ class ExcelTranslator():
             buf.type = data_type
             output_stream.put(buf)
     
-class DBTranslator():
+class ExternalDBTranslator():
     #One translator per DB
+    #Use on one table at a time, finish, then call reset()
     last_read=0
     
     def __init__(self, db_path):
         con = lite.connect(db_path)
+        
+    def reset(self):
+        self.last_read=0
     
     def translate(data_type, table_name, order_by_column_name, output_stream, stream_size):
         with self.con:
             cur = self.con.cursor()
-            cur.execute("SELECT * FROM ? ORDER_BY ? LIMIT ? OFFSET ?", (table_name, order_by_column_name, stream_size, last_read))
+            cur.execute("SELECT * FROM ? ORDER_BY ? LIMIT ? OFFSET ?", (table_name, order_by_column_name, stream_size, self.last_read))
             rows = cur.fetchall()
             for row in rows:
                 buf = DataBuffer()
@@ -365,6 +369,26 @@ class DBTranslator():
                     buf.append(col)
                 buf.type = data_type
                 output_stream.put(buf)
+                
+class InternalDBTranslator():
+    #Singleton
+    #Use on one table at a time, finish, then call reset()
+    last_read=0
+    
+    def __init__(self):
+        pass
+    
+    def reset(self):
+        self.last_read = 0
+    
+    def translate(data_type, table, output_stream, stream_size):
+        rows = session.query(table).order_by(table.id)[self.last_read:self.last_read+stream_size]
+        for row in rows:
+            buf = DataBuffer()
+            for col in row:
+                buf.append(col)
+            buf.type = data_type
+            output_stream.put(buf)
             
 #------------------------------------------------------------
 #----------------Validator-----------------------------------
@@ -409,7 +433,7 @@ class DataStream():
 #----------------DB Writer-----------------------------------
 #------------------------------------------------------------
 
-#DB Writer catches the data stream and writes results to databases
+#Internal DB Writer catches the data stream and writes results to database
 
 class DBWriter():
     
@@ -428,6 +452,11 @@ class ExcelWriter():
         pass
 
 class TerminalWriter():
+    
+    def write(stream):
+        pass
+    
+class CSVWriter():
     
     def write(stream):
         pass
