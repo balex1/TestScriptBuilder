@@ -2,7 +2,6 @@
 			
 <LoadWorkflowPopup>
 	spinner: loadflowpopup_flow
-	lwp_workflow: lwp_workflow
 	lwp_testscript: lwp_testscript
 	lwp_client: lwp_client
 	lwp_project: lwp_project
@@ -12,33 +11,36 @@
 		BoxLayout:
 			orientation: 'horizontal'
 			size_hint: 1, 0.3
-			TextInput:
+			Label:
+				text: 'Filter Values'
+			GridLayout:
+				rows: 2
 				size_hint: 0.5, 1
-				hint_text: 'Workflow'
-				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: lwp_workflow
-			TextInput:
-				size_hint: 0.5, 1
-				hint_text: 'Testscript'
-				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: lwp_testscript
+				Label:
+					text: 'Test Script'
+				Spinner:
+					on_text: app.ApplyLoadWorkflowPopupFilter_Script(self, args[0])
+					id: lwp_testscript
 		BoxLayout:
 			orientation: 'horizontal'
 			size_hint: 1, 0.3
-			TextInput:
+			GridLayout:
+				rows: 2
 				size_hint: 0.5, 1
-				hint_text: 'Client'
-				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: lwp_client
-			TextInput:
+				Label:
+					text: 'Client'
+				Spinner:
+					on_text: app.ApplyLoadWorkflowPopupFilter(self, args[0])
+					id: lwp_client
+			GridLayout:
+				rows: 2
 				size_hint: 0.5, 1
-				hint_text: 'Project'
-				on_text_validate: app.ApplyLoadWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: lwp_project
+				Label:
+					text: 'Project'
+				Spinner:
+					size_hint: 0.5, 1
+					on_text: app.ApplyLoadWorkflowPopupFilter(self, args[0])
+					id: lwp_project
 		GridLayout:
 			cols: 2
 			size_hint: 1, 0.4

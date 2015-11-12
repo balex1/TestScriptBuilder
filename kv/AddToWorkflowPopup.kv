@@ -2,7 +2,6 @@
 			
 <AddToWorkflowPopup>
 	spinner: addtoflowpopup_flow
-	atwp_workflow: atwp_workflow
 	atwp_testscript: atwp_testscript
 	atwp_client: atwp_client
 	atwp_project: atwp_project
@@ -12,33 +11,37 @@
 		BoxLayout:
 			orientation: 'horizontal'
 			size_hint: 1, 0.3
-			TextInput:
+			Label:
+				text: 'Filter Values'
 				size_hint: 0.5, 1
-				hint_text: 'Workflow'
-				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: atwp_workflow
-			TextInput:
+			GridLayout:
 				size_hint: 0.5, 1
-				hint_text: 'Testscript'
-				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: atwp_testscript
+				rows: 2
+				Label:
+					text: 'TestScript'
+				Spinner:
+					size_hint: 0.5, 1
+					on_text: app.ApplyWorkflowPopupFilter(self, args[0])
+					id: atwp_testscript
 		BoxLayout:
 			orientation: 'horizontal'
 			size_hint: 1, 0.3
-			TextInput:
+			GridLayout:
 				size_hint: 0.5, 1
-				hint_text: 'Client'
-				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: atwp_client
-			TextInput:
+				rows: 2
+				Label:
+					text: 'Client'
+				Spinner:
+					on_text: app.ApplyWorkflowPopupFilter(self, args[0])
+					id: atwp_client
+			GridLayout:
 				size_hint: 0.5, 1
-				hint_text: 'Project'
-				on_text_validate: app.ApplyWorkflowPopupFilter(self, args[0])
-				multiline: False
-				id: atwp_project
+				rows: 2
+				Label:
+					text: 'Project'
+				Spinner:
+					on_text: app.ApplyWorkflowPopupFilter_Script(self, args[0])
+					id: atwp_project
 		GridLayout:
 			cols: 2
 			size_hint: 1, 0.4

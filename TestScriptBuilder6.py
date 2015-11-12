@@ -1122,16 +1122,28 @@ class TestScriptBuilderApp(App):
         popup.open()
         self.root.get_screen('workflow').pop_up = popup
         
+        #Populate all clients
+        clients = session.query(Client).all()
+        
+        for client in clients:
+            popup.content.lwp_client.values.append(client.name)
+        
+        #Populate all projects
+        projects = session.query(Project).all()
+        
+        for project in projects:
+            popup.content.lwp_project.values.append(project.name)
+        
         #Populate the latest 5 workflows into the spinner from the current testscript
         num_flows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+            filter(TestScript.name==current_script).filter(Project.name==current_project).\
                 filter(Client.name==current_client).count()
         if num_flows - 5 < 0:
             num_flows = 0
         else:
             num_flows = num_flows - 5
         results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(TestScript.name == current_script).filter(Project.name==current_project).\
+            filter(TestScript.name==current_testscript).filter(Project.name==current_project).\
                 filter(Client.name==current_client).order_by(Workflow.id)[num_flows:num_flows+5]
         
         #Populate values in spinner
@@ -1648,11 +1660,47 @@ class TestScriptBuilderApp(App):
     def ApplyLoadWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
         
-        #Clear the Spinner
+        #Clear the Spinners
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        del self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values[:]
+        
+        #Get Filter Values
+        wf = ''
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
+        
+        #Get Result Set from Filter Manager
+        num_flows = session.query(Workflow).count()
+        if num_flows - 5 < 0:
+            num_flows = 0
+        else:
+            num_flows = num_flows - 5
+        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+        
+        #Get Result set from Filter Manager
+        num_scripts = session.query(TestScript).count()
+        if num_scripts - 5 < 0:
+            num_scripts = 0
+        else:
+            num_scripts = num_scripts - 5
+        scripts = filter.FindTestScripts(wf, ts, cl, pr, 5, num_scripts)
+        
+        #Load Result Set Into Spinner
+        for result in results:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+            
+        for script in scripts:
+            self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values.append(script.name)
+            
+    def ApplyLoadWorkflowPopupFilter_Script(self, *args):
+        Logger.debug('Apply workflow filter popup')
+        
+        #Clear the Spinners
         del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
-        wf = self.root.get_screen('keyactiongroup').pop_up.content.lwp_workflow.text
+        wf = ''
         ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
         cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
@@ -1675,6 +1723,29 @@ class TestScriptBuilderApp(App):
         popup.open()
         self.root.get_screen('keyactiongroup').pop_up = popup
         
+        #Populate all clients
+        clients = session.query(Client).all()
+        
+        for client in clients:
+            popup.content.lwp_client.values.append(client.name)
+        
+        #Populate all projects
+        projects = session.query(Project).all()
+        
+        for project in projects:
+            popup.content.lwp_project.values.append(project.name)
+        
+        #Populate the latest 5 test scripts into the spinner
+        num_scripts = session.query(TestScript).count()
+        if num_scripts - 5 < 0:
+            num_scripts = 0
+        else:
+            num_scripts = num_scripts - 5
+        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+        
+        for script in scripts:
+            popup.content.lwp_testscript.values.append(script.name)
+        
         #Populate the latest 5 workflows into the spinner
         num_flows = session.query(Workflow).count()
         if num_flows - 5 < 0:
@@ -1688,8 +1759,11 @@ class TestScriptBuilderApp(App):
             popup.content.spinner.values.append(result.name)
             
     def LoadFlow(self, *args):
-        #TO-DO - Workflows with the same name in different testscripts/projects/clients
         Logger.debug('Add To Workflow')
+        
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
         
         current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         
@@ -1703,7 +1777,8 @@ class TestScriptBuilderApp(App):
         #Load the Key Actions for the flowchart
         flowchart_actions = session.query(KeyAction.name, FlowchartPosition.col, FlowchartPosition.row).select_from(FlowchartPosition).\
             join(WorkflowAction).join(Workflow).join(KeyAction).join(TestScript).join(Project).join(Client).\
-                filter(Workflow.name==current_workflow).all()
+                filter(Workflow.name==current_workflow).filter(TestScript.name==ts).\
+                    filter(Project.name==pr).filter(Client.name==cl).all()
         if len(flowchart_actions) != 0:            
             #Load the Next Key Actions for the flowchart
             next_actions = session.query(WorkflowNextAction).join(WorkflowAction).\
@@ -1815,10 +1890,46 @@ class TestScriptBuilderApp(App):
         del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
-        wf = self.root.get_screen('keyactiongroup').pop_up.content.atwp_workflow.text
+        wf = ''
         ts = self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript.text
         cl = self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
+        
+        #Get Result Set from Filter Manager
+        num_flows = session.query(Workflow).count()
+        if num_flows - 5 < 0:
+            num_flows = 0
+        else:
+            num_flows = num_flows - 5
+        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+        
+        #Load Result Set Into Spinner
+        for result in results:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+            
+    def ApplyWorkflowPopupFilter_Script(self, *args):
+        Logger.debug('Apply workflow filter popup')
+        
+        #Clear the Spinner
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        
+        #Get Filter Values
+        wf = ''
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
+        
+        #Get Result Set from Filter Manager
+        num_scripts = session.query(TestScript).count()
+        if num_scripts - 5 < 0:
+            num_scripts = 0
+        else:
+            num_scripts = num_scripts - 5
+        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
+        
+        #Load Result Set Into Spinner
+        for script in scripts:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(script.name)
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
@@ -1839,8 +1950,8 @@ class TestScriptBuilderApp(App):
         del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
         
         #Get Filter Values
-        wf = self.root.get_screen('keyactiongroup').pop_up.content.cwp_workflow.text
-        ts = self.root.get_screen('keyactiongroup').pop_up.content.cwp_testscript.text
+        wf = ''
+        ts = ''
         cl = self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
         
@@ -1862,6 +1973,29 @@ class TestScriptBuilderApp(App):
         popup.open()
         self.root.get_screen('keyactiongroup').pop_up = popup
         
+        #Populate all clients
+        clients = session.query(Client).all()
+        
+        for client in clients:
+            popup.content.atwp_client.values.append(client.name)
+        
+        #Populate all projects
+        projects = session.query(Project).all()
+        
+        for project in projects:
+            popup.content.atwp_project.values.append(project.name)
+        
+        #Populate the latest 5 test scripts into the spinner
+        num_scripts = session.query(TestScript).count()
+        if num_scripts - 5 < 0:
+            num_scripts = 0
+        else:
+            num_scripts = num_scripts - 5
+        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+        
+        for script in scripts:
+            popup.content.atwp_testscript.values.append(script.name)
+        
         #Populate the latest 5 workflows into the spinner
         num_flows = session.query(Workflow).count()
         if num_flows - 5 < 0:
@@ -1879,6 +2013,18 @@ class TestScriptBuilderApp(App):
         popup = Popup(title='Create Workflow', content=CreateWorkflowPopup(), size_hint=(0.4, 0.5))
         popup.open()
         self.root.get_screen('keyactiongroup').pop_up = popup
+        
+        #Populate all clients
+        clients = session.query(Client).all()
+        
+        for client in clients:
+            popup.content.cwp_client.values.append(client.name)
+        
+        #Populate all projects
+        projects = session.query(Project).all()
+        
+        for project in projects:
+            popup.content.cwp_project.values.append(project.name)
         
         #Get the latest 5 Test Scripts
         num_scripts = session.query(TestScript).count()
