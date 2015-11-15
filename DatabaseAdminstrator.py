@@ -304,7 +304,7 @@ class CSVTranslator():
     def __init__(self, inp_file):
         self.input_file=inp_file
     
-    def translate(input_file, data_type, output_stream, stream_size):
+    def translate(data_type, output_stream, stream_size):
         with open(self.input_file, 'rb') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             j=0
@@ -335,7 +335,7 @@ class ExcelTranslator():
     def set_sheet(self, sheet):
         self.sheet_name = sheet
     
-    def translate(input_file, data_type, data_length, output_stream, stream_size):
+    def translate(data_type, data_length, output_stream, stream_size):
         reader = self.wb.get_sheet_by_name(self.sheet_name)
         i = self.last_read
         j = 0
@@ -395,9 +395,52 @@ class InternalDBTranslator():
 #------------------------------------------------------------
 
 #The validate function performs validations on the data buffers
-
+#0 is not assigned
+#1 is key action
+#2 is system area
+#3 is module
+#4 is product
+#5 is client
+#6 is project
+#7 is testscript
+#8 is workflow
+#9 is workflow action
+#10 is input parameter
+#11 is workflow parameter
+#12 is workflow next action
+#13 is flowchart
 def validate(buffer_stream, data_buffer):
     #Run validations
+    if data_buffer.type == 0:
+        #The buffer data type is not assigned, perform no operations
+        Logger.debug('Validations: Buffer Data Type not assigned')
+    elif data_buffer.type == 1:
+        Logger.debug('Validations: Key Action Validation Initialized')
+    elif data_buffer.type == 2:
+        Logger.debug('Validations: System Area Validation Initialized')
+    elif data_buffer.type == 3:
+        Logger.debug('Validations: Module Validation Initialized')
+    elif data_buffer.type == 4:
+        Logger.debug('Validations: Product Validation Initialized')
+    elif data_buffer.type == 5:
+        Logger.debug('Validations: Client Validation Initialized')
+    elif data_buffer.type == 6:
+        Logger.debug('Validations: Project Validation Initialized')
+    elif data_buffer.type == 7:
+        Logger.debug('Validations: Test Script Validation Initialized')
+    elif data_buffer.type == 8:
+        Logger.debug('Validations: Workflow Validation Initialized')
+    elif data_buffer.type == 9:
+        Logger.debug('Validations: Workflow Action Validation Initialized')
+    elif data_buffer.type == 10:
+        Logger.debug('Validations: Input Parameter Validation Initialized')
+    elif data_buffer.type == 11:
+        Logger.debug('Validations: Workflow Parameter Validation Initialized')
+    elif data_buffer.type == 12:
+        Logger.debug('Validations: Workflow Next Action Validation Initialized')
+    elif data_buffer.type == 13:
+        Logger.debug('Validations: Flowchart Validation Initialized')
+        
     buffer_stream.task_done()
 
 #------------------------------------------------------------
@@ -438,7 +481,43 @@ class DataStream():
 class DBWriter():
     
     def write(stream):
-        pass
+        while stream.empty() == False:
+            #Retrieve the top value from the queue
+            data_buffer = stream.get()
+            
+            #Write the data to the DB
+            if data_buffer.type == 0:
+                #The buffer data type is not assigned, perform no operations
+                Logger.debug('Writer: Buffer Data Type not assigned')
+            elif data_buffer.type == 1:
+                Logger.debug('Writer: Key Action Export Initialized')
+            elif data_buffer.type == 2:
+                Logger.debug('Writer: System Area Export Initialized')
+            elif data_buffer.type == 3:
+                Logger.debug('Writer: Module Export Initialized')
+            elif data_buffer.type == 4:
+                Logger.debug('Writer: Product Export Initialized')
+            elif data_buffer.type == 5:
+                Logger.debug('Writer: Client Export Initialized')
+            elif data_buffer.type == 6:
+                Logger.debug('Writer: Project Export Initialized')
+            elif data_buffer.type == 7:
+                Logger.debug('Writer: Test Script Export Initialized')
+            elif data_buffer.type == 8:
+                Logger.debug('Writer: Workflow Export Initialized')
+            elif data_buffer.type == 9:
+                Logger.debug('Writer: Workflow Action Export Initialized')
+            elif data_buffer.type == 10:
+                Logger.debug('Writer: Input Parameter Export Initialized')
+            elif data_buffer.type == 11:
+                Logger.debug('Writer: Workflow Parameter Export Initialized')
+            elif data_buffer.type == 12:
+                Logger.debug('Writer: Workflow Next Action Export Initialized')
+            elif data_buffer.type == 13:
+                Logger.debug('Writer: Flowchart Export Initialized')
+            
+            #Finish with the data
+            stream.task_done()
 
 #------------------------------------------------------------
 #----------------Export Writers------------------------------
@@ -449,17 +528,125 @@ class DBWriter():
 class ExcelWriter():
     
     def write(stream):
-        pass
+        while stream.empty() == False:
+            #Retrieve the top value from the queue
+            data_buffer = stream.get()
+            
+            #Write the data to the Excel Sheet
+            if data_buffer.type == 0:
+                #The buffer data type is not assigned, perform no operations
+                Logger.debug('Writer: Buffer Data Type not assigned')
+            elif data_buffer.type == 1:
+                Logger.debug('Writer: Key Action Export Initialized')
+            elif data_buffer.type == 2:
+                Logger.debug('Writer: System Area Export Initialized')
+            elif data_buffer.type == 3:
+                Logger.debug('Writer: Module Export Initialized')
+            elif data_buffer.type == 4:
+                Logger.debug('Writer: Product Export Initialized')
+            elif data_buffer.type == 5:
+                Logger.debug('Writer: Client Export Initialized')
+            elif data_buffer.type == 6:
+                Logger.debug('Writer: Project Export Initialized')
+            elif data_buffer.type == 7:
+                Logger.debug('Writer: Test Script Export Initialized')
+            elif data_buffer.type == 8:
+                Logger.debug('Writer: Workflow Export Initialized')
+            elif data_buffer.type == 9:
+                Logger.debug('Writer: Workflow Action Export Initialized')
+            elif data_buffer.type == 10:
+                Logger.debug('Writer: Input Parameter Export Initialized')
+            elif data_buffer.type == 11:
+                Logger.debug('Writer: Workflow Parameter Export Initialized')
+            elif data_buffer.type == 12:
+                Logger.debug('Writer: Workflow Next Action Export Initialized')
+            elif data_buffer.type == 13:
+                Logger.debug('Writer: Flowchart Export Initialized')
+            
+            #Finish with the data
+            stream.task_done()
 
 class TerminalWriter():
     
     def write(stream):
-        pass
+        while stream.empty() == False:
+            #Retrieve the top value from the queue
+            data = stream.get()
+            
+            #Write the data to the Terminal
+            if data_buffer.type == 0:
+                #The buffer data type is not assigned, perform no operations
+                Logger.debug('Writer: Buffer Data Type not assigned')
+            elif data_buffer.type == 1:
+                Logger.debug('Writer: Key Action Export Initialized')
+            elif data_buffer.type == 2:
+                Logger.debug('Writer: System Area Export Initialized')
+            elif data_buffer.type == 3:
+                Logger.debug('Writer: Module Export Initialized')
+            elif data_buffer.type == 4:
+                Logger.debug('Writer: Product Export Initialized')
+            elif data_buffer.type == 5:
+                Logger.debug('Writer: Client Export Initialized')
+            elif data_buffer.type == 6:
+                Logger.debug('Writer: Project Export Initialized')
+            elif data_buffer.type == 7:
+                Logger.debug('Writer: Test Script Export Initialized')
+            elif data_buffer.type == 8:
+                Logger.debug('Writer: Workflow Export Initialized')
+            elif data_buffer.type == 9:
+                Logger.debug('Writer: Workflow Action Export Initialized')
+            elif data_buffer.type == 10:
+                Logger.debug('Writer: Input Parameter Export Initialized')
+            elif data_buffer.type == 11:
+                Logger.debug('Writer: Workflow Parameter Export Initialized')
+            elif data_buffer.type == 12:
+                Logger.debug('Writer: Workflow Next Action Export Initialized')
+            elif data_buffer.type == 13:
+                Logger.debug('Writer: Flowchart Export Initialized')
+            
+            #Finish with the data
+            stream.task_done()
     
 class CSVWriter():
     
     def write(stream):
-        pass
+        while stream.empty() == False:
+            #Retrieve the top value from the queue
+            data = stream.get()
+            
+            #Write the data to the CSV File
+            if data_buffer.type == 0:
+                #The buffer data type is not assigned, perform no operations
+                Logger.debug('Writer: Buffer Data Type not assigned')
+            elif data_buffer.type == 1:
+                Logger.debug('Writer: Key Action Export Initialized')
+            elif data_buffer.type == 2:
+                Logger.debug('Writer: System Area Export Initialized')
+            elif data_buffer.type == 3:
+                Logger.debug('Writer: Module Export Initialized')
+            elif data_buffer.type == 4:
+                Logger.debug('Writer: Product Export Initialized')
+            elif data_buffer.type == 5:
+                Logger.debug('Writer: Client Export Initialized')
+            elif data_buffer.type == 6:
+                Logger.debug('Writer: Project Export Initialized')
+            elif data_buffer.type == 7:
+                Logger.debug('Writer: Test Script Export Initialized')
+            elif data_buffer.type == 8:
+                Logger.debug('Writer: Workflow Export Initialized')
+            elif data_buffer.type == 9:
+                Logger.debug('Writer: Workflow Action Export Initialized')
+            elif data_buffer.type == 10:
+                Logger.debug('Writer: Input Parameter Export Initialized')
+            elif data_buffer.type == 11:
+                Logger.debug('Writer: Workflow Parameter Export Initialized')
+            elif data_buffer.type == 12:
+                Logger.debug('Writer: Workflow Next Action Export Initialized')
+            elif data_buffer.type == 13:
+                Logger.debug('Writer: Flowchart Export Initialized')
+            
+            #Finish with the data
+            stream.task_done()
 #------------------------------------------------------------
 #----------------Main App------------------------------------
 #------------------------------------------------------------
