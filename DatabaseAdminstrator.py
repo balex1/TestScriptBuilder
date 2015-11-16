@@ -293,18 +293,72 @@ class DataBuffer():
 #----------------Translator Classes--------------------------
 #------------------------------------------------------------
 
+class Translator():
+    #Translator base class that the other translators inherit from
+    #One translator per file
+
+    #The user should override the process and next_section methods for the
+    #individual translator classes.  These are pulled into the translate method
+    #which is called by the end user
+
+    #File type = 0 is Key Action
+    #File type = 1 is Workflow
+    
+    def __init__(self, inp_file, file_type, output_stream, stream_size):
+        #Internal variables based on input
+        self.input_file = inp_file
+        self.type = file_type
+        self.output_queue = output_stream
+        self.stream_size = stream_size
+        
+        #Internal variables not visible to user
+        self.last_read = 0
+        self.sections = []
+        self.last_section = -1
+        self.section_finished = False
+        self.translation_finished= False
+        
+        #Create Sections based on data buffer types
+        if file_type == 0:
+            self.sections = [4, 3, 2, 1, 10]
+        elif file_type == 1:
+            self.sections = [5, 6, 7, 8, 9, 11, 12, 13]
+        
+    #Should be called at beginning of overwritten method
+    def next_section():
+        if self.last_section < len(self.sections) - 1:
+            self.last_section+=1
+        else:
+            self.translation_finished = True
+            return True
+        
+    #Should be called at beginning of overwritten method
+    #In the method the user should control the section_finished flag
+    def process():
+        if self.section_finished == True:
+            self.next_section()
+        #User should implement the rest of this method for each individual translator
+    
+    def translate():
+        self.process()
+        
+
 #Translator classes accept an external file as an output and
 #creates data buffers to be processed in batches & writes the
 #buffers to queues on the data stream
 
-class CSVTranslator():
-    #One translator per file
-    last_read=0
+class CSVTranslator(Translator):
     
-    def __init__(self, inp_file):
-        self.input_file=inp_file
+    def __init__(self, inp_file, file_type, output_stream, stream_size):
+        super(CSVTranslator, self).__init__(**kwargs)
+        #Each entry on the CSV List will start with an integer from 1-13
+        #corresponding to the type of the data buffer created
+        self.current_type = 0
+        
+    def next_section():
+        super(CSVTranslator, self).next_section(**kwargs)
     
-    def translate(data_type, output_stream, stream_size):
+    def process():
         with open(self.input_file, 'rb') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             j=0
@@ -312,22 +366,28 @@ class CSVTranslator():
             for row in reader:
                 Logger.debug('Row returned: %s' % (row))
                 if j - i < stream_size and j >= i:
+                    #Check for the type of the data buffer
+                    if row[0] != self.current_type:
+                        self.next_section()
+                        self.current_type = row[0]
+
+                    #Create the data buffer
                     buf = DataBuffer()
                     for col in row:
                         buf.append(col)
-                    buf.type = data_type
+                    buf.type = self.current_type
                     output_stream.put(buf)
                     j+=1
             self.last_read+=stream_size
     
-class ExcelTranslator():
+class ExcelTranslator(Translator):
     #One translator per sheet
-    last_read=0
     alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
     sheet_name=''
     
-    def __init__(self, input_file):
-        self.wb = load_workbook(filename = input_file)
+    def __init__(self, inp_file):
+        super(ExcelTranslator, self).__init__(**kwargs)
+        self.wb = load_workbook(filename = self.input_file)
         
     def get_sheets(self):
         return self.wb.get_sheet_names()
@@ -335,7 +395,7 @@ class ExcelTranslator():
     def set_sheet(self, sheet):
         self.sheet_name = sheet
     
-    def translate(data_type, data_length, output_stream, stream_size):
+    def process(data_type, data_length, output_stream, stream_size):
         reader = self.wb.get_sheet_by_name(self.sheet_name)
         i = self.last_read
         j = 0
@@ -347,18 +407,18 @@ class ExcelTranslator():
             buf.type = data_type
             output_stream.put(buf)
     
-class ExternalDBTranslator():
+class ExternalDBTranslator(Translator):
     #One translator per DB
     #Use on one table at a time, finish, then call reset()
-    last_read=0
     
-    def __init__(self, db_path):
-        con = lite.connect(db_path)
+    def __init__(self, inp_file):
+        super(ExternalDBTranslator, self).__init__(**kwargs)
+        con = lite.connect(self.input_file)
         
     def reset(self):
         self.last_read=0
     
-    def translate(data_type, table_name, order_by_column_name, output_stream, stream_size):
+    def process(data_type, table_name, order_by_column_name, output_stream, stream_size):
         with self.con:
             cur = self.con.cursor()
             cur.execute("SELECT * FROM ? ORDER_BY ? LIMIT ? OFFSET ?", (table_name, order_by_column_name, stream_size, self.last_read))
@@ -370,18 +430,17 @@ class ExternalDBTranslator():
                 buf.type = data_type
                 output_stream.put(buf)
                 
-class InternalDBTranslator():
+class InternalDBTranslator(Translator):
     #Singleton
     #Use on one table at a time, finish, then call reset()
-    last_read=0
     
     def __init__(self):
-        pass
+        super(InternalDBTranslator, self).__init__(**kwargs)
     
     def reset(self):
         self.last_read = 0
     
-    def translate(data_type, table, output_stream, stream_size):
+    def process(data_type, table, output_stream, stream_size):
         rows = session.query(table).order_by(table.id)[self.last_read:self.last_read+stream_size]
         for row in rows:
             buf = DataBuffer()
@@ -452,25 +511,26 @@ def validate(buffer_stream, data_buffer):
 #This uses Batches
 
 class DataStream():
-    buffer_stream = Queue(maxsize=0)
-    error_stream = Queue(maxsize=0)
-    result_stream = Queue(maxsize=0)
+    def __init__(self):
+        self.buffer_stream = Queue(maxsize=0)
+        self.error_stream = Queue(maxsize=0)
+        self.result_stream = Queue(maxsize=0)
     
     def stream():
-        while buffer_stream.empty() == False:
+        while self.buffer_stream.empty() == False:
             
             #Retrieve the top value from the queue
-            data = buffer_stream.get()
+            data = self.buffer_stream.get()
             
             #Validate the buffer
             validate(data)
             
             #If there is an error on the buffer, move it to the error stream
             if data.status==4:
-                error_stream.put(data)
+                self.error_stream.put(data)
             #Else, put it to the result stream
             else:
-                result_stream.put(data)
+                self.result_stream.put(data)
 
 #------------------------------------------------------------
 #----------------DB Writer-----------------------------------
@@ -481,9 +541,9 @@ class DataStream():
 class DBWriter():
     
     def write(stream):
-        while stream.empty() == False:
+        while stream.result_stream.empty() == False:
             #Retrieve the top value from the queue
-            data_buffer = stream.get()
+            data_buffer = stream.result_stream.get()
             
             #Write the data to the DB
             if data_buffer.type == 0:
@@ -517,7 +577,7 @@ class DBWriter():
                 Logger.debug('Writer: Flowchart Export Initialized')
             
             #Finish with the data
-            stream.task_done()
+            stream.result_stream.task_done()
 
 #------------------------------------------------------------
 #----------------Export Writers------------------------------
@@ -527,8 +587,11 @@ class DBWriter():
 
 class ExcelWriter():
     
+    def __init__(self, inp_file):
+        self.input_file=inp_file
+    
     def write(stream):
-        while stream.empty() == False:
+        while stream.result_stream.empty() == False:
             #Retrieve the top value from the queue
             data_buffer = stream.get()
             
@@ -564,14 +627,15 @@ class ExcelWriter():
                 Logger.debug('Writer: Flowchart Export Initialized')
             
             #Finish with the data
-            stream.task_done()
+            stream.result_stream.task_done()
 
 class TerminalWriter():
+    #The error logger
     
     def write(stream):
-        while stream.empty() == False:
+        while stream.error_stream.empty() == False:
             #Retrieve the top value from the queue
-            data = stream.get()
+            data = stream.error_stream.get()
             
             #Write the data to the Terminal
             if data_buffer.type == 0:
@@ -605,14 +669,17 @@ class TerminalWriter():
                 Logger.debug('Writer: Flowchart Export Initialized')
             
             #Finish with the data
-            stream.task_done()
+            stream.error_stream.task_done()
     
 class CSVWriter():
     
+    def __init__(self, inp_file):
+        self.input_file=inp_file
+    
     def write(stream):
-        while stream.empty() == False:
+        while stream.result_stream.empty() == False:
             #Retrieve the top value from the queue
-            data = stream.get()
+            data = stream.result_stream.get()
             
             #Write the data to the CSV File
             if data_buffer.type == 0:
@@ -646,7 +713,7 @@ class CSVWriter():
                 Logger.debug('Writer: Flowchart Export Initialized')
             
             #Finish with the data
-            stream.task_done()
+            stream.result_stream.task_done()
 #------------------------------------------------------------
 #----------------Main App------------------------------------
 #------------------------------------------------------------
@@ -691,24 +758,68 @@ class DatabaseApp(App):
      
     def FindDestinationPopup(self, *args):
          Logger.debug('Find Destination Popup')
-         popup = Popup(title='Source', content=DestinationFileChooserPopup(app=self), size_hint=(0.5, 0.75))
+         popup = Popup(title='Destination', content=DestinationFileChooserPopup(app=self), size_hint=(0.5, 0.75))
          self.root.pop_up = popup
          popup.open()
      
     def RunMigration(self, *args):
          Logger.debug('Run Migration')
          
-         #Create Translators
-         
          #Create Data Stream
+         stream = DataStream()
          
-         #Create Writers
+         #Create Translators & Writers
          
+         #If the direction is 'Import', assign the writer to the Internal DB Writer
+         #If it's 'Export', assign the importer to the Internal DB Importer
+         if self.root.ids.direction_spinner.text == 'Import':
+             writer = DBWriter()
+             
+             #Find the importer
+             if self.root.ids.translator_spinner.text == 'CSV':
+                 importer = CSVTranslator(input_file=self.root.ids.source_input.text)
+             elif self.root.ids.translator_spinner.text == 'Excel':
+                 importer = ExcelTranslator(input_file=self.root.ids.source_input.text)
+             elif self.root.ids.translator_spinner.text == 'DB':
+                 importer = ExternalDBTranslator(db_path=self.root.ids.source_input.text)
+             else:
+                 Logger.debug('Nothing Selected')
+                 return True
+                 #Nothing selected
+         elif self.root.ids.direction_spinner.text == 'Export':
+             importer = InternalDBTranslator()
+             
+             #Find the writer
+             if self.root.ids.translator_spinner.text == 'CSV':
+                 writer = CSVWriter(input_file=self.root.ids.destination_input.text)
+             elif self.root.ids.translator_spinner.text == 'Excel':
+                 writer = ExcelWriter(input_file=self.root.ids.destination_input.text)
+             else:
+                 Logger.debug('Nothing Selected')
+                 return True
+                 #Nothing selected
+                 
+         else:
+             #No direction selected
+             Logger.debug('Nothing Selected')
+             return True
+        
+         log_writer = TerminalWriter()
+
+         #TO-DO: How do we know when to stop
+
+         #Single Iteration
          #Run Translations
+         importer.translate()
          
          #Run Validations
+         stream.stream()
          
          #Run Writer
+         writer.write(stream)
+         
+         #Run Error Writer
+         log_writer.write(stream)
          
     def UpdateDirection(self, *args):
          Logger.debug('Update Direction')
