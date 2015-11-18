@@ -283,6 +283,10 @@ class DataBuffer():
     def set_error(self, error_message):
         self.error = error_message
         self.status = 4
+		
+	def add_error(self, error_message):
+		self.error.append(error_message)
+		self.status = 4
         
     def clear_error(self):
         del self.error[:]
@@ -334,7 +338,7 @@ class Translator():
         
     #Should be called at beginning of overwritten method
     #In the method the user should control the section_finished flag
-    def process():
+    def process(self, data_type, data_length, output_stream, stream_size):
         if self.section_finished == True:
             self.next_section()
         #User should implement the rest of this method for each individual translator
@@ -354,17 +358,18 @@ class CSVTranslator(Translator):
         #Each entry on the CSV List will start with an integer from 1-13
         #corresponding to the type of the data buffer created
         self.current_type = 0
+		self.reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         
-    def next_section():
+    def next_section(self):
         super(CSVTranslator, self).next_section(**kwargs)
     
-    def process():
+    def process(self, data_type, data_length, output_stream, stream_size):
         with open(self.input_file, 'rb') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             j=0
             i=self.last_read
-            for row in reader:
+            for row in self.reader:
                 Logger.debug('Row returned: %s' % (row))
+				super(CSVTranslator, self).process(**kwargs)
                 if j - i < stream_size and j >= i:
                     #Check for the type of the data buffer
                     if row[0] != self.current_type:
@@ -381,29 +386,37 @@ class CSVTranslator(Translator):
             self.last_read+=stream_size
     
 class ExcelTranslator(Translator):
-    #One translator per sheet
-    alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-    sheet_name=''
     
     def __init__(self, inp_file):
         super(ExcelTranslator, self).__init__(**kwargs)
         self.wb = load_workbook(filename = self.input_file)
-        
-    def get_sheets(self):
-        return self.wb.get_sheet_names()
-        
-    def set_sheet(self, sheet):
-        self.sheet_name = sheet
+		self.alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+		self.current_sheet = 0
+		self.sheets = self.wb.get_sheet_names()
+		self.sheet_name = self.sheets[self.current_sheet]
+		
+	def next_section(self):
+		super(ExcelTranslator, self).next_section(**kwargs)
+        self.last_row = 0
+		
+		#Move to the next excel sheet
+		self.current_sheet+=1
+		self.sheet_name = self.sheets[self.current_sheet]
     
-    def process(data_type, data_length, output_stream, stream_size):
+    def process(self, data_type, data_length, output_stream, stream_size):
         reader = self.wb.get_sheet_by_name(self.sheet_name)
         i = self.last_read
         j = 0
         for i in range(self.last_read, self.last_read+stream_size):
-            Logger.debug('Row returned: %s' % (j))
+            Logger.debug('Row returned: %s' % (i))
+			super(ExcelTranslator, self).process(**kwargs)
             buf = DataBuffer()
-            for j in range(0, data_length):
-                buf.append(reader['%s%s' % (alphabet_list[j], i)])
+			start_element = self.wb['%s1' % (alphabet_list[i])]
+			if start_element != '':
+            	for j in range(0, data_length):
+                	buf.append(start_element)
+			else:
+				self.section_finished = True
             buf.type = data_type
             output_stream.put(buf)
     
