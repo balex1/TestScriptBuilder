@@ -129,22 +129,7 @@ class ExcelTranslator(Translator):
             buf.type = self.type
             self.output_stream.put(buf)
     
-    #1 is key action
-        #2 is system area
-        #3 is module
-        #4 is product
-        #5 is client
-        #6 is project
-        #7 is testscript
-        #8 is workflow
-        #9 is workflow action
-        #10 is input parameter
-        #11 is workflow parameter
-        #12 is workflow next action
-        #13 is flowchart
 class ExternalDBTranslator(Translator):
-    #One translator per DB
-    #Use on one table at a time, finish, then call reset()
     
     def __init__(self, inp_file, file_type, output_stream, stream_size):
         super(ExternalDBTranslator, self).__init__(**kwargs)
