@@ -2,6 +2,7 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 import csv
 import sqlite3 as lite
+from DataBuffer import DataBuffer
 
 #Translator classes accept an external file as an output and
 #creates data buffers to be processed in batches & writes the
@@ -39,7 +40,7 @@ class Translator():
             self.sections = [5, 6, 7, 8, 9, 11, 12, 13]
         
     #Should be called at beginning of overwritten method
-    def next_section():
+    def next_section(self):
         if self.last_section < len(self.sections) - 1:
             self.last_section+=1
         else:
@@ -48,14 +49,14 @@ class Translator():
         
     #Should be called at beginning of overwritten method
     #In the method the user should control the section_finished flag
-    def process(self, data_type, data_length, output_stream, stream_size):
+    def process(self):
         if self.section_finished == True:
             self.next_section()
         #User should implement the rest of this method for each individual translator
     
-    def translate():
+    def translate(self):
         self.process()
-		
+        
 
 class CSVTranslator(Translator):
     
@@ -64,19 +65,18 @@ class CSVTranslator(Translator):
         #Each entry on the CSV List will start with an integer from 1-13
         #corresponding to the type of the data buffer created
         self.current_type = 0
-		self.reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        self.reader = csv.reader(inp_file, delimiter=',', quotechar='|')
         
     def next_section(self):
         super(CSVTranslator, self).next_section(**kwargs)
     
-    def process(self, data_type, data_length, output_stream, stream_size):
+    def process(self):
         with open(self.input_file, 'rb') as csvfile:
             j=0
             i=self.last_read
             for row in self.reader:
-                Logger.debug('Row returned: %s' % (row))
-				super(CSVTranslator, self).process(**kwargs)
-                if j - i < stream_size and j >= i:
+                super(CSVTranslator, self).process(**kwargs)
+                if j - i < self.stream_size and j >= i:
                     #Check for the type of the data buffer
                     if row[0] != self.current_type:
                         self.next_section()
@@ -87,65 +87,95 @@ class CSVTranslator(Translator):
                     for col in row:
                         buf.append(col)
                     buf.type = self.current_type
-                    output_stream.put(buf)
+                    self.output_queue.put(buf)
                     j+=1
-            self.last_read+=stream_size
+            self.last_read+=self.stream_size
     
 class ExcelTranslator(Translator):
     
-    def __init__(self, inp_file):
+    def __init__(self, inp_file, file_type, output_stream, stream_size):
         super(ExcelTranslator, self).__init__(**kwargs)
         self.wb = load_workbook(filename = self.input_file)
-		self.alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-		self.current_sheet = 0
-		self.sheets = self.wb.get_sheet_names()
-		self.sheet_name = self.sheets[self.current_sheet]
-		
-	def next_section(self):
-		super(ExcelTranslator, self).next_section(**kwargs)
-        self.last_row = 0
-		
-		#Move to the next excel sheet
-		self.current_sheet+=1
-		self.sheet_name = self.sheets[self.current_sheet]
+        self.alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        self.current_sheet = 0
+        self.sheets = self.wb.get_sheet_names()
+        self.sheet_name = self.sheets[self.current_sheet]
+        
+    def next_section(self):
+        super(ExcelTranslator, self).next_section(**kwargs)
+        self.last_read = 0
+        
+        #Move to the next excel sheet
+        self.current_sheet+=1
+        self.sheet_name = self.sheets[self.current_sheet]
     
-    def process(self, data_type, data_length, output_stream, stream_size):
+    def process(self):
         reader = self.wb.get_sheet_by_name(self.sheet_name)
         i = self.last_read
         j = 0
-        for i in range(self.last_read, self.last_read+stream_size):
-            Logger.debug('Row returned: %s' % (i))
-			super(ExcelTranslator, self).process(**kwargs)
+        for i in range(self.last_read, self.last_read+self.stream_size):
+            super(ExcelTranslator, self).process(**kwargs)
             buf = DataBuffer()
-			start_element = self.wb['%s1' % (alphabet_list[i])]
-			if start_element != '':
-            	for j in range(0, data_length):
-                	buf.append(start_element)
-			else:
-				self.section_finished = True
-            buf.type = data_type
-            output_stream.put(buf)
+            start_element = reader['%s1' % (self.alphabet_list[i])]
+            
+            #TO-DO: Calculate Data Length
+            data_length = 0
+            
+            if start_element != '':
+                for j in range(0, data_length):
+                    buf.append(reader['%s%s' % (self.alphabet_list[i], j))
+            else:
+                self.section_finished = True
+            buf.type = self.type
+            self.output_stream.put(buf)
     
-	
+    #1 is key action
+        #2 is system area
+        #3 is module
+        #4 is product
+        #5 is client
+        #6 is project
+        #7 is testscript
+        #8 is workflow
+        #9 is workflow action
+        #10 is input parameter
+        #11 is workflow parameter
+        #12 is workflow next action
+        #13 is flowchart
 class ExternalDBTranslator(Translator):
     #One translator per DB
     #Use on one table at a time, finish, then call reset()
     
-    def __init__(self, inp_file):
+    def __init__(self, inp_file, file_type, output_stream, stream_size):
         super(ExternalDBTranslator, self).__init__(**kwargs)
-        con = lite.connect(self.input_file)
-        
-    def reset(self):
+        self.con = lite.connect(self.input_file)
+        #Key Action
+        if self.type == 0:
+            self.tables = ['Product', 'Module', 'SystemArea', 'KeyAction', 'InputParameter']
+        else:
+            self.tables = ['Client', 'Project', 'TestScript', 'Workflow', 'WorkflowAction', 'WorkflowNextAction', 'WorkflowParameter', 'Flowchart']
+        self.current_table = 0
+        self.table_name = self.tables[self.current_table]
+
+    def next_section(self):
+        super(ExternalDBTranslator, self).next_section(**kwargs)
         self.last_read=0
+        
+        #Move to the next table
+        self.current_table+=1
+        self.table_name = self.tables[self.current_table]
     
-    def process(data_type, table_name, order_by_column_name, output_stream, stream_size):
+    def process(self):
         with self.con:
             cur = self.con.cursor()
-            cur.execute("SELECT * FROM ? ORDER_BY ? LIMIT ? OFFSET ?", (table_name, order_by_column_name, stream_size, self.last_read))
+            cur.execute("SELECT * FROM ? ORDER_BY Id LIMIT ? OFFSET ?", (self.table_name, stream_size, self.last_read))
             rows = cur.fetchall()
-            for row in rows:
-                buf = DataBuffer()
-                for col in row:
-                    buf.append(col)
-                buf.type = data_type
-                output_stream.put(buf)
+            if rows is None:
+                self.section_finished = True
+            else:
+                for row in rows:
+                    buf = DataBuffer()
+                    for col in row:
+                        buf.append(col)
+                    buf.type = data_type
+                    output_stream.put(buf)

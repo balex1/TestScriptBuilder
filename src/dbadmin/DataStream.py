@@ -1,4 +1,5 @@
-from Queue import Queue
+from queue import Queue
+from Validator import Validator
 
 #------------------------------------------------------------
 #----------------Data Stream---------------------------------
@@ -13,15 +14,16 @@ class DataStream():
         self.buffer_stream = Queue(maxsize=0)
         self.error_stream = Queue(maxsize=0)
         self.result_stream = Queue(maxsize=0)
+        self.val = Validator()
     
-    def stream():
+    def stream(self):
         while self.buffer_stream.empty() == False:
             
             #Retrieve the top value from the queue
             data = self.buffer_stream.get()
             
             #Validate the buffer
-            validate(data)
+            self.val.validate(self.buffer_stream, data)
             
             #If there is an error on the buffer, move it to the error stream
             if data.status==4:

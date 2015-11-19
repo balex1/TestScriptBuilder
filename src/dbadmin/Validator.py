@@ -19,36 +19,36 @@
 #13 is flowchart
 class Validator():
 
-	def validate(buffer_stream, data_buffer):
+	def validate(self, buffer_stream, data_buffer):
 		#Run validations
 		if data_buffer.type == 0:
 			#The buffer data type is not assigned, perform no operations
-			Logger.debug('Validations: Buffer Data Type not assigned')
+			print('Validations: Buffer Data Type not assigned')
 		elif data_buffer.type == 1:
-			Logger.debug('Validations: Key Action Validation Initialized')
+			print('Validations: Key Action Validation Initialized')
 		elif data_buffer.type == 2:
-			Logger.debug('Validations: System Area Validation Initialized')
+			print('Validations: System Area Validation Initialized')
 		elif data_buffer.type == 3:
-			Logger.debug('Validations: Module Validation Initialized')
+			print('Validations: Module Validation Initialized')
 		elif data_buffer.type == 4:
-			Logger.debug('Validations: Product Validation Initialized')
+			print('Validations: Product Validation Initialized')
 		elif data_buffer.type == 5:
-			Logger.debug('Validations: Client Validation Initialized')
+			print('Validations: Client Validation Initialized')
 		elif data_buffer.type == 6:
-			Logger.debug('Validations: Project Validation Initialized')
+			print('Validations: Project Validation Initialized')
 		elif data_buffer.type == 7:
-			Logger.debug('Validations: Test Script Validation Initialized')
+			print('Validations: Test Script Validation Initialized')
 		elif data_buffer.type == 8:
-			Logger.debug('Validations: Workflow Validation Initialized')
+			print('Validations: Workflow Validation Initialized')
 		elif data_buffer.type == 9:
-			Logger.debug('Validations: Workflow Action Validation Initialized')
+			print('Validations: Workflow Action Validation Initialized')
 		elif data_buffer.type == 10:
-			Logger.debug('Validations: Input Parameter Validation Initialized')
+			print('Validations: Input Parameter Validation Initialized')
 		elif data_buffer.type == 11:
-			Logger.debug('Validations: Workflow Parameter Validation Initialized')
+			print('Validations: Workflow Parameter Validation Initialized')
 		elif data_buffer.type == 12:
-			Logger.debug('Validations: Workflow Next Action Validation Initialized')
+			print('Validations: Workflow Next Action Validation Initialized')
 		elif data_buffer.type == 13:
-			Logger.debug('Validations: Flowchart Validation Initialized')
+			print('Validations: Flowchart Validation Initialized')
 			
 		buffer_stream.task_done()

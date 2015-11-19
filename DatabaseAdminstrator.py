@@ -17,13 +17,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from Queue import Queue
-
 from src.dbadmin.Translator import CSVTranslator, ExcelTranslator, ExternalDBTranslator
 from src.dbadmin.DataBuffer import DataBuffer
 from src.dbadmin.Writer import CSVWriter, ExcelWriter, TerminalWriter
 from src.dbadmin.DataStream import DataStream
-from src.dbadmin.Validator import Validator
 
 import os.path
 import platform
