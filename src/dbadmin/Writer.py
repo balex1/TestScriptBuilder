@@ -2,6 +2,21 @@
 #----------------Export Writers------------------------------
 #------------------------------------------------------------
 
+#0 is not assigned
+#1 is product
+#2 is module
+#3 is system area
+#4 is key action
+#5 is client
+#6 is input parameter
+#7 is project
+#8 is testscript
+#9 is workflow
+#10 is workflow action
+#11 is workflow next action
+#12 is workflow parameter
+#13 is flowchart
+
 #Export Writers catch the data stream and write results out to external files
 
 class ExcelWriter():

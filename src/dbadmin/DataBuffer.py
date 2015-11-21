@@ -24,18 +24,18 @@ class DataBuffer():
         
         #The type of the data buffer
         #0 is not assigned
-        #1 is key action
-        #2 is system area
-        #3 is module
-        #4 is product
+        #1 is product
+        #2 is module
+        #3 is system area
+        #4 is key action
         #5 is client
-        #6 is project
-        #7 is testscript
-        #8 is workflow
-        #9 is workflow action
-        #10 is input parameter
-        #11 is workflow parameter
-        #12 is workflow next action
+        #6 is input parameter
+        #7 is project
+        #8 is testscript
+        #9 is workflow
+        #10 is workflow action
+        #11 is workflow next action
+        #12 is workflow parameter
         #13 is flowchart
         self.type = 0
     

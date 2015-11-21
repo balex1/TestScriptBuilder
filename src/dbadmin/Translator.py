@@ -18,6 +18,9 @@ class Translator():
 
     #File type = 0 is Key Action
     #File type = 1 is Workflow
+
+    #Stream Size is approximate - each translator implements it differently but uses
+    #the input value as a guideline
     
     def __init__(self, inp_file, file_type, output_stream, stream_size):
         #Internal variables based on input
@@ -35,9 +38,11 @@ class Translator():
         
         #Create Sections based on data buffer types
         if file_type == 0:
-            self.sections = [4, 3, 2, 1, 10]
+            self.sections = [1, 2, 3, 4, 5]
         elif file_type == 1:
-            self.sections = [5, 6, 7, 8, 9, 11, 12, 13]
+            self.sections = [6, 7, 8, 9, 10, 11, 12, 13]
+            
+        print('Translator base initialized')
         
     #Should be called at beginning of overwritten method
     def next_section(self):
@@ -46,6 +51,10 @@ class Translator():
         else:
             self.translation_finished = True
             return True
+            
+        self.section_finished = False
+            
+        print('Translator base Next Section Called')
         
     #Should be called at beginning of overwritten method
     #In the method the user should control the section_finished flag
@@ -53,81 +62,123 @@ class Translator():
         if self.section_finished == True:
             self.next_section()
         #User should implement the rest of this method for each individual translator
+        print('Translator base Process called')
     
     def translate(self):
+        print('Translator base Translate called')
         self.process()
         
 
 class CSVTranslator(Translator):
     
     def __init__(self, inp_file, file_type, output_stream, stream_size):
-        super(CSVTranslator, self).__init__(**kwargs)
+        Translator.__init__(self, inp_file, file_type, output_stream, stream_size)
         #Each entry on the CSV List will start with an integer from 1-13
         #corresponding to the type of the data buffer created
         self.current_type = 0
-        self.reader = csv.reader(inp_file, delimiter=',', quotechar='|')
+        print('CSVTranslator Intialized')
         
     def next_section(self):
-        super(CSVTranslator, self).next_section(**kwargs)
+        print('CSVTranslator Next Section Called')
+        Translator.next_section(self)
     
     def process(self):
+        print('CSVTranslator Process Called')
         with open(self.input_file, 'rb') as csvfile:
+            self.reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            #Counter to reset on next section
+            k=0
+            
+            #Process Counter
             j=0
+            
+            #Last Read
             i=self.last_read
+            
+            
             for row in self.reader:
-                super(CSVTranslator, self).process(**kwargs)
+                
                 if j - i < self.stream_size and j >= i:
                     #Check for the type of the data buffer
                     if row[0] != self.current_type:
                         self.next_section()
                         self.current_type = row[0]
-
-                    #Create the data buffer
-                    buf = DataBuffer()
-                    for col in row:
-                        buf.append(col)
-                    buf.type = self.current_type
-                    self.output_queue.put(buf)
-                    j+=1
+                        print('Current Type set to %s' % (self.current_type))
+                        k=0
+                    else:
+                        k+=1
+                        
+                        #Create the data buffer
+                        buf = DataBuffer()
+                        print('Data buffer initialized')
+                        skipfirst = 0
+                        for col in row:
+                            if skipfirst != 0:
+                                buf.append(col)
+                                print('%s appended to data buffer' % (col))
+                            skipfirst+=1
+                        buf.type = self.current_type
+                        print('Buffer type set to %s' % (self.current_type))
+                        self.output_queue.put(buf)
+                        print('Buffer written to queue')
+                j+=1
             self.last_read+=self.stream_size
+            print('Last read set to %s' % (self.last_read))
     
 class ExcelTranslator(Translator):
     
     def __init__(self, inp_file, file_type, output_stream, stream_size):
-        super(ExcelTranslator, self).__init__(**kwargs)
+        Translator.__init__(self, inp_file, file_type, output_stream, stream_size)
         self.wb = load_workbook(filename = self.input_file)
         self.alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
         self.current_sheet = 0
         self.sheets = self.wb.get_sheet_names()
         self.sheet_name = self.sheets[self.current_sheet]
+        self.last_read = 1
         
     def next_section(self):
-        super(ExcelTranslator, self).next_section(**kwargs)
-        self.last_read = 0
+        Translator.next_section(self)
+        self.last_read = 2
         
         #Move to the next excel sheet
-        self.current_sheet+=1
-        self.sheet_name = self.sheets[self.current_sheet]
+        if self.type == 0:
+            sheet_limit = 4
+        else:
+            sheet_limit = 8
+        if self.current_sheet < sheet_limit:
+            self.current_sheet+=1
+            self.sheet_name = self.sheets[self.current_sheet]
+        else:
+            self.translation_finished = True
     
     def process(self):
-        reader = self.wb.get_sheet_by_name(self.sheet_name)
-        i = self.last_read
-        j = 0
-        for i in range(self.last_read, self.last_read+self.stream_size):
-            super(ExcelTranslator, self).process(**kwargs)
-            buf = DataBuffer()
-            start_element = reader['%s1' % (self.alphabet_list[i])]
-            
-            #TO-DO: Calculate Data Length
-            data_length = 0
-            
-            if start_element != '':
-                for j in range(0, data_length):
-                    buf.append(reader['%s%s' % (self.alphabet_list[i], j))
-            else:
-                self.section_finished = True
-            buf.type = self.type
-            self.output_stream.put(buf)
+        counter=0
+        while counter < self.stream_size and self.translation_finished == False:
+            Translator.process(self)
+            reader = self.wb.get_sheet_by_name(self.sheet_name)
+            skipfirst = 0
+            for row in reader.rows:
+                if skipfirst != 0:
+                    buf = DataBuffer()
+                    start_element = row[0].value
+                    
+                    #If the row is not empty, populate and push the data buffer
+                    if start_element != '' and start_element is not None:
+                        for col in row:
+                            if col.value != '' and col.value is not None:
+                                buf.append(col.value)
+                            if self.type == 0:
+                                buf.type = self.current_sheet+1
+                            else:
+                                but.type = self.current_sheet+6
+                        self.output_queue.put(buf)
+                    #If the row is empty, flip the section finished flag
+                    else:
+                        self.section_finished = True
+                    counter+=1
+                skipfirst+=1
+            self.last_read+=self.stream_size
+            self.section_finished = True
     
 class ExternalDBTranslator(Translator):
     
@@ -162,5 +213,8 @@ class ExternalDBTranslator(Translator):
                     buf = DataBuffer()
                     for col in row:
                         buf.append(col)
-                    buf.type = data_type
+                    if self.type == 0:
+                        buf.type = self.current_table+1
+                    else:
+                        buf.type = self.current_table+6
                     output_stream.put(buf)

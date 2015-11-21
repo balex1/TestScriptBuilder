@@ -1,4 +1,8 @@
-from queue import Queue
+#Queue module name differs on Windows vs Unix
+try:
+    from Queue import Queue
+except:
+    from queue import Queue
 from Validator import Validator
 
 #------------------------------------------------------------

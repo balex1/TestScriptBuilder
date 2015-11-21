@@ -25,30 +25,30 @@ class Validator():
 			#The buffer data type is not assigned, perform no operations
 			print('Validations: Buffer Data Type not assigned')
 		elif data_buffer.type == 1:
-			print('Validations: Key Action Validation Initialized')
+			pass
 		elif data_buffer.type == 2:
-			print('Validations: System Area Validation Initialized')
+			pass
 		elif data_buffer.type == 3:
-			print('Validations: Module Validation Initialized')
+			pass
 		elif data_buffer.type == 4:
-			print('Validations: Product Validation Initialized')
+			pass
 		elif data_buffer.type == 5:
-			print('Validations: Client Validation Initialized')
+			pass
 		elif data_buffer.type == 6:
-			print('Validations: Project Validation Initialized')
+			pass
 		elif data_buffer.type == 7:
-			print('Validations: Test Script Validation Initialized')
+			pass
 		elif data_buffer.type == 8:
-			print('Validations: Workflow Validation Initialized')
+			pass
 		elif data_buffer.type == 9:
-			print('Validations: Workflow Action Validation Initialized')
+			pass
 		elif data_buffer.type == 10:
-			print('Validations: Input Parameter Validation Initialized')
+			pass
 		elif data_buffer.type == 11:
-			print('Validations: Workflow Parameter Validation Initialized')
+			pass
 		elif data_buffer.type == 12:
-			print('Validations: Workflow Next Action Validation Initialized')
+			pass
 		elif data_buffer.type == 13:
-			print('Validations: Flowchart Validation Initialized')
+			pass
 			
 		buffer_stream.task_done()
