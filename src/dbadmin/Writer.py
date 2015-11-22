@@ -24,7 +24,7 @@ class ExcelWriter():
     def __init__(self, inp_file):
         self.input_file=inp_file
     
-    def write(stream):
+    def write(self, stream):
         while stream.result_stream.empty() == False:
             #Retrieve the top value from the queue
             data_buffer = stream.get()
@@ -66,7 +66,7 @@ class ExcelWriter():
 class TerminalWriter():
     #The error logger
     
-    def write(stream):
+    def write(self, stream):
         while stream.error_stream.empty() == False:
             #Retrieve the top value from the queue
             data_buffer = stream.error_stream.get()
@@ -74,33 +74,39 @@ class TerminalWriter():
             #Write the data to the Terminal
             if data_buffer.type == 0:
                 #The buffer data type is not assigned, perform no operations
-                print('Writer: Buffer Data Type not assigned')
+                print('Writer: Buffer Data Type not assigned Error Encountered')
             elif data_buffer.type == 1:
-                print('Writer: Key Action Export Initialized')
+                print('Writer: Product Error Encountered')
             elif data_buffer.type == 2:
-                print('Writer: System Area Export Initialized')
+                print('Writer: Module Error Encountered')
             elif data_buffer.type == 3:
-                print('Writer: Module Export Initialized')
+                print('Writer: System Area Error Encountered')
             elif data_buffer.type == 4:
-                print('Writer: Product Export Initialized')
+                print('Writer: Key Action Error Encountered')
             elif data_buffer.type == 5:
-                print('Writer: Client Export Initialized')
+                print('Writer: Input Parameter Error Encountered')
             elif data_buffer.type == 6:
-                print('Writer: Project Export Initialized')
+                print('Writer: Client Error Encountered')
             elif data_buffer.type == 7:
-                print('Writer: Test Script Export Initialized')
+                print('Writer: Project Error Encountered')
             elif data_buffer.type == 8:
-                print('Writer: Workflow Export Initialized')
+                print('Writer: Test Script Error Encountered')
             elif data_buffer.type == 9:
-                print('Writer: Workflow Action Export Initialized')
+                print('Writer: Workflow Error Encountered')
             elif data_buffer.type == 10:
-                print('Writer: Input Parameter Export Initialized')
+                print('Writer: Workflow Action Error Encountered')
             elif data_buffer.type == 11:
-                print('Writer: Workflow Parameter Export Initialized')
+                print('Writer: Workflow Next Action Error Encountered')
             elif data_buffer.type == 12:
-                print('Writer: Workflow Next Action Export Initialized')
+                print('Writer: Workflow Parameter Error Encountered')
             elif data_buffer.type == 13:
-                print('Writer: Flowchart Export Initialized')
+                print('Writer: Flowchart Error Encountered')
+                
+            for d in data_buffer.data:
+                print('%s' % (d))
+                
+            for e in data_buffer.error:
+                print('%s' % (e))
             
             #Finish with the data
             stream.error_stream.task_done()
@@ -110,7 +116,7 @@ class CSVWriter():
     def __init__(self, inp_file):
         self.input_file=inp_file
     
-    def write(stream):
+    def write(self, stream):
         while stream.result_stream.empty() == False:
             #Retrieve the top value from the queue
             data_buffer = stream.result_stream.get()

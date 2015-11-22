@@ -21,6 +21,7 @@
 			Spinner:
 				id: translator_spinner
 				values: ('CSV', 'Excel', 'DB')
+				on_text: app.UpdateTranslator(self, args[0])
 		GridLayout:
 			cols: 2
 			size_hint: 1, 0.2

@@ -449,6 +449,80 @@ class Tester():
         print('Stream Pushed')
         
         #Pull the buffers off the result stream for validation (later, for writing)
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 1)
+        assert(buf.data[1] == 'TMS')
+        assert(buf.type == 1)
+        stream.result_stream.task_done()
+        print('Buffer 1 checked')
+        
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 2)
+        assert(buf.data[1] == 'WMOS')
+        assert(buf.type == 1)
+        stream.result_stream.task_done()
+        print('Buffer 2 checked')
+        
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 3)
+        assert(buf.data[1] == 'MIF')
+        assert(buf.type == 1)
+        stream.result_stream.task_done()
+        print('Buffer 3 checked')
+        
+        assert(stream.result_stream.empty() == True)
+        
+        #Pull Results from the CSV Files into the data stream
+        translator.translate()
+        print('Translation Done')
+        
+        #Pull the data buffers through the data stream
+        stream.stream()
+        print('Stream Pushed')
+        
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 1)
+        assert(buf.data[1] == 1)
+        assert(buf.data[2] == 'TP&E')
+        assert(buf.type == 2)
+        stream.result_stream.task_done()
+        print('Buffer 4 checked')
+        
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 2)
+        assert(buf.data[1] == 1)
+        assert(buf.data[2] == 'FAP')
+        assert(buf.type == 2)
+        stream.result_stream.task_done()
+        print('Buffer 5 checked')
+        
+        assert(stream.result_stream.empty() == False)
+        buf = stream.result_stream.get()
+        for d in buf.data:
+            print(d)
+        assert(buf.data[0] == 3)
+        assert(buf.data[1] == 1)
+        assert(buf.data[2] == 'Order Management')
+        assert(buf.type == 2)
+        stream.result_stream.task_done()
+        print('Buffer 6 checked')
+        
+        assert(stream.result_stream.empty() == True)
     
     def run_tests(self):
         
@@ -467,8 +541,7 @@ class Tester():
         #Fail
         #self.test_odf_translator()
         
-        #TO-DO
-        #self.test_db_translator()
+        self.test_db_translator()
 
 if __name__ == '__main__':
     Tester().run_tests()

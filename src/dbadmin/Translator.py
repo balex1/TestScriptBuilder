@@ -40,7 +40,7 @@ class Translator():
         if file_type == 0:
             self.sections = [1, 2, 3, 4, 5]
         elif file_type == 1:
-            self.sections = [6, 7, 8, 9, 10, 11, 12, 13]
+            self.sections = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
             
         print('Translator base initialized')
         
@@ -183,32 +183,40 @@ class ExcelTranslator(Translator):
 class ExternalDBTranslator(Translator):
     
     def __init__(self, inp_file, file_type, output_stream, stream_size):
-        super(ExternalDBTranslator, self).__init__(**kwargs)
-        self.con = lite.connect(self.input_file)
+        Translator.__init__(self, inp_file, file_type, output_stream, stream_size)
         #Key Action
         if self.type == 0:
             self.tables = ['Product', 'Module', 'SystemArea', 'KeyAction', 'InputParameter']
         else:
-            self.tables = ['Client', 'Project', 'TestScript', 'Workflow', 'WorkflowAction', 'WorkflowNextAction', 'WorkflowParameter', 'Flowchart']
+            self.tables = ['Product', 'Module', 'SystemArea', 'KeyAction', 'InputParameter', 'Client', 'Project', 'TestScript', 'Workflow', 'WorkflowAction', 'WorkflowNextAction', 'WorkflowParam', 'Flowchart']
         self.current_table = 0
         self.table_name = self.tables[self.current_table]
 
     def next_section(self):
-        super(ExternalDBTranslator, self).next_section(**kwargs)
+        Translator.next_section(self)
         self.last_read=0
         
         #Move to the next table
-        self.current_table+=1
-        self.table_name = self.tables[self.current_table]
+        if self.type == 0:
+            table_limit = 4
+        else:
+            table_limit = 12
+        if self.current_table < table_limit:
+            self.current_table+=1
+            self.table_name = self.tables[self.current_table]
+        else:
+            self.translation_finished = True
     
     def process(self):
+        self.con = lite.connect(self.input_file)
         with self.con:
             cur = self.con.cursor()
-            cur.execute("SELECT * FROM ? ORDER_BY Id LIMIT ? OFFSET ?", (self.table_name, stream_size, self.last_read))
+            cur.execute("SELECT * FROM {} LIMIT ? OFFSET ?".format(self.table_name), (self.stream_size, self.last_read))
             rows = cur.fetchall()
-            if rows is None:
+            self.last_read+=len(rows)
+            if len(rows) < self.stream_size:
                 self.section_finished = True
-            else:
+            if rows is not None and len(rows) != 0:
                 for row in rows:
                     buf = DataBuffer()
                     for col in row:
@@ -216,5 +224,6 @@ class ExternalDBTranslator(Translator):
                     if self.type == 0:
                         buf.type = self.current_table+1
                     else:
-                        buf.type = self.current_table+6
-                    output_stream.put(buf)
+                        buf.type = self.current_table+1
+                    self.output_queue.put(buf)
+            Translator.process(self)

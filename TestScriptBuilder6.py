@@ -82,6 +82,8 @@ class Module(Base):
     productid = Column(Integer, ForeignKey('product.id'))
     name = Column(String)
     
+    mod = relationship("Product", backref=backref('module', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    
     def __repr_(self):
         return "<Module: ID = '%s', Name = '%s', Product = %s>" % (self.id, self.name, self.productid)
     
