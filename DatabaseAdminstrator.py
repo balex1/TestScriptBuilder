@@ -187,7 +187,7 @@ class Project(Base):
     clientid = Column(Integer, ForeignKey('client.id'))
     name = Column(String)
     
-    mod = relationship("Client", backref=backref('project', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    mod = relationship("Client", backref=backref('project', order_by=id))
     
     def __repr_(self):
         return "<Project: ID = '%s', Client ID = '%s', Name = '%s'>" % (self.id, self.clientid, self.name)
@@ -212,7 +212,7 @@ class TestScript(Base):
     projectid = Column(Integer, ForeignKey('project.id'))
     name = Column(String)
     
-    mod = relationship("Project", backref=backref('testscript', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    mod = relationship("Project", backref=backref('testscript', order_by=id))
     
     def __repr_(self):
         return "<Test Script: ID = '%s', Project ID = '%s', Name = '%s'>" % (self.id, self.projectid, self.name)
@@ -237,7 +237,7 @@ class Workflow(Base):
     testscriptid = Column(Integer, ForeignKey('testscript.id'))
     name = Column(String)
     
-    mod = relationship("TestScript", backref=backref('workflow', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    mod = relationship("TestScript", backref=backref('workflow', order_by=id))
     
     def __repr_(self):
         return "<System Area: ID = '%s', Module ID = '%s', Name = '%s'>" % (self.id, self.moduleid, self.name)
@@ -265,7 +265,7 @@ class WorkflowAction(Base):
     fail = Column(Boolean)
     
     ka = relationship("KeyAction", backref=backref('workflowaction', order_by=id), single_parent=True)
-    wf = relationship("Workflow", backref=backref('workflowaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    wf = relationship("Workflow", backref=backref('workflowaction', order_by=id))
     
     def __repr_(self):
         return "<Workflow Action: ID = '%s', Key Action ID = '%s', Expected Results = '%s', Notes = '%s', Fail = '%s'>" % (self.id, self.keyactionid, self.expectedresult, self.notes, self.fail)
@@ -289,7 +289,7 @@ class WorkflowNextAction(Base):
     keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
     nextactionid = Column(Integer)
     
-    act = relationship("WorkflowAction", backref=backref('workflownextaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    act = relationship("WorkflowAction", backref=backref('workflownextaction', order_by=id))
     
     def __repr_(self):
         return "<Workflow Next Action: ID = '%s', Key Action ID = '%s', Next Action ID = '%s'>" % (self.id, self.keyactionid, self.nextactionid)
@@ -314,7 +314,7 @@ class WorkflowParameter(Base):
     keyactionid = Column(Integer, ForeignKey('workflowaction.id'))
     value = Column(String)
     
-    act = relationship("WorkflowAction", backref=backref('workflowparam', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    act = relationship("WorkflowAction", backref=backref('workflowparam', order_by=id))
     ip = relationship("InputParameter", backref=backref('workflowparam', order_by=id), single_parent=True)
     
     def __repr_(self):
@@ -340,7 +340,7 @@ class FlowchartPosition(Base):
     row = Column(Integer)
     col = Column(Integer)
     
-    act = relationship("WorkflowAction", backref=backref('flowchart', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    act = relationship("WorkflowAction", backref=backref('flowchart', order_by=id))
 
 class FlowchartPositionImport(Base):
     __tablename__ = 'flowchart_import'
@@ -471,15 +471,24 @@ class DBWriter():
                 else:
                     #Find the product for the new module
                     prod = session.query(Product).join(ProductImport).\
-                        filter(ProductImport.id == data_buffer.data[1]).all()
+                        filter(ProductImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new module
-                    mod = Module()
-                    mod.name = data_buffer.data[2]
-                    mod.productid = prod[0].id
-                    session.add(mod)
-                    session.commit()
-                    imp.moduleid = mod.id
+                    if prod is not None and len(prod) != 0:
+                        
+                        #Make a new module
+                        mod = Module()
+                        mod.name = data_buffer.data[2]
+                        mod.productid = prod[0].id
+                        session.add(mod)
+                        session.commit()
+                        imp.moduleid = mod.id
+                    
+                    else:
+                        #If the product import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Product not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -502,15 +511,23 @@ class DBWriter():
                 else:
                     #Find the module for the new system area
                     mod = session.query(Module).join(ModuleImport).\
-                        filter(ModuleImport.id == data_buffer.data[1]).all()
+                        filter(ModuleImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new system area
-                    sa = SystemArea()
-                    sa.name = data_buffer.data[2]
-                    sa.moduleid = mod[0].id
-                    session.add(sa)
-                    session.commit()
-                    imp.systemareaid = sa.id
+                    if mod is not None and len(mod) != 0:
+                        
+                        #Make a new system area
+                        sa = SystemArea()
+                        sa.name = data_buffer.data[2]
+                        sa.moduleid = mod[0].id
+                        session.add(sa)
+                        session.commit()
+                        imp.systemareaid = sa.id
+                    else:
+                        #If the module import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Module not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -542,24 +559,33 @@ class DBWriter():
                 else:
                     #Find the system area for the new key action
                     sa = session.query(SystemArea).join(SystemAreaImport).\
-                        filter(SystemAreaImport.id == data_buffer.data[1]).all()
+                        filter(SystemAreaImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new key action
-                    ka = KeyAction()
-                    ka.name = data_buffer.data[2]
-                    ka.systemareaid = sa[0].id
-                    ka.name = data_buffer.data[2]
-                    ka.description = data_buffer.data[3]
-                    if data_buffer.data[4] == 0 or data_buffer.data[4] == '0'\
-                        or data_buffer.data[4] == False or data_buffer.data[4] == 'False'\
-                            or data_buffer.data[4] is None or data_buffer.data[4] == '':
-                                
-                        ka.custom = False
+                    if sa is not None and len(sa) != 0:
+                        
+                        #Make a new key action
+                        ka = KeyAction()
+                        ka.name = data_buffer.data[2]
+                        ka.systemareaid = sa[0].id
+                        ka.name = data_buffer.data[2]
+                        ka.description = data_buffer.data[3]
+                        if data_buffer.data[4] == 0 or data_buffer.data[4] == '0'\
+                            or data_buffer.data[4] == False or data_buffer.data[4] == 'False'\
+                                or data_buffer.data[4] is None or data_buffer.data[4] == '':
+                                    
+                            ka.custom = False
+                        else:
+                            ka.custom = True
+                        session.add(ka)
+                        session.commit()
+                        imp.keyactionid = ka.id
+                        
                     else:
-                        ka.custom = True
-                    session.add(ka)
-                    session.commit()
-                    imp.keyactionid = ka.id
+                        #If the system area import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import System Area not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -582,15 +608,24 @@ class DBWriter():
                 else:
                     #Find the key action for the new input parameter
                     ka = session.query(KeyAction).join(KeyActionImport).\
-                        filter(KeyActionImport.id == data_buffer.data[1]).all()
+                        filter(KeyActionImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new input paramter
-                    ip = InputParameter()
-                    ip.name = data_buffer.data[2]
-                    ip.keyactionid = ka[0].id
-                    session.add(ip)
-                    session.commit()
-                    imp.keyactionid = ip.id
+                    if ka is not None and len(ka) != 0:
+                        
+                        #Make a new input paramter
+                        ip = InputParameter()
+                        ip.name = data_buffer.data[2]
+                        ip.keyactionid = ka[0].id
+                        session.add(ip)
+                        session.commit()
+                        imp.keyactionid = ip.id
+                        
+                    else:
+                        #If the key action import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Key Action not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -639,13 +674,21 @@ class DBWriter():
                     cl = session.query(Client).join(ClientImport).\
                         filter(ClientImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new project
-                    pr = Project()
-                    pr.name = data_buffer.data[2]
-                    pr.clientid = cl[0].id
-                    session.add(pr)
-                    session.commit()
-                    imp.projectid = pr.id
+                    if cl is not None and len(cl) != 0:
+                        
+                        #Make a new project
+                        pr = Project()
+                        pr.name = data_buffer.data[2]
+                        pr.clientid = cl[0].id
+                        session.add(pr)
+                        session.commit()
+                        imp.projectid = pr.id
+                    else:
+                        #If the client import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Client not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -669,13 +712,21 @@ class DBWriter():
                     pr = session.query(Project).join(ProjectImport).\
                         filter(ProjectImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new test script
-                    ts = TestScript()
-                    ts.name = data_buffer.data[2]
-                    ts.projectid = pr[0].id
-                    session.add(ts)
-                    session.commit()
-                    imp.testscriptid = ts.id
+                    if pr is not None and len(pr) != 0:
+                        
+                        #Make a new test script
+                        ts = TestScript()
+                        ts.name = data_buffer.data[2]
+                        ts.projectid = pr[0].id
+                        session.add(ts)
+                        session.commit()
+                        imp.testscriptid = ts.id
+                    else:
+                        #If the project import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Project not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -695,18 +746,47 @@ class DBWriter():
                         
                 if result is not None and len(result) != 0:
                     imp.workflowid = result[0].id
+                    #Remove the workflow actions from the workflow and replace them
+                    wfas = session.query(WorkflowAction).join(Workflow).filter(Workflow.id == result[0].id)
+                    for wfa in wfas:
+                    
+                        #Clear the next actions, flowchart positions, and workflow parameters from the workflow action
+                        #This allows for a full replace when doing dataloaders of these
+                        #lower level objects while updating on matches with higher level
+                        #objects
+                        
+                        na = session.query(WorkflowNextAction).join(WorkflowAction).filter(WorkflowAction.id == wfa.id)
+                        fc = session.query(FlowchartPosition).join(WorkflowAction).filter(WorkflowAction.id == wfa.id)
+                        wp = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id == wfa.id)
+                        
+                        for n in na:
+                            session.delete(n)
+                        for f in fc:
+                            session.delete(f)
+                        for w in wp:
+                            session.delete(w)
+                        session.delete(wfa)
+                    session.commit()
                 else:
                     #Find the test script for the new workflow
                     ts = session.query(TestScript).join(TestScriptImport).\
-                        filter(TestScriptImport.id == data_buffer.data[1]).all()
+                        filter(TestScriptImport.importid == data_buffer.data[1]).all()
                         
-                    #Make a new workflow
-                    wf = Workflow()
-                    wf.name = data_buffer.data[2]
-                    wf.testscriptid = ts[0].id
-                    session.add(wf)
-                    session.commit()
-                    imp.workflowid = wf.id
+                    if ts is not None and len(ts) != 0:
+                        
+                        #Make a new workflow
+                        wf = Workflow()
+                        wf.name = data_buffer.data[2]
+                        wf.testscriptid = ts[0].id
+                        session.add(wf)
+                        session.commit()
+                        imp.workflowid = wf.id
+                    else:
+                        #If the Test Script import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Test Script not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 
                 session.add(imp)
                 session.commit()
@@ -719,50 +799,41 @@ class DBWriter():
                 imp = WorkflowActionImport()
                 imp.importid = data_buffer.data[0]
                 
-                #Does the workflow action already exist in the DB?
-                result = session.query(WorkflowAction).join(WorkflowActionImport).\
-                    join(Workflow).join(WorkflowImport).join(KeyAction).join(KeyActionImport).\
-                        filter(KeyActionImport.importid == '%s' % (data_buffer.data[2])).\
-                            filter(WorkflowImport.importid == data_buffer.data[1]).all()
-                        
-                if result is not None and len(result) != 0:
-                    imp.workflowactionid = result[0].id
+                #Does the workflow action already exist in the DB? No
+
+                #Find the workfow for the new workflow action
+                wf = session.query(Workflow).join(WorkflowImport).\
+                    filter(WorkflowImport.importid == data_buffer.data[2]).all()
                     
-                    #Clear the next actions, flowchart positions, and workflow parameters from the workflow action
-                    #This allows for a full replace when doing dataloaders of these
-                    #lower level objects while updating on matches with higher level
-                    #objects
+                #Find the key action for the new workflow action
+                ka = session.query(KeyAction).join(KeyActionImport).\
+                    filter(KeyActionImport.importid == data_buffer.data[1]).all()
                     
-                    na = session.query(WorkflowNextAction).join(WorkflowAction).filter(WorkflowAction.id == result[0].id)
-                    fc = session.query(FlowchartPosition).join(WorkflowAction).filter(WorkflowAction.id == result[0].id)
-                    wp = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id == result[0].id)
+                if wf is not None and len(wf) != 0:
+                    if ka is not None and len(ka) != 0:
                     
-                    for n in na:
-                        session.delete(n)
-                    for f in fc:
-                        session.delete(f)
-                    for w in wp:
-                        session.delete(w)
-                    
+                        #Make a new workflow action
+                        wfa = WorkflowAction()
+                        wfa.keyactionid = ka[0].id
+                        wfa.workflowid = wf[0].id
+                        wfa.expectedresult = data_buffer.data[3]
+                        wfa.notes = data_buffer.data[4]
+                        wfa.fail = data_buffer.data[5]
+                        session.add(wfa)
+                        session.commit()
+                        imp.workflowactionid = wfa.id
+                    else:
+                        #If the key action import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('Import Key Action not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
                 else:
-                    #Find the workfow for the new workflow action
-                    wf = session.query(Workflow).join(WorkflowImport).\
-                        filter(WorkflowImport.importid == data_buffer.data[2]).all()
-                        
-                    #Find the key action for the new workflow action
-                    ka = session.query(KeyAction).join(KeyActionImport).\
-                        filter(KeyActionImport.importid == data_buffer.data[1]).all()
-                        
-                    #Make a new workflow action
-                    wfa = WorkflowAction()
-                    wfa.keyactionid = ka[0].id
-                    wfa.workflowid = wf[0].id
-                    wfa.expectedresult = data_buffer.data[3]
-                    wfa.notes = data_buffer.data[4]
-                    wfa.fail = data_buffer.data[5]
-                    session.add(wfa)
-                    session.commit()
-                    imp.workflowactionid = wfa.id
+                    #If the Workflow import can't be found, then the buffer should be
+                    #added to the error queue and the method exited
+                    data_buffer.add_error('Import Workflow not found in DB')
+                    stream.error_stream.put(data_buffer)
+                    return True
                 
                 session.add(imp)
                 session.commit()
@@ -786,13 +857,29 @@ class DBWriter():
                 wfa2 = session.query(WorkflowAction).join(WorkflowActionImport).\
                     filter(WorkflowActionImport.importid == data_buffer.data[2]).all()
                     
-                #Make a new workflow next action
-                wfna = WorkflowNextAction()
-                wfna.keyactionid = wfa[0].id
-                wfna.nextactionid = wfa2[0].id
-                session.add(wfna)
-                session.commit()
-                imp.workflownextactionid = wfna.id
+                if wfa is not None and len(wfa) != 0:
+                    if wfa2 is not None and len(wfa2) != 0:
+                    
+                        #Make a new workflow next action
+                        wfna = WorkflowNextAction()
+                        wfna.keyactionid = wfa[0].id
+                        wfna.nextactionid = wfa2[0].id
+                        session.add(wfna)
+                        session.commit()
+                        imp.workflownextactionid = wfna.id
+                        
+                    else:
+                        #If the first workflow action import can't be found, then the buffer should be
+                        #added to the error queue and the method exited
+                        data_buffer.add_error('First Import Workflow Action not found in DB')
+                        stream.error_stream.put(data_buffer)
+                        return True
+                else:
+                    #If the second workflow action import can't be found, then the buffer should be
+                    #added to the error queue and the method exited
+                    data_buffer.add_error('Second Import Workflow Action not found in DB')
+                    stream.error_stream.put(data_buffer)
+                    return True
                 
                 session.add(imp)
                 session.commit()
@@ -810,17 +897,32 @@ class DBWriter():
                 
                 if len(ips) != 0 and ips is not None:
                     ip = ips[0]
+                else:
+                    #If the workflow parameter import can't be found, then the buffer should be
+                    #added to the error queue and the method exited
+                    data_buffer.add_error('Import Workflow Parameter not found in DB')
+                    stream.error_stream.put(data_buffer)
+                    return True
                     
                     #Does the workflow parameter already exist in the DB?
                     #We can assume no, and clear the workflow next actions & replce them
 
                     #Find the workfow action for the new workflow parameter
-                wfa = session.query(WorkflowAction).join(WorkflowActionImport).\
+                wfas = session.query(WorkflowAction).join(WorkflowActionImport).\
                     filter(WorkflowActionImport.importid == data_buffer.data[1]).all()
+                    
+                if wfas is not None and len(wfa) != 0:
+                    wfa = wfas[0]
+                else:
+                    #If the product import can't be found, then the buffer should be
+                    #added to the error queue and the method exited
+                    data_buffer.add_error('Import Product not found in DB')
+                    stream.error_stream.put(data_buffer)
+                    return True
                     
                 #Make a new workflow parameter
                 wfp = WorkflowNextAction()
-                wfp.keyactionid = wfa[0].id
+                wfp.keyactionid = wfa.id
                 wfp.inputparameterid = ip.id
                 wfp.value = data_buffer.data[3]
                 session.add(wfp)
@@ -844,19 +946,28 @@ class DBWriter():
                 wfa = session.query(WorkflowAction).join(WorkflowActionImport).\
                     filter(WorkflowActionImport.importid == data_buffer.data[1]).all()
                     
-                #Make a new flowchart position
-                fp = FlowchartPosition()
-                fp.keyactionid = wfa[0].id
-                fp.row = data_buffer.data[2]
-                fp.col = data_buffer.data[3]
-                session.add(fp)
-                session.commit()
-                imp.flowchartpositionid = fp.id
+                if wfa is not None and len(wfa) != 0:
+                    
+                    #Make a new flowchart position
+                    fp = FlowchartPosition()
+                    fp.keyactionid = wfa[0].id
+                    fp.row = data_buffer.data[2]
+                    fp.col = data_buffer.data[3]
+                    session.add(fp)
+                    session.commit()
+                    imp.flowchartpositionid = fp.id
+                else:
+                    #If the workflow action import can't be found, then the buffer should be
+                    #added to the error queue and the method exited
+                    data_buffer.add_error('Import Workflow Action not found in DB')
+                    stream.error_stream.put(data_buffer)
+                    return True
                 
                 session.add(imp)
                 session.commit()
             
             #Finish with the data
+            data_buffer.next_status()
             stream.result_stream.task_done()
 
 #------------------------------------------------------------
@@ -972,8 +1083,8 @@ class DatabaseApp(App):
              #Run Writer
              writer.write(stream)
              
-             #Run Error Writer
-             log_writer.write(stream)
+         #Run Error Writer
+         log_writer.write(stream)
              
          #DB Cleanup
              
@@ -1027,7 +1138,37 @@ class DatabaseApp(App):
                      
                  #Delete everything from the workflow import tables
                      
-                 pass
+                 cl = session.query(ClientImport).all()
+                 for c in cl:
+                     session.delete(c)
+                     
+                 pr = session.query(ProjectImport).all()
+                 for p in pr:
+                     session.delete(p)
+                     
+                 ts = session.query(TestScriptImport).all()
+                 for t in ts:
+                     session.delete(t)
+                     
+                 wf = session.query(WorkflowImport).all()
+                 for w in wf:
+                     session.delete(w)
+                     
+                 wfa = session.query(WorkflowActionImport).all()
+                 for a in wfa:
+                     session.delete(a)
+                     
+                 wfna = session.query(WorkflowNextActionImport).all()
+                 for na in wfna:
+                     session.delete(na)
+                     
+                 wfp = session.query(WorkflowParameterImport).all()
+                 for p in wfp:
+                     session.delete(p)
+                     
+                 fl = session.query(FlowchartPositionImport).all()
+                 for l in fl:
+                     session.delete(l)
              
              session.commit()
          

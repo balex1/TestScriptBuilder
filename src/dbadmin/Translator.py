@@ -118,6 +118,8 @@ class CSVTranslator(Translator):
                                 print('%s appended to data buffer' % (col))
                             skipfirst+=1
                         buf.type = self.current_type
+                        #The buffer has been translated
+                        buf.next_status()
                         print('Buffer type set to %s' % (self.current_type))
                         self.output_queue.put(buf)
                         print('Buffer written to queue')
@@ -171,6 +173,7 @@ class ExcelTranslator(Translator):
                                 buf.type = self.current_sheet+1
                             else:
                                 but.type = self.current_sheet+6
+                        buf.next_status()
                         self.output_queue.put(buf)
                     #If the row is empty, flip the section finished flag
                     else:
@@ -225,5 +228,6 @@ class ExternalDBTranslator(Translator):
                         buf.type = self.current_table+1
                     else:
                         buf.type = self.current_table+1
+                    buf.next_status()
                     self.output_queue.put(buf)
             Translator.process(self)
