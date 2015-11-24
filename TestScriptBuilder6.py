@@ -2238,9 +2238,14 @@ class TestScriptBuilderApp(App):
         else:
             prod_name = self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_text.text
             if len(prod_name) > 1 or prod_name[0].isupper():
-                prod = Product(name=prod_name)
-                session.add(prod)
-                session.commit()
+                prod_rows = session.query(Product).filter(Product.name == prod_name).all()
+                if prod_rows is None or len(prod_rows) == 0:
+                    prod = Product(name=prod_name)
+                    session.add(prod)
+                    session.commit()
+                    fprod = prod.name
+                else:
+                    fprod = prod_rows[0].name
                 self.root.get_screen('keyactiongroup').current_product = prod_name
             else:
                 lbl = Label(text='%s is not long enough or not capitalized' % (prod_name))
@@ -2417,10 +2422,31 @@ class TestScriptBuilderApp(App):
             cust = True
         else:
             cust = False
-
+            
+        mod_text = popup.content.module_in.text
+        sa_text = popup.content.sa_in.text
+        ka_text = popup.content.ka_in.text
+        desc_text = popup.content.desc_in.text
+        
+        if len(mod_text) < 2:
+            lbl = Label(text='Module Name not long enough')
+            er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+            return True
+        if len(sa_text) < 2:
+            lbl = Label(text='System Area Name not long enough')
+            er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+            return True
+        if len(ka_text) < 2:
+            lbl = Label(text='Key Action Name not long enough')
+            er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+            return True
+        if len(desc_text) < 2:
+            lbl = Label(text='Description Name not long enough')
+            er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+            return True
+            
         #Save Key Action
-        writer.SaveKeyAction(popup.content.module_in.text, popup.content.sa_in.text,\
-            popup.content.ka_in.text, popup.content.desc_in.text, cust, popup.content.ips)
+        writer.SaveKeyAction(mod_text, sa_text, ka_text, desc_text, cust, popup.content.ips)
             
         #Add to workflow
         ip = []
@@ -2496,6 +2522,28 @@ class TestScriptBuilderApp(App):
     def SaveTestScriptPopup(self, *args):
         Logger.debug('WF: Save Test Script Popup')
         popup = self.root.get_screen('workflow').pop_up
+        cl_text = popup.content.new_client.text
+        pr_text = popup.content.new_project.text
+        ts_text = popup.content.new_testscript.text
+        #Validations
+        if (popup.content.new_client.text is not None and popup.content.new_client.text != ""):
+            if len(cl_text) < 2:
+                lbl = Label(text='Client name is not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                er_popup.open()
+                return True
+        if (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
+            if len(cl_text) < 2:
+                lbl = Label(text='Project name is not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                er_popup.open()
+                return True
+        if (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
+            if len(cl_text) < 2:
+                lbl = Label(text='Test Script name is not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                er_popup.open()
+                return True
         
         #If-Else Block to determine whether we're creating new values or using 
         #old ones, or a combination of the two
@@ -3334,6 +3382,28 @@ class TestScriptBuilderApp(App):
         if len(selected_ids)>1:
             Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
             for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
+                mod_text = child.module_in.text
+                sa_text = child.sa_in.text
+                ka_text = child.ka_in.text
+                desc_text = child.desc_in.text
+                
+                if len(mod_text) < 2:
+                    lbl = Label(text='Module Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    return True
+                if len(sa_text) < 2:
+                    lbl = Label(text='System Area Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    return True
+                if len(ka_text) < 2:
+                    lbl = Label(text='Key Action Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    return True
+                if len(desc_text) < 2:
+                    lbl = Label(text='Description not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    return True
+            for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
             
                 orig_id_list = child.id_list
                 name_list = child.name_list
@@ -3344,6 +3414,29 @@ class TestScriptBuilderApp(App):
                 
         #If there is only one child, save it
         elif len(selected_ids) == 1:
+            
+            mod_text = child.module_in.text
+            sa_text = child.sa_in.text
+            ka_text = child.ka_in.text
+            desc_text = child.desc_in.text
+            
+            if len(mod_text) < 2:
+                lbl = Label(text='Module Name not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                return True
+            if len(sa_text) < 2:
+                lbl = Label(text='System Area Name not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                return True
+            if len(ka_text) < 2:
+                lbl = Label(text='Key Action Name not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                return True
+            if len(desc_text) < 2:
+                lbl = Label(text='Description not long enough')
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                return True
+            
             Logger.debug('QKA: Selected IDs Length 1')
             child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
             orig_id_list = child.id_list
@@ -3359,6 +3452,32 @@ class TestScriptBuilderApp(App):
                 #Only execute if there are elements in the carousel
                 Logger.debug('QKA: Elements exist in the carousel')
                 child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
+                
+                mod_text = child.module_in.text
+                sa_text = child.sa_in.text
+                ka_text = child.ka_in.text
+                desc_text = child.desc_in.text
+                
+                if len(mod_text) < 2:
+                    lbl = Label(text='Module Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    er_popup.open()
+                    return True
+                if len(sa_text) < 2:
+                    lbl = Label(text='System Area Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    er_popup.open()
+                    return True
+                if len(ka_text) < 2:
+                    lbl = Label(text='Key Action Name not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    er_popup.open()
+                    return True
+                if len(desc_text) < 2:
+                    lbl = Label(text='Description not long enough')
+                    er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                    er_popup.open()
+                    return True
                 
                 #Module
                 prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product).all()
