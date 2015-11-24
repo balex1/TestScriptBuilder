@@ -453,6 +453,15 @@ if len(seed_workflows) == 0:
     session.add(seed_workflow)
 else:
     seed_workflow = seed_workflows[0]
+    
+    
+#------------------------------------------------------------
+#----------------'Current' Variables-------------------------
+#------------------------------------------------------------
+
+current_client = 'Default'
+current_project = 'Default'
+current_script = 'Default'
 
 #------------------------------------------------------------
 #----------------Filter Manager------------------------------
@@ -486,28 +495,28 @@ class FilterManager():
         self.customEnabled = newcust
 
     #Pagination
-    def NextPage_KA(self, module, sysarea, keyaction, custom):
+    def NextPage_KA(self, module, sysarea, keyaction, custom, current_product):
         Logger.debug('Filter: Next Page')
         self.page = self.page + 1
         limit = ((self.page - 1) * self.pageLength)
         offset = self.pageLength + ((self.page - 1) * self.pageLength)
-        res = self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset)
+        res = self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset, current_product)
         Logger.debug('Filter: Filter Applied')
         if len(res) == 0:
             self.page = 1
             limit = ((self.page - 1) * self.pageLength)
             offset = self.pageLength + ((self.page - 1) * self.pageLength)
-            return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset)
+            return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset, current_product)
         else:
             return res
 
-    def PrevPage_KA(self, module, sysarea, keyaction, custom):
+    def PrevPage_KA(self, module, sysarea, keyaction, custom, current_product):
         Logger.debug('Filter: Previous Page')
         if self.page != 1:
             self.page = self.page - 1
         limit = ((self.page - 1) * self.pageLength)
         offset = self.pageLength + ((self.page - 1) * self.pageLength)
-        return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset)
+        return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset, current_product)
             
     #Utility Method
     def FirstPage(self):
@@ -515,13 +524,13 @@ class FilterManager():
         Logger.debug('Filter: First Page')
 
     #Filtering
-    def ApplyFilter(self, module, sysarea, keyaction, custom):
+    def ApplyFilter(self, module, sysarea, keyaction, custom, current_product):
         #Instantiate a session each time we need to connect to the DB
         self.pageLength = 20
         limit = ((self.page - 1) * self.pageLength)
         offset = self.pageLength + ((self.page - 1) * self.pageLength)
         Logger.debug('Filter: Key Action Filter Applied')
-        return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset)
+        return self.GetKeyActionResults(module, sysarea, keyaction, custom, limit, offset, current_product)
     
     def SimpleFilter(self):
         limit = ((self.page - 1) * self.pageLength)
@@ -698,75 +707,96 @@ class FilterManager():
             
         return results
         
-    def GetKeyActionResults(self, module, sysarea, keyaction, cust, limit, offset):
+    def GetKeyActionResults(self, module, sysarea, keyaction, cust, limit, offset, current_product):
         if self.customEnabled == True:
             if cust == 'False' or cust == False or cust == 0:
                 custom = 0
             else:
                 custom = 1
             if (module == "" or module is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.custom == custom).filter(Product.name == current_product).\
+                        order_by(KeyAction.id)[limit:offset]
                 
             elif (module == "" or module is None) and (sysarea == "" or sysarea is None):
-                results = session.query(KeyAction).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                     
             elif (module == "" or module is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                    filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Product.name == current_product).\
+                        filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                     
             elif (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(Module.name.like('%' + str(module) + '%')).\
-                    filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(Module.name.like('%' + str(module) + '%')).filter(Product.name == current_product).\
+                        filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                 
             elif (module == "" or module is None):
-                results = session.query(KeyAction).join(SystemArea).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
+                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Product.name == current_product).\
+                            filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                 
             elif (sysarea == "" or sysarea is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(Module.name.like('%' + str(module) + '%')).filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
+                        filter(Module.name.like('%' + str(module) + '%')).filter(Product.name == current_product).\
+                            filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                 
             elif (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                    filter(Module.name.like('%' + str(module) + '%')).filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
+                        filter(Module.name.like('%' + str(module) + '%')).filter(Product.name == current_product).\
+                            filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
                 
             else:
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Module.name.like('%' + str(module) + '%')).\
-                        filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Module.name.like('%' + str(module) + '%')).\
+                            filter(KeyAction.custom == custom).order_by(KeyAction.id)[limit:offset]
         else:
             if (module == "" or module is None) and (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).\
+                    join(Product).filter(Product.name == current_product).\
+                        order_by(KeyAction.id)[limit:offset]
                 
             elif (module == "" or module is None) and (sysarea == "" or sysarea is None):
-                results = session.query(KeyAction).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        order_by(KeyAction.id)[limit:offset]
                     
             elif (module == "" or module is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                    order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Product.name == current_product).\
+                        order_by(KeyAction.id)[limit:offset]
                     
             elif (sysarea == "" or sysarea is None) and (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(Module.name.like('%' + str(module) + '%')).\
-                    order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(Module.name.like('%' + str(module) + '%')).filter(Product.name == current_product).\
+                        order_by(KeyAction.id)[limit:offset]
                 
             elif (module == "" or module is None):
-                results = session.query(KeyAction).join(SystemArea).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).order_by(KeyAction.id)[limit:offset]
                 
             elif (sysarea == "" or sysarea is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(Module.name.like('%' + str(module) + '%')).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        filter(Module.name.like('%' + str(module) + '%')).order_by(KeyAction.id)[limit:offset]
                 
             elif (keyaction == "" or keyaction is None):
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(SystemArea.name.like('%' + str(sysarea) + '%')).\
-                    filter(Module.name.like('%' + str(module) + '%')).order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Product.name == current_product).\
+                        filter(Module.name.like('%' + str(module) + '%')).order_by(KeyAction.id)[limit:offset]
                 
             else:
-                results = session.query(KeyAction).join(SystemArea).join(Module).filter(KeyAction.name.like('%' + str(keyaction) + '%')).\
-                    filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Module.name.like('%' + str(module) + '%')).\
-                        order_by(KeyAction.id)[limit:offset]
+                results = session.query(KeyAction).join(SystemArea).join(Module).join(Product).\
+                    filter(KeyAction.name.like('%' + str(keyaction) + '%')).filter(Product.name == current_product).\
+                        filter(SystemArea.name.like('%' + str(sysarea) + '%')).filter(Module.name.like('%' + str(module) + '%')).\
+                            order_by(KeyAction.id)[limit:offset]
         return results
     
      #TO-DO: Update Query
@@ -1682,14 +1712,8 @@ Builder.load_file('kv/DBAdministrator.kv')
 Builder.load_file('kv/FileChooserPopup.kv')
 Logger.info('KV: KV Files Loaded')
 
-#Create the filter manager
-filter = FilterManager()
 #Create the DB Writer
 writer = DatabaseWriter()
-current_product = 'Default'
-current_client = 'Default'
-current_project = 'Default'
-current_script = 'Default'
 
 #Create the Selection List
 selected = []
@@ -1700,6 +1724,7 @@ selected_ids = []
 class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
     original_pop_up = ObjectProperty(None)
+    current_product = ObjectProperty(None)
 
 class WorkflowScreen(Screen):
     pop_up=ObjectProperty(None)
@@ -1814,6 +1839,13 @@ class SelectableButton(ToggleButton):
         else:
             self.selection = False
             selected.remove(self.text)
+        
+#------------------------------------------------------------
+#----------------Central App---------------------------------
+#------------------------------------------------------------
+
+#Create the filter manager
+filter = FilterManager()
 
 #Create the Screenmanager and add the Screens
 sm = ScreenManager()
@@ -1830,18 +1862,22 @@ class TestScriptBuilderApp(App):
         Logger.debug('Kivy: Set current Screen and return the ScreenManager')
         #Set the current page to key action and run a default filter
         sm.current = 'keyactiongroup'
-        filter.FirstPage()
-        prod_rows = session.query(Product).filter(Product.name == current_product).all()
-        if len(prod_rows) == 0:
-            prod = Product(name=current_product)
-            session.add(prod)
-            session.commit()
 
+        Clock.schedule_once(self.FirstFilter)
         return sm
         
 #----------------------------------------------------------
 #------------------DB Admin Callbacks----------------------
 #----------------------------------------------------------
+        
+    def FirstFilter(self, *args):
+        self.root.get_screen('keyactiongroup').current_product = 'Default'
+        filter.FirstPage()
+        prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product).all()
+        if len(prod_rows) == 0:
+            prod = Product(name=self.root.get_screen('keyactiongroup').current_product)
+            session.add(prod)
+            session.commit()
         
     def FindSourcePopup(self, *args):
          Logger.debug('Find Source Popup')
@@ -2194,14 +2230,23 @@ class TestScriptBuilderApp(App):
     def SaveProductPanel(self, *args):
         Logger.debug('Save Product Panel')
         
-        if self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text != '' and\
-            self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text is not None:
+        if self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text != '' or self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text is None:
             
-            current_product = self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text
+            self.root.get_screen('keyactiongroup').current_product = self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_spinner.text
+            Logger.debug('Current Product set from spinner')
             
         else:
-            current_product = self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_text.text
-
+            prod_name = self.root.get_screen('keyactiongroup').pop_up.content.ka_prodpanel.product_text.text
+            if len(prod_name) > 1 or prod_name[0].isupper():
+                prod = Product(name=prod_name)
+                session.add(prod)
+                session.commit()
+                self.root.get_screen('keyactiongroup').current_product = prod_name
+            else:
+                lbl = Label(text='%s is not long enough or not capitalized' % (prod_name))
+                er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
+                er_popup.open()
+            
     def AddAndNode(self, *args):
         Logger.debug('WF: Add And Node')
         
@@ -3022,7 +3067,7 @@ class TestScriptBuilderApp(App):
         del selected_ids[:]
         del selected[:]
         
-        results = filter.NextPage_KA(str(mod), str(sa), str(ka), str(cust))
+        results = filter.NextPage_KA(str(mod), str(sa), str(ka), str(cust), self.root.get_screen('keyactiongroup').current_product)
         i = 0
         for i in range(0, len(results)):
             sel = SelectableButton(text=str(results[i].name))
@@ -3042,7 +3087,7 @@ class TestScriptBuilderApp(App):
         del selected_ids[:]
         del selected[:]
         
-        results = filter.PrevPage_KA(str(mod), str(sa), str(ka), str(cust))
+        results = filter.PrevPage_KA(str(mod), str(sa), str(ka), str(cust), self.root.get_screen('keyactiongroup').current_product)
         i = 0
         for i in range(0, len(results)):
             sel = SelectableButton(text=str(results[i].name))
@@ -3063,7 +3108,7 @@ class TestScriptBuilderApp(App):
         del selected_ids[:]
         del selected[:]
         
-        results = filter.ApplyFilter(str(mod), str(sa), str(ka), str(cust))
+        results = filter.ApplyFilter(str(mod), str(sa), str(ka), str(cust), str(self.root.get_screen('keyactiongroup').current_product))
         i = 0
         for i in range(0, len(results)):
             sel = SelectableButton(text=str(results[i].name))
@@ -3316,7 +3361,7 @@ class TestScriptBuilderApp(App):
                 child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
                 
                 #Module
-                prod_rows = session.query(Product).filter(Product.name == current_product).all()
+                prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product).all()
                 rows = session.query(Module).filter(Module.name == child.module_in.text).all()
                 if len(rows) > 1:
                     raise KeyError('Business Key Violation in table module')
