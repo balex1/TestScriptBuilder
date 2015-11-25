@@ -61,7 +61,7 @@ class KeyAction(Base):
     description = Column(String)
     custom = Column(Boolean)
     
-    sys = relationship("SystemArea", backref=backref('keyaction', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    sys = relationship("SystemArea", backref=backref('keyaction', order_by=id))
     
     def __repr_(self):
         return "<Key Action: ID = '%s', System Area ID = '%s', Name = '%s', Description = '%s', Custom = '%s'>" % (self.id, self.systemareaid, self.name, self.description, self.custom)
@@ -86,7 +86,7 @@ class SystemArea(Base):
     moduleid = Column(Integer, ForeignKey('module.id'))
     name = Column(String)
     
-    mod = relationship("Module", backref=backref('systemarea', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    mod = relationship("Module", backref=backref('systemarea', order_by=id))
     
     def __repr_(self):
         return "<System Area: ID = '%s', Module ID = '%s', Name = '%s'>" % (self.id, self.moduleid, self.name)
@@ -111,7 +111,7 @@ class Module(Base):
     productid = Column(Integer, ForeignKey('product.id'))
     name = Column(String)
     
-    mod = relationship("Product", backref=backref('module', order_by=id), cascade="all, delete, delete-orphan", single_parent=True)
+    mod = relationship("Product", backref=backref('module', order_by=id))
     
     def __repr_(self):
         return "<Module: ID = '%s', Name = '%s', Product = %s>" % (self.id, self.name, self.productid)
@@ -1867,7 +1867,7 @@ class TestScriptBuilderApp(App):
         #Set the current page to key action and run a default filter
         sm.current = 'keyactiongroup'
 
-        Clock.schedule_once(self.FirstFilter)
+        Clock.schedule_once(self.AdvancedOptionsPopup_KAG)
         return sm
         
 #----------------------------------------------------------
@@ -1875,7 +1875,7 @@ class TestScriptBuilderApp(App):
 #----------------------------------------------------------
         
     def FirstFilter(self, *args):
-        self.root.get_screen('keyactiongroup').current_product = 'Default'
+        #self.root.get_screen('keyactiongroup').current_product = 'Default'
         self.root.get_screen('workflow').current_client = 'Default'
         self.root.get_screen('workflow').current_project = 'Default'
         self.root.get_screen('workflow').current_script = 'Default'
@@ -2262,6 +2262,7 @@ class TestScriptBuilderApp(App):
                 lbl = Label(text='%s is not long enough or not capitalized' % (prod_name))
                 er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
                 er_popup.open()
+        self.root.get_screen('keyactiongroup').pop_up.dismiss()
             
     def AddAndNode(self, *args):
         Logger.debug('WF: Add And Node')
@@ -2862,7 +2863,8 @@ class TestScriptBuilderApp(App):
         
         #Load the Key Actions for the flow
         keyactions = session.query(KeyAction).join(WorkflowAction).\
-            join(Workflow).filter(Workflow.name==current_workflow).all()
+            join(Workflow).join(TestScript).join(Project).join(Client).filter(Workflow.name==current_workflow).\
+                filter(TestScript.name==ts).filter(Project.name==pr).filter(Client.name==cl).all()
             
         #Load the Key Actions for the flowchart
         flowchart_actions = session.query(KeyAction.name, FlowchartPosition.col, FlowchartPosition.row).select_from(FlowchartPosition).\
@@ -2872,13 +2874,18 @@ class TestScriptBuilderApp(App):
         if len(flowchart_actions) != 0:            
             #Load the Next Key Actions for the flowchart
             next_actions = session.query(WorkflowNextAction).join(WorkflowAction).\
-                join(Workflow).filter(Workflow.name==current_workflow).all()
+                join(Workflow).join(TestScript).join(Project).join(Client).filter(Workflow.name==current_workflow).\
+                    filter(TestScript.name==ts).filter(Project.name==pr).filter(Client.name==cl).all()
                         
             #Identify the elements in the keyactions list that aren't in the flowchart_actions list
+            ka_list = []
             for action in keyactions:
+                match=False
                 for node in flowchart_actions:
                     if action.name == node.name:
-                        keyactions.remove(action)
+                        match=True
+                if match==False:
+                    ka_list.append(action)
                         
             #Populate the flowchart
                         
@@ -2889,8 +2896,12 @@ class TestScriptBuilderApp(App):
             
             #Connections
             for action in next_actions:
-                ka1 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.keyactionid).all()
-                ka2 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.nextactionid).all()
+                ka1 = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
+                    join(TestScript).join(Project).join(Client).filter(TestScript.name==ts).\
+                    filter(Project.name==pr).filter(Client.name==cl).filter(WorkflowAction.id == action.keyactionid).all()
+                ka2 = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
+                    join(TestScript).join(Project).join(Client).filter(TestScript.name==ts).\
+                    filter(Project.name==pr).filter(Client.name==cl).filter(WorkflowAction.id == action.nextactionid).all()
                 
                 for node in self.root.get_screen('workflow').drag_grid.nodes:
                     #Find the cnnected node
@@ -2905,7 +2916,7 @@ class TestScriptBuilderApp(App):
                         node.grid.connections[0].append(node)
                         node.grid.connections[1].append(connected_node)
         #Put each remaining element into the draggable list
-        for action in keyactions:
+        for action in ka_list:
             lbl = Label(text=action.name)
             
             drag_option = DraggableOption(img=lbl, app=self,\
