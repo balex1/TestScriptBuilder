@@ -2861,6 +2861,8 @@ class TestScriptBuilderApp(App):
         #Clear the current elements in the UI
         self.ClearWorkflow()
         
+        ka_list = []
+        
         #Load the Key Actions for the flow
         keyactions = session.query(KeyAction).join(WorkflowAction).\
             join(Workflow).join(TestScript).join(Project).join(Client).filter(Workflow.name==current_workflow).\
@@ -2878,7 +2880,6 @@ class TestScriptBuilderApp(App):
                     filter(TestScript.name==ts).filter(Project.name==pr).filter(Client.name==cl).all()
                         
             #Identify the elements in the keyactions list that aren't in the flowchart_actions list
-            ka_list = []
             for action in keyactions:
                 match=False
                 for node in flowchart_actions:
@@ -2915,6 +2916,10 @@ class TestScriptBuilderApp(App):
                         node.connections.append(connected_node)
                         node.grid.connections[0].append(node)
                         node.grid.connections[1].append(connected_node)
+        else:
+            for action in keyactions:
+                ka_list.append(action)
+        
         #Put each remaining element into the draggable list
         for action in ka_list:
             lbl = Label(text=action.name)
