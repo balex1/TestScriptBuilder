@@ -14,7 +14,7 @@ Windows Install
 
 2.	Find the Python Distribution shipped with your Kivy package (it’s located inside the Kivy folder, wherever you unzipped it to).  Copy the path to the python executable.
 
-3.	Open the command prompt.  Go to the directory to which you unzipped sqlalchemy and run the following command:
+3.	Open the command prompt & run the following command:
 
 a.	""Path_to_Python_Executable"\python.exe -m pip install sqlalchemy
 
