@@ -6,32 +6,45 @@ This is written in Python, leveraging the Kivy and SQLAlchemy libraries.
 
 More information to come.
 
-Dependency Installs:
+#Dependency Installs:
 
-Windows Install
+##Windows Install
 
-1.	Install the Kivy Portable Package for Python 2.7, following the install instructions here: http://kivy.org/docs/installation/installation-windows.html
+###Install Kivy
+1.	Install the Kivy Portable Package for Python 2.7, following the [install instructions](http://kivy.org/docs/installation/installation-windows.html)
 
-2.	Find the Python Distribution shipped with your Kivy package (it’s located inside the Kivy folder, wherever you unzipped it to).  Copy the path to the python executable.
+###Install SQLAlchemy
 
-3.	Open the command prompt.  Go to the directory to which you unzipped sqlalchemy and run the following command:
+1.	Find the Python Distribution shipped with your Kivy package (it’s located inside the Kivy folder, wherever you unzipped it to).  Copy the path to the python executable.
 
-a.	""Path_to_Python_Executable"\python.exe -m pip install sqlalchemy
+2.	Open the command prompt & run the following command:
 
-b.	For instance, my system compiled successfully with:
+```
+""Path_to_Python_Executable"\python.exe -m pip install sqlalchemy
+```
 
-c.	C:\Users\ABarry.US\Documents\Development\Python\Kivy-1.9.0-py2.7-win32-x86\python27\python.exe -m pip install sqlalchemy
+a.	For instance, my system compiled successfully with:
+
+```
+C:\Users\ABarry.US\Documents\Development\Python\Kivy-1.9.0-py2.7-win32-x86\python27\python.exe -m pip install sqlalchemy
+```
+
+###Install OpenPyXL
 
 4.	Get the Python Distribution shipped with your Kivy package again and copy the path to the python executable
 
 5.	Run the following command:
 
-a.	""Path_to_Python_Executable"\python.exe -m pip install openpyxl
+```
+""Path_to_Python_Executable"\python.exe -m pip install openpyxl
+```
 
-6.	Follow the instructions below to start the application:  http://kivy.org/docs/installation/installation-windows.html#start-a-kivy-application
+###Start the Application
+
+6.	Follow [the instructions](http://kivy.org/docs/installation/installation-windows.html#start-a-kivy-application) to start the application
 
 
-Linux Install
+##Linux Install
 
 1.	Install Python (may not be necessary depending on distribution & version.  For instance, Python is included with Ubuntu 14.04 and later)
 
