@@ -21,7 +21,7 @@
 				Label:
 					text: 'Client'
 				Spinner:
-					on_text: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+					on_text: app.ApplyCreateWorkflowPopupFilterI(self, args[0])
 					id: cwp_client
 			GridLayout:
 				rows: 2
@@ -29,7 +29,7 @@
 				Label:
 					text: 'Project'
 				Spinner:
-					on_text: app.ApplyCreateWorkflowPopupFilter(self, args[0])
+					on_text: app.ApplyCreateWorkflowPopupFilterII(self, args[0])
 					id: cwp_project
 		GridLayout:
 			cols: 2

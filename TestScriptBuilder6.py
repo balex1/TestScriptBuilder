@@ -453,15 +453,6 @@ if len(seed_workflows) == 0:
     session.add(seed_workflow)
 else:
     seed_workflow = seed_workflows[0]
-    
-    
-#------------------------------------------------------------
-#----------------'Current' Variables-------------------------
-#------------------------------------------------------------
-
-current_client = 'Default'
-current_project = 'Default'
-current_script = 'Default'
 
 #------------------------------------------------------------
 #----------------Filter Manager------------------------------
@@ -554,75 +545,74 @@ class FilterManager():
                 order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (project == "" or project is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).order_by(TestScript.id)[limit:offset]
                 
         elif (testscript == "" or testscript is None) and (project == "" or project is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).filter(Workflow.name.like('%' + str(workflow) + '%')).\
-                order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(Project.name.like('%' + str(project) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).\
+                filter(Project.name == project).order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None) and (client == "" or client is None):
             results = session.query(TestScript).\
-                filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
+                filter(TestScript.name == testscript).order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (testscript == "" or testscript is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).filter(Project.name == project).\
                     order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (project == "" or project is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).filter(TestScript.name == testscript).\
                     order_by(TestScript.id)[limit:offset]
                 
         elif (workflow == "" or workflow is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+            results = session.query(TestScript).join(Project).\
+                filter(TestScript.name == testscript).filter(Project.name == project).\
                     order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (project == "" or project is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).\
                     order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).join(Project).\
-                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
+            results = session.query(TestScript).join(Project).\
+                filter(Project.name == project).\
                     order_by(TestScript.id)[limit:offset]
                     
         elif (project == "" or project is None) and (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).\
-                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(TestScript.name.like('%' + str(testscript) + '%')).\
+            results = session.query(TestScript).\
+                filter(TestScript.name == testscript).\
                     order_by(TestScript.id)[limit:offset]
                     
         elif (workflow == "" or workflow is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
-                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).filter(Project.name == project).\
+                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit:offset]
                     
         elif (testscript == "" or testscript is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
-                    filter(Workflow.name.like('%' + str(workflow) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).filter(Project.name == project).\
+                    order_by(TestScript.id)[limit:offset]
                     
         elif (project == "" or project is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
-                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).\
+                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit:offset]
                     
         elif (client == "" or client is None):
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Workflow.name.like('%' + str(workflow) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
-                    filter(TestScript.name.like('%' + str(testscript) + '%')).order_by(TestScript.id)[limit:offset]
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Project.name == project).\
+                    filter(TestScript.name == testscript).order_by(TestScript.id)[limit:offset]
                     
         else:
-            results = session.query(TestScript).join(Workflow).join(Project).join(Client).\
-                filter(Client.name.like('%' + str(client) + '%')).filter(Project.name.like('%' + str(project) + '%')).\
-                    filter(TestScript.name.like('%' + str(testscript) + '%')).filter(Workflow.name.like('%' + str(workflow) + '%')).\
+            results = session.query(TestScript).join(Project).join(Client).\
+                filter(Client.name == client).filter(Project.name == project).\
+                    filter(TestScript.name == testscript).\
                         order_by(TestScript.id)[limit:offset]
             
         return results
@@ -1031,16 +1021,30 @@ class DatabaseWriter():
         for celement in con_list[0]:
             #A celement of index i from con_list[0] is the start connector
             #A celement of index i from con_list[1] is the end connector
+        
+            #Find next action id
+            nextaction_id = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
+                join(TestScript).join(Project).join(Client).filter(KeyAction.name==end[i].label.img.text).\
+                    filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
+                        filter(Project.name == project).filter(Client.name == client).all()
+            firstaction_id = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
+                join(TestScript).join(Project).join(Client).filter(KeyAction.name==celement.label.img.text).\
+                    filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
+                        filter(Project.name == project).filter(Client.name == client).all()
             
             #Check if the next action exists within the workflow
-            nxa = session.query(WorkflowNextAction).filter(WorkflowNextAction.keyactionid==celement.label.img.text).filter(WorkflowNextAction.nextactionid==end[i].label.img.text).all()
+            nxa = session.query(WorkflowNextAction).join(WorkflowAction).join(Workflow).join(TestScript).join(Project).join(Client).\
+                filter(WorkflowNextAction.keyactionid==firstaction_id[0].id).\
+                    filter(WorkflowNextAction.nextactionid==nextaction_id[0].id).\
+                        filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
+                            filter(Project.name == project).filter(Client.name == client).all()
             
             if len(nxa) == 0:
                 #Find the key action and next key action
-                ka = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==celement.label.img.text).all()
-                na = session.query(WorkflowAction).join(KeyAction).filter(KeyAction.name==end[i].label.img.text).all()
+                ka = firstaction_id[0]
+                na = nextaction_id[0]
                 #Create a new workflow next action
-                next_action = WorkflowNextAction(keyactionid=ka[0].id, nextactionid=na[0].id)
+                next_action = WorkflowNextAction(keyactionid=ka.id, nextactionid=na.id)
                 session.add(next_action)
                 session.commit()
             else:
@@ -1112,12 +1116,12 @@ class DatabaseWriter():
         
         self.ValidateInputParameter(child.iplist, ka_rows, id, orig_ip_list)
         
-    def SaveFlowchart(self, nodes_list):
+    def SaveFlowchart(self, nodes_list, current_script, current_project, current_client, current_workflow):
         for node in nodes_list:
             wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
                 join(TestScript).join(Project).join(Client).filter(KeyAction.name==node.label.img.text).\
                     filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                        filter(Client.name==current_client).all()
+                        filter(Client.name==current_client).filter(Workflow.name==current_workflow).all()
                         
             fl = session.query(FlowchartPosition).filter(FlowchartPosition.keyactionid == wfa[0].id).all()
             
@@ -1872,6 +1876,9 @@ class TestScriptBuilderApp(App):
         
     def FirstFilter(self, *args):
         self.root.get_screen('keyactiongroup').current_product = 'Default'
+        self.root.get_screen('workflow').current_client = 'Default'
+        self.root.get_screen('workflow').current_project = 'Default'
+        self.root.get_screen('workflow').current_script = 'Default'
         filter.FirstPage()
         prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product).all()
         if len(prod_rows) == 0:
@@ -2118,11 +2125,11 @@ class TestScriptBuilderApp(App):
     
     def ClearWorkflow(self):
         #Clear the current workflow information and input box
-        current_client = 'Default'
-        current_project = 'Default'
-        current_script = 'Default'
-        self.root.get_screen('workflow').current_workflowname = 'Default'
-        self.root.get_screen('workflow').current_wf.text = 'Default'
+#        self.root.get_screen('workflow').current_client = 'Default'
+#        self.root.get_screen('workflow').current_project = 'Default'
+#        self.root.get_screen('workflow').current_script = 'Default'
+#        self.root.get_screen('workflow').current_workflowname = 'Default'
+#        self.root.get_screen('workflow').current_wf.text = 'Default'
         
         #Clear the Drag Grid, Draggable List
         self.root.get_screen('workflow').drag_grid.clear_cells()
@@ -2149,15 +2156,15 @@ class TestScriptBuilderApp(App):
         
         #Populate the latest 5 workflows into the spinner from the current testscript
         num_flows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(TestScript.name==current_script).filter(Project.name==current_project).\
-                filter(Client.name==current_client).count()
+            filter(TestScript.name==self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                filter(Client.name==self.root.get_screen('workflow').current_client).count()
         if num_flows - 5 < 0:
             num_flows = 0
         else:
             num_flows = num_flows - 5
         results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(TestScript.name==current_testscript).filter(Project.name==current_project).\
-                filter(Client.name==current_client).order_by(Workflow.id)[num_flows:num_flows+5]
+            filter(TestScript.name==self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                filter(Client.name==self.root.get_screen('workflow').current_client).order_by(Workflow.id)[num_flows:num_flows+5]
         
         #Populate values in spinner
         for result in results:
@@ -2167,18 +2174,21 @@ class TestScriptBuilderApp(App):
         Logger.debug('Load Subflow')
         
         current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
+        self.root.get_screen('workflow').current_script = self.root.get_screen('workflow').pop_up.content.lwp_testscript.text
+        self.root.get_screen('workflow').current_project = self.root.get_screen('workflow').pop_up.content.lwp_project.text
+        self.root.get_screen('workflow').current_client = self.root.get_screen('workflow').pop_up.content.lwp_client.text
         new_workflow=self.root.get_screen('workflow').pop_up.content.new_name.text
         self.root.get_screen('workflow').pop_up.dismiss()
         #Copy the current workflow into a new workflow
         
         #Check if the new workflow already exists
         wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                filter(Client.name==current_client).filter(Workflow.name==new_workflow).all()
+            filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                filter(Client.name==self.root.get_screen('workflow').current_client).filter(Workflow.name==new_workflow).all()
         if len(wf)==0:
             ts = session.query(TestScript).join(Project).join(Client).\
-            filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                filter(Client.name==current_client).all()
+            filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                filter(Client.name==self.root.get_screen('workflow').current_client).all()
             script = ts[0]
             flow = Workflow(name=new_workflow, testscriptid=script.id)
             session.add(flow)
@@ -2189,13 +2199,13 @@ class TestScriptBuilderApp(App):
         #Copy the workflow actions
         actions = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
             join(TestScript).join(Project).join(Client).filter(Workflow.name==current_workflow).\
-                filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                    filter(Client.name==current_client).all()
+                filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                    filter(Client.name==self.root.get_screen('workflow').current_client).all()
         for action in actions:
             wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).join(TestScript).\
                 join(Project).join(Client).filter(KeyAction.name==action.name).\
-                    filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                        filter(Client.name==current_client).all()
+                    filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                        filter(Client.name==self.root.get_screen('workflow').current_client).all()
             flowaction = wfa[0]
             ips = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==flowaction.id).all()
             ip_value_list = []
@@ -2209,8 +2219,8 @@ class TestScriptBuilderApp(App):
         #Load the Key Actions from the new subflow into the editor
         keyactions = session.query(KeyAction).join(WorkflowAction).\
             join(Workflow).join(TestScript).join(Project).Client().\
-                filter(Workflow.name==new_workflow).filter(TestScript.name == current_script).\
-                    filter(Project.name==current_project).filter(Client.name==current_client).all()
+                filter(Workflow.name==new_workflow).filter(TestScript.name == self.root.get_screen('workflow').current_script).\
+                    filter(Project.name==self.root.get_screen('workflow').current_project).filter(Client.name==self.root.get_screen('workflow').current_client).all()
         
         #Put each element into the draggable list
         for action in keyactions:
@@ -2226,6 +2236,7 @@ class TestScriptBuilderApp(App):
         self.root.get_screen('keyactiongroup').pop_up.dismiss()
         self.root.get_screen('workflow').ids.current_wf.text = new_workflow
         self.root.get_screen('workflow').current_workflowname = new_workflow
+        self.root.get_screen('workflow').current_wf.text = new_workflow
         
     def SaveProductPanel(self, *args):
         Logger.debug('Save Product Panel')
@@ -2274,8 +2285,8 @@ class TestScriptBuilderApp(App):
         ka = session.query(KeyAction).filter(KeyAction.name=='AND').all()
         #Find the workflow
         wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
-                    filter(Project.name==current_project).filter(Client.name==current_client).one()
+            filter(Workflow.name==current_workflow).filter(TestScript.name == self.root.get_screen('workflow').current_script).\
+                    filter(Project.name==self.root.get_screen('workflow').current_project).filter(Client.name==self.root.get_screen('workflow').current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='AND')
             session.add(keyaction)
@@ -2309,8 +2320,8 @@ class TestScriptBuilderApp(App):
         ka = session.query(KeyAction).filter(KeyAction.name=='OR').all()
         #Find the workflow
         wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
-                    filter(Project.name==current_project).filter(Client.name==current_client).one()
+            filter(Workflow.name==current_workflow).filter(TestScript.name == self.root.get_screen('workflow').current_script).\
+                    filter(Project.name==self.root.get_screen('workflow').current_project).filter(Client.name==self.root.get_screen('workflow').current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='OR')
             session.add(keyaction)
@@ -2357,8 +2368,8 @@ class TestScriptBuilderApp(App):
         ka = session.query(KeyAction).filter(KeyAction.name=='FOR').all()
         #Find the workflow
         wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
-                    filter(Project.name==current_project).filter(Client.name==current_client).one()
+            filter(Workflow.name==current_workflow).filter(TestScript.name == self.root.get_screen('workflow').current_script).\
+                    filter(Project.name==self.root.get_screen('workflow').current_project).filter(Client.name==self.root.get_screen('workflow').current_client).one()
         if len(ka) == 0:
             keyaction = KeyAction(name='FOR')
             session.add(keyaction)
@@ -2470,9 +2481,12 @@ class TestScriptBuilderApp(App):
         popup.open()
         
         #Populate the currently selected values into the popup
-        popup.content.current_client = current_client
-        popup.content.current_project = current_project
-        popup.content.current_testscript = current_script
+        popup.content.load_client.text = self.root.get_screen('workflow').current_client
+        popup.content.load_project.text = self.root.get_screen('workflow').current_project
+        popup.content.load_testscript.text = self.root.get_screen('workflow').current_script
+        popup.content.load_client.values.append('')
+        popup.content.load_project.values.append('')
+        popup.content.load_testscript.values.append('')
         
         #Populate the Spinners
         clients = session.query(Client).all()
@@ -2632,18 +2646,20 @@ class TestScriptBuilderApp(App):
         #Clear the current elements in the UI
         self.ClearWorkflow()
 
+        Logger.debug('Setting current variables: Script - %s; Project - %s; Client - %s' % (script.name, project.name, client.name))
+
         #Assign the current script        
-        current_script = script.name
-        current_project = project.name
-        current_client = client.name
+        self.root.get_screen('workflow').current_script = script.name
+        self.root.get_screen('workflow').current_project = project.name
+        self.root.get_screen('workflow').current_client = client.name
         
     def UpdateWorkflowName(self, *args):
         #When Enter is pressed on the current workflow text input, update the workflow name
         Logger.debug('WF: Update Workflow Name')
         wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
             filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
-                filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                    filter(Client.name==current_client).all()
+                filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                    filter(Client.name==self.root.get_screen('workflow').current_client).all()
         flow = wf[0]
         flow.name = self.root.get_screen('workflow').current_wf.text
         session.commit()
@@ -2655,7 +2671,8 @@ class TestScriptBuilderApp(App):
             self.root.get_screen('workflow').current_workflowname, self.root.get_screen('workflow').current_script,\
                 self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
         
-        writer.SaveFlowchart(self.root.get_screen('workflow').drag_grid.nodes)
+        writer.SaveFlowchart(self.root.get_screen('workflow').drag_grid.nodes, self.root.get_screen('workflow').current_script,\
+                self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client, self.root.get_screen('workflow').current_workflowname)
         
     def SaveAction(self, *args):
         Logger.debug('WF: Save Action')
@@ -2710,8 +2727,8 @@ class TestScriptBuilderApp(App):
         w = session.query(WorkflowAction).join(Workflow).join(TestScript).join(Project).join(Client).\
             join(KeyAction).filter(KeyAction.name == node.img.text).\
                 filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
-                    filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                        filter(Client.name==current_client).all()
+                    filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                        filter(Client.name==self.root.get_screen('workflow').current_client).all()
         wfa = w[0]
         #Load the double clicked node into the side editor
         self.root.get_screen('workflow').ids.wf_carousel.name = node.img.text
@@ -2723,8 +2740,8 @@ class TestScriptBuilderApp(App):
             wp = session.query(WorkflowParameter).join(InputParameter).join(WorkflowAction).\
                 join(Workflow).join(TestScript).join(Project).join(Client).\
                     filter(InputParameter.id == ip.id).filter(Workflow.id == w[0].id).\
-                        filter(TestScript.name == current_script).filter(Project.name==current_project).\
-                            filter(Client.name==current_client).all()
+                        filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                            filter(Client.name==self.root.get_screen('workflow').current_client).all()
             lbl = TextInput(hint_text=ip.name)
             if len(wp) != 0:
                 lbl.text = wp[0].value
@@ -2749,7 +2766,7 @@ class TestScriptBuilderApp(App):
             num_flows = 0
         else:
             num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+5)
         
         #Get Result set from Filter Manager
         num_scripts = session.query(TestScript).count()
@@ -2757,7 +2774,7 @@ class TestScriptBuilderApp(App):
             num_scripts = 0
         else:
             num_scripts = num_scripts - 5
-        scripts = filter.FindTestScripts(wf, ts, cl, pr, 5, num_scripts)
+        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts+5)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -2784,7 +2801,7 @@ class TestScriptBuilderApp(App):
             num_flows = 0
         else:
             num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+5)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -2901,6 +2918,10 @@ class TestScriptBuilderApp(App):
         self.root.get_screen('keyactiongroup').pop_up.dismiss()
         self.root.get_screen('workflow').ids.current_wf.text = current_workflow
         self.root.get_screen('workflow').current_workflowname = current_workflow
+        self.root.get_screen('workflow').current_wf.text = current_workflow
+        self.root.get_screen('workflow').current_script = ts
+        self.root.get_screen('workflow').current_project = pr
+        self.root.get_screen('workflow').current_client = cl
         
             
 #----------------------------------------------------------
@@ -2917,8 +2938,11 @@ class TestScriptBuilderApp(App):
         Logger.debug('Create New Flow')
         
         new_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        new_project=self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
+        new_client=self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
         
-        test_script=session.query(TestScript).filter(TestScript.name==new_script).one()
+        test_script=session.query(TestScript).join(Project).join(Client).filter(TestScript.name==new_script).\
+            filter(Project.name == new_project).filter(Client.name == new_client).one()
         
         workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('keyactiongroup').pop_up.content.new_flow.text)
         session.add(workflow)
@@ -2933,8 +2957,13 @@ class TestScriptBuilderApp(App):
         Logger.debug('Add To Workflow')
         
         current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        new_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        new_project=self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
+        new_client=self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
         
-        workflow = session.query(Workflow).filter(Workflow.name==current_workflow).one()
+        workflow = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==current_workflow).filter(TestScript.name==new_script).\
+            filter(Project.name == new_project).filter(Client.name == new_client).one()
         for option in selected:
             keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
@@ -3001,7 +3030,31 @@ class TestScriptBuilderApp(App):
         for result in results:
             self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
         
-    def ApplyCreateWorkflowPopupFilter(self, *args):
+    def ApplyCreateWorkflowPopupFilterI(self, *args):
+        Logger.debug('Apply workflow filter popup')
+        
+        #Clear the Spinner
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        
+        #Get Filter Values
+        wf = ''
+        ts = ''
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
+        
+        #Get Result Set from Filter Manager
+        num_scripts = session.query(TestScript).count()
+        if num_scripts - 5 < 0:
+            num_scripts = 0
+        else:
+            num_scripts = num_scripts - 5
+        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
+        
+        #Load Result Set Into Spinner
+        for result in results:
+            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+            
+    def ApplyCreateWorkflowPopupFilterII(self, *args):
         Logger.debug('Apply workflow filter popup')
         
         #Clear the Spinner
