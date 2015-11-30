@@ -5,11 +5,22 @@
         </Row>
     </Header>
     <Body>
+		<Page name='Product'>
+            <Segment cell='A1'>
+                <Title>Product</Title>
+                <Header>
+                    <Column>ID</Column>
+                    <Column>Name</Column>
+                </Header>
+                <Query>select * from product;</Query>
+            </Segment>
+        </Page>
         <Page name='Module'>
             <Segment cell='A1'>
                 <Title>Module</Title>
                 <Header>
                     <Column>ID</Column>
+					<Column>ProductID</Column>
                     <Column>Name</Column>
                 </Header>
                 <Query>select * from module;</Query>
@@ -28,7 +39,7 @@
         </Page>
         <Page name='Key Action'>
             <Segment cell='A1'>
-                <Title>Segment 1</Title>
+                <Title>Key Action</Title>
                 <Header>
                     <Column>ID</Column>
                     <Column>SystemAreaID</Column>

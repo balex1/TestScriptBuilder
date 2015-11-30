@@ -10,7 +10,6 @@ from openpyxl import Workbook
 import openpyxl.utils as Utils
 import sqlite3 as lite
 import os
-import sys
 
 class TemplateReader():
     #Read the XML Template and generate SQL Queries based on it
@@ -51,7 +50,7 @@ class TemplateReader():
                             #end_cell, the last cell in the merge
                             header_ws[element.attrib['start_cell']] = element.text
                             header_ws.merge_cells('%s:%s' % (element.attrib['start_cell'], element.attrib['end_cell']))
-                            
+                            print('Header element placed')
                 elif child.tag == 'Body':
                     #Process the body segment
                     for page in child:
@@ -61,24 +60,31 @@ class TemplateReader():
                             for child in segment:
                                 if child.tag == 'Title':
                                     body_ws[segment.attrib['cell']] = child.text
+                                    print('Data Title element %s placed in cell %s' % (child.text, segment.attrib['cell']))
                                 elif child.tag == 'Header':
                                     i=0
                                     for column in child:
                                         #Place the column header for each query column
+                                        #TO-DO: Ensure header column moves down for each segment correctly
                                         cell = Utils.coordinate_from_string(segment.attrib['cell'])
                                         col = Utils.column_index_from_string(cell[0])
                                         body_ws['%s%s' % (Utils.get_column_letter(col+i), 2)] = column.text
+                                        print('Data Header element %s placed in cell %s%s' % (column.text, Utils.get_column_letter(col+i), 2))
                                         i+=1
                                 elif child.tag == 'Query':
                                     #Execute the query and place the results into the page
                                     self.cur.execute(child.text)
                                     data = self.cur.fetchall()
-                                    i=0
+                                    print('query %s executed' % (child.text))
+                                    i=3
                                     for row in data:
-                                        j=2
+                                        j=0
                                         #Place the data into the report
                                         for e in row:
                                             cell = Utils.coordinate_from_string(segment.attrib['cell'])
                                             col = Utils.column_index_from_string(cell[0])
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), j)] = e
-                                        
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)] = e
+                                            print('Data Element %s placed in column %s%s' % (e, Utils.get_column_letter(col+i), j))
+                                            j+=1
+                                        i+=1
+            self.wb.save('Export.xlsx')
