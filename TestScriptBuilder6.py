@@ -40,6 +40,10 @@ from src.dbadmin.DataBuffer import DataBuffer
 from src.dbadmin.Writer import CSVWriter, ExcelWriter, TerminalWriter
 from src.dbadmin.DataStream import DataStream
 
+from src.export.ExcelExporter import TemplateReader
+
+import os
+import sys
 import os.path
 import platform
 
@@ -1767,6 +1771,7 @@ class DatabaseWidget(BoxLayout):
     type_spinner = ObjectProperty(None)
     source_input = ObjectProperty(None)
     destination_input = ObjectProperty(None)
+    finddestpopup_button = ObjectProperty(None)
 
 class KeyActionAdvancedOptionsPopup(BoxLayout):
     pass
@@ -1851,6 +1856,9 @@ class SelectableButton(ToggleButton):
 #Create the filter manager
 filter = FilterManager()
 
+#Create the export template reader
+tr = TemplateReader('test.db')
+
 #Create the Screenmanager and add the Screens
 sm = ScreenManager()
 sm.add_widget(KeyActionGroupScreen(name='keyactiongroup'))
@@ -1921,25 +1929,29 @@ class TestScriptBuilderApp(App):
     def RunMigration(self, *args):
          Logger.debug('Run Migration')
          
-         #Create Data Stream
-         stream = DataStream()
+         #Determine if we are using the import pipeline or export pipeline
+         if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Export':
+             xml_path = os.path.abspath('src/export_templates/%s' % (self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text))
+             tr.translate_template(xml_path)
+
+         elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
          
-         #Create Translators & Writers
-         
-         #Read the data type
-         if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Key Action':
-             import_type = 0
-         elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Workflow':
-             import_type = 1
-         elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Test Script':
-             import_type = 2
-         else:
-             import_type = 3
-             Logger.debug('Import Type Unresolved')
+             #Create Data Stream
+             stream = DataStream()
              
-         #If the direction is 'Import', assign the writer to the Internal DB Writer
-         #If it's 'Export', assign the importer to the Internal DB Importer
-         if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
+             #Create Translators & Writers
+             
+             #Read the data type
+             if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Key Action':
+                 import_type = 0
+             elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Workflow':
+                 import_type = 1
+             elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text == 'Test Script':
+                 import_type = 2
+             else:
+                 import_type = 3
+                 Logger.debug('Import Type Unresolved')
+                 
              writer = DBWriter()
              
              #Find the importer
@@ -1953,124 +1965,109 @@ class TestScriptBuilderApp(App):
                  Logger.debug('Nothing Selected')
                  return True
                  #Nothing selected
-         elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Export':
-             importer = InternalDBTranslator()
-             
-             #Find the writer
-             if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.translator_spinner.text == 'Excel':
-                 writer = ExcelWriter()
-             else:
-                 Logger.debug('Nothing Selected')
-                 return True
-                 #Nothing selected
+            
+             log_writer = TerminalWriter()
+    
+             while importer.translation_finished == False:
+    
+                 #Single Iteration
+                 #Run Translations
+                 importer.translate()
                  
-         else:
-             #No direction selected
-             Logger.debug('Nothing Selected')
-             return True
-        
-         log_writer = TerminalWriter()
-
-         while importer.translation_finished == False:
-
-             #Single Iteration
-             #Run Translations
-             importer.translate()
-             
-             #Run Validations
-             stream.stream()
-             
-             #Run Writer
-             writer.write(stream)
-             
-         #Run Error Writer
-         log_writer.write(stream)
-             
-         #DB Cleanup
-             
-         if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
-             
-             if import_type == 0:
-             
-                 #Delete everything from the key action import tables
-                 imp = session.query(InputParameterImport).all()
-                 for i in imp:
-                     session.delete(i)
-                     
-                 ka = session.query(KeyActionImport).all()
-                 for i in ka:
-                     session.delete(i)
-                     
-                 sa = session.query(SystemAreaImport).all()
-                 for i in sa:
-                     session.delete(i)
-                     
-                 mod = session.query(ModuleImport).all()
-                 for i in mod:
-                     session.delete(i)
-                     
-                 prod = session.query(ProductImport).all()
-                 for i in prod:
-                     session.delete(i)
-                     
-             else:
+                 #Run Validations
+                 stream.stream()
                  
-                 #Delete everything from the key action import tables
-                 imp = session.query(InputParameterImport).all()
-                 for i in imp:
-                     session.delete(i)
+                 #Run Writer
+                 writer.write(stream)
+                 
+             #Run Error Writer
+             log_writer.write(stream)
+                 
+             #DB Cleanup
+                 
+             if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
+                 
+                 if import_type == 0:
+                 
+                     #Delete everything from the key action import tables
+                     imp = session.query(InputParameterImport).all()
+                     for i in imp:
+                         session.delete(i)
+                         
+                     ka = session.query(KeyActionImport).all()
+                     for i in ka:
+                         session.delete(i)
+                         
+                     sa = session.query(SystemAreaImport).all()
+                     for i in sa:
+                         session.delete(i)
+                         
+                     mod = session.query(ModuleImport).all()
+                     for i in mod:
+                         session.delete(i)
+                         
+                     prod = session.query(ProductImport).all()
+                     for i in prod:
+                         session.delete(i)
+                         
+                 else:
                      
-                 ka = session.query(KeyActionImport).all()
-                 for i in ka:
-                     session.delete(i)
-                     
-                 sa = session.query(SystemAreaImport).all()
-                 for i in sa:
-                     session.delete(i)
-                     
-                 mod = session.query(ModuleImport).all()
-                 for i in mod:
-                     session.delete(i)
-                     
-                 prod = session.query(ProductImport).all()
-                 for i in prod:
-                     session.delete(i)
-                     
-                 #Delete everything from the workflow import tables
-                     
-                 cl = session.query(ClientImport).all()
-                 for c in cl:
-                     session.delete(c)
-                     
-                 pr = session.query(ProjectImport).all()
-                 for p in pr:
-                     session.delete(p)
-                     
-                 ts = session.query(TestScriptImport).all()
-                 for t in ts:
-                     session.delete(t)
-                     
-                 wf = session.query(WorkflowImport).all()
-                 for w in wf:
-                     session.delete(w)
-                     
-                 wfa = session.query(WorkflowActionImport).all()
-                 for a in wfa:
-                     session.delete(a)
-                     
-                 wfna = session.query(WorkflowNextActionImport).all()
-                 for na in wfna:
-                     session.delete(na)
-                     
-                 wfp = session.query(WorkflowParameterImport).all()
-                 for p in wfp:
-                     session.delete(p)
-                     
-                 fl = session.query(FlowchartPositionImport).all()
-                 for l in fl:
-                     session.delete(l)
-             
-             session.commit()
+                     #Delete everything from the key action import tables
+                     imp = session.query(InputParameterImport).all()
+                     for i in imp:
+                         session.delete(i)
+                         
+                     ka = session.query(KeyActionImport).all()
+                     for i in ka:
+                         session.delete(i)
+                         
+                     sa = session.query(SystemAreaImport).all()
+                     for i in sa:
+                         session.delete(i)
+                         
+                     mod = session.query(ModuleImport).all()
+                     for i in mod:
+                         session.delete(i)
+                         
+                     prod = session.query(ProductImport).all()
+                     for i in prod:
+                         session.delete(i)
+                         
+                     #Delete everything from the workflow import tables
+                         
+                     cl = session.query(ClientImport).all()
+                     for c in cl:
+                         session.delete(c)
+                         
+                     pr = session.query(ProjectImport).all()
+                     for p in pr:
+                         session.delete(p)
+                         
+                     ts = session.query(TestScriptImport).all()
+                     for t in ts:
+                         session.delete(t)
+                         
+                     wf = session.query(WorkflowImport).all()
+                     for w in wf:
+                         session.delete(w)
+                         
+                     wfa = session.query(WorkflowActionImport).all()
+                     for a in wfa:
+                         session.delete(a)
+                         
+                     wfna = session.query(WorkflowNextActionImport).all()
+                     for na in wfna:
+                         session.delete(na)
+                         
+                     wfp = session.query(WorkflowParameterImport).all()
+                     for p in wfp:
+                         session.delete(p)
+                         
+                     fl = session.query(FlowchartPositionImport).all()
+                     for l in fl:
+                         session.delete(l)
+                 
+                 session.commit()
          
     def UpdateDirection(self, *args):
          Logger.debug('Update Direction')
@@ -2084,6 +2081,7 @@ class TestScriptBuilderApp(App):
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.translator_spinner.values.append('DB')
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.translator_spinner.text = ''
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text = ''
+             self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.finddestpopup_button.disabled = False
          else:
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.source_input.text = 'test.db'
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.destination_input.text = ''
@@ -2092,9 +2090,13 @@ class TestScriptBuilderApp(App):
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.translator_spinner.values.append('Excel')
              self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.translator_spinner.text = 'Excel'
              
+             #Populate the values in the data type spinner values with the xml templates in the
+             #src.export_templates folder
              del self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.values[:]
-             self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.values.append('Test Script')
-             self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text = 'Test Script'
+             for file in tr.select_files_in_folder(os.path.abspath("src/export_templates"), 'xml'):
+                 self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.values.append(os.path.basename(file))
+             self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text = ''
+             self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.finddestpopup_button.disabled = True
              
     def UpdateTranslator(self, *args):
          Logger.debug('Update Translator')
