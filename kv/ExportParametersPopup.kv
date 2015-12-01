@@ -1,0 +1,30 @@
+#: kivy 1.9.0
+
+<ExportParametersPopup>
+	ip1: ip1
+	ip2: ip2
+	ip3: ip3
+	ip4: ip4
+	GridLayout:
+		size: root.size
+		pos: root.pos
+		cols: 1
+		TextInput:
+			hint_text: 'Parameter 1'
+			id: ip1
+			multiline: False
+		TextInput:
+			hint_text: 'Parameter 2'
+			id: ip2
+			multiline: False
+		TextInput:
+			hint_text: 'Parameter 3'
+			id: ip3
+			multiline: False
+		TextInput:
+			hint_text: 'Parameter 4'
+			id: ip4
+			multiline: False
+		Button:
+			text: 'Execute'
+			on_press: app.ExecuteExport(self, args[0])

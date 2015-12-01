@@ -1,0 +1,25 @@
+<Template name='Test Script Export'>
+    <Header>
+        <Row>
+			<Element start_cell='A1' end_cell='E1'>Test Script Export</Element>
+		</Row>
+		<Row>
+			<Element start_cell='A2' end_cell='E2'>?</Element>
+		</Row>
+	</Header>
+	<Body>
+		<Page name='Script Overview'>
+            <Segment cell='A1'>
+                <Title>Test Script</Title>
+                <Header>
+                    <Column>Workflow Name</Column>
+                    <Column>Action Name</Column>
+					<Column>Description</Column>
+					<Column>Custom</Column>
+					<Column>Expected Result</Column>
+                </Header>
+                <Query>select w.name, ka.name, ka.description, ka.custom, wa.expectedresult from (((((workflowaction wa left join workflownextaction wna on wa.id = wna.keyactionid) left join workflow w on w.id = wa.workflowid) left join keyaction ka on wa.keyactionid = ka.id) left join testscript ts on ts.id = w.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where ts.name = '?' and p.name = '?' and c.name = '?' order by w.id, wna.nextactionid;</Query>
+            </Segment>
+        </Page>
+	</Body>
+</Template>

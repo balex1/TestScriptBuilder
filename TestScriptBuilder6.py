@@ -43,7 +43,6 @@ from src.dbadmin.DataStream import DataStream
 from src.export.ExcelExporter import TemplateReader
 
 import os
-import sys
 import os.path
 import platform
 
@@ -1718,6 +1717,7 @@ Builder.load_file('kv/ForInPopup.kv')
 Builder.load_file('kv/DeletePopup.kv')
 Builder.load_file('kv/DBAdministrator.kv')
 Builder.load_file('kv/FileChooserPopup.kv')
+Builder.load_file('kv/ExportParametersPopup.kv')
 Logger.info('KV: KV Files Loaded')
 
 #Create the DB Writer
@@ -1801,6 +1801,12 @@ class TestScriptOptionsPopup(BoxLayout):
 
 class ExportPopup(BoxLayout):
     pass
+
+class ExportParametersPopup(GridLayout):
+    ip1 = ObjectProperty(None)
+    ip2 = ObjectProperty(None)
+    ip3 = ObjectProperty(None)
+    ip4 = ObjectProperty(None)
 
 class AddToWorkflowPopup(BoxLayout):
     spinner=ObjectProperty(None)
@@ -1925,14 +1931,30 @@ class TestScriptBuilderApp(App):
          self.root.get_screen('keyactiongroup').pop_up.dismiss()
          self.root.get_screen('keyactiongroup').pop_up = popup
          popup.open()
+         
+    def ShowExportParametersPopup(self, *args):
+         Logger.debug('Show Export Parameters Popup')
+         self.root.get_screen('keyactiongroup').original_pop_up = self.root.get_screen('keyactiongroup').pop_up
+         popup = Popup(title='Export Parameters', content=ExportParametersPopup(), size_hint=(0.3, 0.5))
+         self.root.get_screen('keyactiongroup').pop_up.dismiss()
+         self.root.get_screen('keyactiongroup').pop_up = popup
+         popup.open()
+         
+    def ExecuteExport(self, *args):
+         params = []
+         xml_path = os.path.abspath('src/export_templates/%s' % (self.root.get_screen('keyactiongroup').original_pop_up.content.conn_panel.db.type_spinner.text))
+         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip1.text)
+         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip2.text)
+         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip3.text)
+         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip4.text)
+         tr.translate_template(xml_path, params)
      
     def RunMigration(self, *args):
          Logger.debug('Run Migration')
          
          #Determine if we are using the import pipeline or export pipeline
          if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Export':
-             xml_path = os.path.abspath('src/export_templates/%s' % (self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.type_spinner.text))
-             tr.translate_template(xml_path)
+             self.ShowExportParametersPopup(args)
 
          elif self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
          
@@ -2259,7 +2281,7 @@ class TestScriptBuilderApp(App):
                     fprod = prod.name
                 else:
                     fprod = prod_rows[0].name
-                self.root.get_screen('keyactiongroup').current_product = prod_name
+                self.root.get_screen('keyactiongroup').current_product = fprod
             else:
                 lbl = Label(text='%s is not long enough or not capitalized' % (prod_name))
                 er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
