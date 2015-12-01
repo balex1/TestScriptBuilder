@@ -65,7 +65,7 @@ class TemplateReader():
                             #We expect two property values:
                             #cell, the first cell of the merge
                             #end_cell, the last cell in the merge
-                            if '?' not in element.text or element.text != '?':
+                            if '?' not in element.text:
                                 header_ws[element.attrib['start_cell']] = element.text
                             #If a wildcard is encountered, we need to replace it with the
                             #correct parameter
@@ -74,8 +74,9 @@ class TemplateReader():
                                 wc_counter = 0
                                 for i in text:
                                     if i == '?':
-                                        text[wc_counter] = params[param_counter]
-                                        print('Parameter %s used' % (params[param_counter]))
+                                        text[wc_counter] = params[int(text[wc_counter + 1])]
+                                        print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
+                                        del text[wc_counter + 1]
                                         param_counter+=1
                                     wc_counter+=1
                                 header_ws[element.attrib['start_cell']] = ''.join(text)
@@ -90,7 +91,7 @@ class TemplateReader():
                         for segment in page:
                             for child in segment:
                                 if child.tag == 'Title':
-                                    if '?' not in child.text or child.text != '?':
+                                    if '?' not in child.text:
                                         body_ws[segment.attrib['cell']] = child.text
                                     #If a wildcard is encountered, we need to replace it with the
                                     #correct parameter
@@ -99,8 +100,9 @@ class TemplateReader():
                                         wc_counter = 0
                                         for i in text:
                                             if i == '?':
-                                                text[wc_counter] = params[param_counter]
-                                                print('Parameter %s used' % (params[param_counter]))
+                                                text[wc_counter] = params[int(text[wc_counter + 1])]
+                                                print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
+                                                del text[wc_counter + 1]
                                                 param_counter+=1
                                             wc_counter+=1
                                         body_ws[segment.attrib['cell']] = ''.join(text)
@@ -127,8 +129,9 @@ class TemplateReader():
                                         wc_counter = 0
                                         for i in text:
                                             if i == '?':
-                                                text[wc_counter] = params[param_counter]
-                                                print('Parameter %s used' % (params[param_counter]))
+                                                text[wc_counter] = params[int(text[wc_counter + 1])]
+                                                print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
+                                                del text[wc_counter + 1]
                                                 param_counter+=1
                                             wc_counter+=1
                                         self.cur.execute(''.join(text))
