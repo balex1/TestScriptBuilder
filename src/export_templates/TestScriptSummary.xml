@@ -21,22 +21,5 @@
                 <Query>select w.name, ka.name, ka.description, ka.custom, wa.expectedresult from (((((workflowaction wa left join workflownextaction wna on wa.id = wna.keyactionid) left join workflow w on w.id = wa.workflowid) left join keyaction ka on wa.keyactionid = ka.id) left join testscript ts on ts.id = w.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where ts.name = '?1' and p.name = '?2' and c.name = '?3' order by w.id, wna.nextactionid;</Query>
             </Segment>
         </Page>
-		<Page name='Script Details'>
-            <Segment cell='A1'>
-                <Title>?3 Details</Title>
-                <Header>
-                    <Column>Workflow Name</Column>
-                    <Column>Action Name</Column>
-					<Column>Description</Column>
-					<Column>Expected Result</Column>
-					<Column>Next Action</Column>
-					<Column>Notes</Column>
-					<Column>Pass/Fail</Column>
-                </Header>
-				<Query>create view keyactionview() as select * from workflowaction w left join keyaction k on w.keyactionid = k.id left join workflownextaction wn on w.id = wn.keyactionid;</Query>
-				<Query>create view nextactionview() as select * from workflowaction w left join keyaction k on w.keyactionid = k.id left join workflownextaction wn on w.id = wn.nextactionid;</Query>
-                <Query>select w.name, ka.name, ka.description, wa.expectedresult from keyactionview k left join nextactionview n on k.nextactionid = n.id where ts.name = '?1' and p.name = '?2' and c.name = '?3' order by w.id, wna.nextactionid;</Query>
-            </Segment>
-        </Page>
 	</Body>
 </Template>
