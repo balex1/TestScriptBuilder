@@ -7,8 +7,10 @@ Created on Fri Nov 27 11:06:25 2015
 
 import xml.etree.ElementTree as ET
 from openpyxl import Workbook
-import openpyxl.utils as Utils
-from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font
+import utils as Utils
+import platform
+if platform.system() == 'Windows':
+    from openpyxl.style import PatternFill, Border, Side, Alignment, Protection, Font
 import sqlite3 as lite
 import os
 
@@ -19,27 +21,32 @@ class TemplateReader():
     def __init__(self, db_path):
         self.wb = Workbook()
         orig_sheet = self.wb.get_active_sheet()
-        self.wb.create_sheet('Header', 0)
+        if platform.system() == 'Windows':
+            self.wb.create_sheet('Header', 0)
+        else:
+            self.wb.create_sheet(0, 'Header')
         self.wb.remove_sheet(orig_sheet)
         self.db_path=db_path
         
-        #Base Styles
-        self.base_font = Font(name='Calibri', size=11, bold=False, italic=False, vertAlign=None, underline='none', strike=False, color='FF000000')
-        self.base_fill = PatternFill(fill_type=None, start_color='FFFFFFFF', end_color='FF000000')
-        self.base_border = Border(left=Side(border_style=None, color='FF000000'), right=Side(border_style=None, color='FF000000'),\
-            top=Side(border_style=None, color='FF000000'), bottom=Side(border_style=None, color='FF000000'), diagonal=Side(border_style=None, color='FF000000'),\
-                diagonal_direction=0, outline=Side(border_style=None, color='FF000000'), vertical=Side(border_style=None, color='FF000000'), horizontal=Side(border_style=None, color='FF000000'))
-        self.base_alignment=Alignment(horizontal='general', vertical='bottom', text_rotation=0, wrap_text=True, shrink_to_fit=False, indent=0)
-        self.base_number_format = 'General'
+        if platform.system() == 'Windows':
         
-        #Base Header Styles
-        self.header_font = Font(name='Calibri', size=13, bold=True, italic=False, vertAlign=None, underline='none', strike=False, color='FF000000')
-        self.header_fill = PatternFill(fill_type=None, start_color='FFFFFFFF', end_color='FF000000')
-        self.header_border = Border(left=Side(border_style=None, color='FF000000'), right=Side(border_style=None, color='FF000000'),\
-            top=Side(border_style=None, color='FF000000'), bottom=Side(border_style=None, color='FF000000'), diagonal=Side(border_style=None, color='FF000000'),\
-                diagonal_direction=0, outline=Side(border_style='thin', color='FF000000'), vertical=Side(border_style=None, color='FF000000'), horizontal=Side(border_style=None, color='FF000000'))
-        self.header_alignment=Alignment(horizontal='center', vertical='center', text_rotation=0, wrap_text=True, shrink_to_fit=False, indent=0)
-        self.header_number_format = 'General'
+            #Base Styles
+            self.base_font = Font(name='Calibri', size=11, bold=False, italic=False, vertAlign=None, underline='none', strike=False, color='FF000000')
+            self.base_fill = PatternFill(fill_type=None, start_color='FFFFFFFF', end_color='FF000000')
+            self.base_border = Border(left=Side(border_style=None, color='FF000000'), right=Side(border_style=None, color='FF000000'),\
+                top=Side(border_style=None, color='FF000000'), bottom=Side(border_style=None, color='FF000000'), diagonal=Side(border_style=None, color='FF000000'),\
+                    diagonal_direction=0, outline=Side(border_style=None, color='FF000000'), vertical=Side(border_style=None, color='FF000000'), horizontal=Side(border_style=None, color='FF000000'))
+            self.base_alignment=Alignment(horizontal='general', vertical='bottom', text_rotation=0, wrap_text=True, shrink_to_fit=False, indent=0)
+            self.base_number_format = 'General'
+            
+            #Base Header Styles
+            self.header_font = Font(name='Calibri', size=13, bold=True, italic=False, vertAlign=None, underline='none', strike=False, color='FF000000')
+            self.header_fill = PatternFill(fill_type=None, start_color='FFFFFFFF', end_color='FF000000')
+            self.header_border = Border(left=Side(border_style=None, color='FF000000'), right=Side(border_style=None, color='FF000000'),\
+                top=Side(border_style=None, color='FF000000'), bottom=Side(border_style=None, color='FF000000'), diagonal=Side(border_style=None, color='FF000000'),\
+                    diagonal_direction=0, outline=Side(border_style='thin', color='FF000000'), vertical=Side(border_style=None, color='FF000000'), horizontal=Side(border_style=None, color='FF000000'))
+            self.header_alignment=Alignment(horizontal='center', vertical='center', text_rotation=0, wrap_text=True, shrink_to_fit=False, indent=0)
+            self.header_number_format = 'General'
 
     def select_files_in_folder(self, dir, ext):
         for file in os.listdir(dir):
@@ -99,11 +106,12 @@ class TemplateReader():
                                         param_counter+=1
                                     wc_counter+=1
                                 header_ws[element.attrib['start_cell']] = ''.join(text)
-                            header_ws[element.attrib['start_cell']].font = self.header_font
-                            header_ws[element.attrib['start_cell']].fill = self.header_fill
-                            header_ws[element.attrib['start_cell']].border = self.header_border
-                            header_ws[element.attrib['start_cell']].alignment = self.header_alignment
-                            header_ws[element.attrib['start_cell']].number_format = self.header_number_format
+                            if platform.system() == 'Windows':
+                                header_ws[element.attrib['start_cell']].font = self.header_font
+                                header_ws[element.attrib['start_cell']].fill = self.header_fill
+                                header_ws[element.attrib['start_cell']].border = self.header_border
+                                header_ws[element.attrib['start_cell']].alignment = self.header_alignment
+                                header_ws[element.attrib['start_cell']].number_format = self.header_number_format
                             header_ws.merge_cells('%s:%s' % (element.attrib['start_cell'], element.attrib['end_cell']))
                             print('Header element placed')
                 elif child.tag == 'Body':
@@ -130,11 +138,12 @@ class TemplateReader():
                                                 param_counter+=1
                                             wc_counter+=1
                                         body_ws[segment.attrib['cell']] = ''.join(text)
-                                    body_ws[segment.attrib['cell']].font = self.header_font
-                                    body_ws[segment.attrib['cell']].fill = self.header_fill
-                                    body_ws[segment.attrib['cell']].border = self.header_border
-                                    body_ws[segment.attrib['cell']].alignment = self.header_alignment
-                                    body_ws[segment.attrib['cell']].number_format = self.header_number_format
+                                    if platform.system() == 'Windows':
+                                        body_ws[segment.attrib['cell']].font = self.header_font
+                                        body_ws[segment.attrib['cell']].fill = self.header_fill
+                                        body_ws[segment.attrib['cell']].border = self.header_border
+                                        body_ws[segment.attrib['cell']].alignment = self.header_alignment
+                                        body_ws[segment.attrib['cell']].number_format = self.header_number_format
                                     print('Data Title element %s placed in cell %s' % (child.text, segment.attrib['cell']))
                                     segment_counter+=1
                                 elif child.tag == 'Header':
@@ -144,11 +153,12 @@ class TemplateReader():
                                         cell = Utils.coordinate_from_string(segment.attrib['cell'])
                                         col = Utils.column_index_from_string(cell[0])
                                         body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)] = column.text
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].font = self.base_font
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].fill = self.base_fill
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].border = self.base_border
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].alignment = self.base_alignment
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].number_format = self.base_number_format
+                                        if platform.system() == 'Windows':
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].font = self.base_font
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].fill = self.base_fill
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].border = self.base_border
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].alignment = self.base_alignment
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].number_format = self.base_number_format
                                         print('Data Header element %s placed in cell %s%s' % (column.text, Utils.get_column_letter(col+i), 2))
                                         i+=1
                                     segment_counter+=1
@@ -180,11 +190,12 @@ class TemplateReader():
                                             cell = Utils.coordinate_from_string(segment.attrib['cell'])
                                             col = Utils.column_index_from_string(cell[0])
                                             body_ws['%s%s' % (Utils.get_column_letter(col+j), i)] = e
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].font = self.base_font
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].fill = self.base_fill
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].border = self.base_border
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].alignment = self.base_alignment
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].number_format = self.base_number_format
+                                            if platform.system() == 'Windows':
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].font = self.base_font
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].fill = self.base_fill
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].border = self.base_border
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].alignment = self.base_alignment
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].number_format = self.base_number_format
                                             print('Data Element %s placed in column %s%s' % (e, Utils.get_column_letter(col+i), j))
                                             j+=1
                                         i+=1
