@@ -133,7 +133,7 @@ class ExcelTranslator(Translator):
         Translator.__init__(self, inp_file, file_type, output_stream, stream_size)
         self.wb = load_workbook(filename = self.input_file)
         self.alphabet_list=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-        self.current_sheet = 0
+        self.current_sheet = 1
         self.sheets = self.wb.get_sheet_names()
         self.sheet_name = self.sheets[self.current_sheet]
         self.last_read = 1
