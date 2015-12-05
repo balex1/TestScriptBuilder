@@ -2730,6 +2730,11 @@ class TestScriptBuilderApp(App):
                 filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
                     filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
                         filter(Client.name==self.root.get_screen('workflow').current_client).all()
+                        
+        flow = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==self.root.get_screen('workflow').current_workflowname).\
+                filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
+                    filter(Client.name==self.root.get_screen('workflow').current_client).all()
         wfa = w[0]
         #Load the double clicked node into the side editor
         self.root.get_screen('workflow').ids.wf_carousel.name = node.img.text
@@ -2738,11 +2743,8 @@ class TestScriptBuilderApp(App):
             
         #Load the input parameters
         for ip in ips:
-            wp = session.query(WorkflowParameter).join(InputParameter).join(WorkflowAction).\
-                join(Workflow).join(TestScript).join(Project).join(Client).\
-                    filter(InputParameter.id == ip.id).filter(Workflow.id == w[0].id).\
-                        filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
-                            filter(Client.name==self.root.get_screen('workflow').current_client).all()
+            wp = session.query(WorkflowParameter).filter(WorkflowParameter.inputparamid == ip.id).\
+                filter(WorkflowParameter.keyactionid ==w[0].id).all()
             lbl = TextInput(hint_text=ip.name)
             if len(wp) != 0:
                 lbl.text = wp[0].value
@@ -3484,6 +3486,8 @@ class TestScriptBuilderApp(App):
         #If there is only one child, save it
         elif len(selected_ids) == 1:
             
+            child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
+            
             mod_text = child.module_in.text
             sa_text = child.sa_in.text
             ka_text = child.ka_in.text
@@ -3507,8 +3511,8 @@ class TestScriptBuilderApp(App):
                 return True
             
             Logger.debug('QKA: Selected IDs Length 1')
-            child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
             orig_id_list = child.id_list
+            
             name_list = child.name_list
 
             keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
