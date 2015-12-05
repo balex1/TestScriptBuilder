@@ -1,13 +1,7 @@
 <Template name='Key Action Export'>
-    <Header>
-        <Row>
-            <Element start_cell='A1' end_cell='E1'>Key Action Export</Element>
-        </Row>
-    </Header>
     <Body>
-		<Page name='Product'>
+	<Page name='Product'>
             <Segment cell='A1'>
-                <Title>Product</Title>
                 <Header>
                     <Column>ID</Column>
                     <Column>Name</Column>
@@ -17,7 +11,6 @@
         </Page>
         <Page name='Module'>
             <Segment cell='A1'>
-                <Title>Module</Title>
                 <Header>
                     <Column>ID</Column>
 					<Column>ProductID</Column>
@@ -28,7 +21,6 @@
         </Page>
         <Page name='System Area'>
             <Segment cell='A1'>
-                <Title>System Area</Title>
                 <Header>
                     <Column>ID</Column>
                     <Column>ModuleID</Column>
@@ -39,7 +31,6 @@
         </Page>
         <Page name='Key Action'>
             <Segment cell='A1'>
-                <Title>Key Action</Title>
                 <Header>
                     <Column>ID</Column>
                     <Column>SystemAreaID</Column>
@@ -52,7 +43,6 @@
         </Page>
         <Page name='Input Parameter'>
             <Segment cell='A1'>
-                <Title>Input Parameter</Title>
                 <Header>
                     <Column>ID</Column>
                     <Column>KeyActionID</Column>
