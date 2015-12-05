@@ -6,6 +6,7 @@
 	type_spinner: type_spinner
 	source_input: source_input
 	destination_input: destination_input
+	finddestpopup_button: finddestpopup_button
 	BoxLayout:
 		orientation: 'vertical'
 		size: root.size
@@ -54,8 +55,9 @@
 			Button:
 				text: 'Browse'
 				size_hint: 0.3, 1
+				id: finddestpopup_button
 				on_press: app.FindDestinationPopup(self, args[0])
-				
+
 		Button:
 			text: 'Run'
 			size_hint: 1, 0.2

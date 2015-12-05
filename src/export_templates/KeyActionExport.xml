@@ -1,0 +1,65 @@
+<Template name='Key Action Export'>
+    <Header>
+        <Row>
+            <Element start_cell='A1' end_cell='E1'>Key Action Export</Element>
+        </Row>
+    </Header>
+    <Body>
+		<Page name='Product'>
+            <Segment cell='A1'>
+                <Title>Product</Title>
+                <Header>
+                    <Column>ID</Column>
+                    <Column>Name</Column>
+                </Header>
+                <Query>select * from product;</Query>
+            </Segment>
+        </Page>
+        <Page name='Module'>
+            <Segment cell='A1'>
+                <Title>Module</Title>
+                <Header>
+                    <Column>ID</Column>
+					<Column>ProductID</Column>
+                    <Column>Name</Column>
+                </Header>
+                <Query>select * from module;</Query>
+            </Segment>
+        </Page>
+        <Page name='System Area'>
+            <Segment cell='A1'>
+                <Title>System Area</Title>
+                <Header>
+                    <Column>ID</Column>
+                    <Column>ModuleID</Column>
+                    <Column>Name</Column>
+                </Header>
+                <Query>select * from systemarea;</Query>
+            </Segment>
+        </Page>
+        <Page name='Key Action'>
+            <Segment cell='A1'>
+                <Title>Key Action</Title>
+                <Header>
+                    <Column>ID</Column>
+                    <Column>SystemAreaID</Column>
+                    <Column>Name</Column>
+                    <Column>Description</Column>
+                    <Column>Custom</Column>
+                </Header>
+                <Query>select * from keyaction;</Query>
+            </Segment>
+        </Page>
+        <Page name='Input Parameter'>
+            <Segment cell='A1'>
+                <Title>Input Parameter</Title>
+                <Header>
+                    <Column>ID</Column>
+                    <Column>KeyActionID</Column>
+                    <Column>Name</Column>
+                </Header>
+                <Query>select * from inputparameter;</Query>
+            </Segment>
+        </Page>
+    </Body>
+</Template>
