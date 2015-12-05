@@ -7,10 +7,10 @@ Created on Fri Nov 27 11:06:25 2015
 
 import xml.etree.ElementTree as ET
 from openpyxl import Workbook
-import utils as Utils
 import platform
 if platform.system() == 'Windows':
-    from openpyxl.style import PatternFill, Border, Side, Alignment, Protection, Font
+    from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font
+    import openpyxl.utils as Utils
 import sqlite3 as lite
 import os
 

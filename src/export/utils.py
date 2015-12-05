@@ -24,7 +24,7 @@ def column_index_from_string(str_col):
     temp_string = ""
     col_index = 0
     
-    for c in coord_string:
+    for c in str_col:
         number = ord(c) - 96
         col_index+=number
         
