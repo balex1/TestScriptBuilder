@@ -2919,29 +2919,29 @@ class TestScriptBuilderApp(App):
             #Nodes
             for node in flowchart_actions:
                 image = Label(text=node.name)
-                self.add_flowchart_node(self.root.get_screen('workflow').drag_grid.get_cell(node.col, node.row), image)
+                self.add_flowchart_node(self.root.get_screen('workflow').drag_grid.get_cell(node.row, node.col), image)
             
             #Connections
             for action in next_actions:
-                ka1 = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
-                    join(TestScript).join(Project).join(Client).filter(TestScript.name==ts).\
-                    filter(Project.name==pr).filter(Client.name==cl).filter(WorkflowAction.id == action.keyactionid).all()
-                ka2 = session.query(KeyAction).join(WorkflowAction).join(Workflow).\
-                    join(TestScript).join(Project).join(Client).filter(TestScript.name==ts).\
-                    filter(Project.name==pr).filter(Client.name==cl).filter(WorkflowAction.id == action.nextactionid).all()
+                ka1 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.keyactionid).all()
+                ka2 = session.query(KeyAction).join(WorkflowAction).filter(WorkflowAction.id == action.nextactionid).all()
                 
                 for node in self.root.get_screen('workflow').drag_grid.nodes:
-                    #Find the cnnected node
-                    for node2 in self.root.get_screen('workflow').drag_grid.nodes:
-                        if ka2[0].name == node2.label.img.text:
-                            connected_node = node2
+    
                     #Add connections to the grid
                     if ka1[0].name == node.label.img.text:
-                        connector = Connector(line_color=node.connector.connector_color)
-                        node.connector.connections.append(connector)
-                        node.connections.append(connected_node)
-                        node.grid.connections[0].append(node)
-                        node.grid.connections[1].append(connected_node)
+                        
+                        #Find the connected node
+                        for node2 in self.root.get_screen('workflow').drag_grid.nodes:
+                            if ka2[0].name == node2.label.img.text:
+                                connected_node = node2
+                                
+                                connector = Connector(line_color=node.connector.connector_color)
+                                
+                                node.connector.connections.append(connector)
+                                node.connections.append(connected_node)
+                                node.grid.connections[0].append(node)
+                                node.grid.connections[1].append(connected_node)
         else:
             for action in keyactions:
                 ka_list.append(action)

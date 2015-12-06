@@ -162,12 +162,11 @@ class ConnectorForward(ToggleButton):
 #                        self.matching_connection=node
                         
                         #Validate for duplicates
-                        #TO-DO: Adding duplicates is crashing on line 171
                         j=0
                         for con_start in self.grid.connections[0]:
-                            if self.node == self.grid.connections[0][j] and self.matching_connection == self.grid.connections[1][j]:
+                            if self.node == self.grid.connections[0][j] and node == self.grid.connections[1][j]:
                                 match=True
-                                Logger.debug('Duplicate Connection Found')
+                                Logger.debug('Duplicate Connection Found: %s, %s' % (str(self.grid.connections[0][j]), str(self.grid.connections[1][j])))
                                 con_out_1 = ""
                                 i=0
                                 for connection in self.grid.connections[0]:
@@ -184,7 +183,7 @@ class ConnectorForward(ToggleButton):
                                 self.grid.connections[0].remove(self.grid.connections[0][j])
                                 self.grid.connections[1].remove(self.grid.connections[1][j])
                                 self.node.connections.remove(node)
-                                j+=1
+                            j+=1
                                 
                                 
                         if match == False:
@@ -214,7 +213,7 @@ class ConnectorForward(ToggleButton):
                 self.clear_widgets()
                 self.add_widget(connect)
                 connect.front=self.center
-                connect.back=self.matching_connection.receiver.center
+#                connect.back=self.matching_connection.receiver.center
                 Logger.debug('FlowChart: Connections Updated')
     
 class ConnectorBack(ToggleButton):
