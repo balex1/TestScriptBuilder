@@ -162,12 +162,29 @@ class ConnectorForward(ToggleButton):
 #                        self.matching_connection=node
                         
                         #Validate for duplicates
-                        for con_start, con_end in zip(self.grid.connections[0], self.grid.connections[1]):
-                            if self.node == con_start and self.matching_connection == con_end:
+                        #TO-DO: Adding duplicates is crashing on line 171
+                        j=0
+                        for con_start in self.grid.connections[0]:
+                            if self.node == self.grid.connections[0][j] and self.matching_connection == self.grid.connections[1][j]:
                                 match=True
-                                self.grid.connections[0].remove(con_start)
-                                self.grid.connections[1].remove(con_end)
+                                Logger.debug('Duplicate Connection Found')
+                                con_out_1 = ""
+                                i=0
+                                for connection in self.grid.connections[0]:
+                                    con_out_1+="%s, %s" % (str(self.grid.connections[0][i]), str(self.grid.connections[1][i]))
+                                    i+=1
+                                Logger.debug('Current Grid Connections are: %s' % (con_out_1))
+                                
+                                i=0
+                                con_out_2 = ""
+                                for connection in self.node.connections:
+                                    con_out_2+=str(connection)
+                                Logger.debug('Current node connections are: %s' % (con_out_2))
+                                
+                                self.grid.connections[0].remove(self.grid.connections[0][j])
+                                self.grid.connections[1].remove(self.grid.connections[1][j])
                                 self.node.connections.remove(node)
+                                j+=1
                                 
                                 
                         if match == False:
@@ -178,6 +195,19 @@ class ConnectorForward(ToggleButton):
                             self.grid.connections[0].append(self.node)
                             self.grid.connections[1].append(self.matching_connection)
                             Logger.debug('FlowChart: Matching Connector appended: Node 1 %s & Node 2 %s' % (self.node, self.matching_connection))
+                            
+                            con_out_1 = ""
+                            i=0
+                            for connection in self.grid.connections[0]:
+                                con_out_1+="%s, %s" % (str(self.grid.connections[0][i]), str(self.grid.connections[1][i]))
+                                i+=1
+                            Logger.debug('Current Grid Connections are: %s' % (con_out_1))
+                            
+                            i=0
+                            con_out_2 = ""
+                            for connection in self.node.connections:
+                                con_out_2+=str(connection)
+                            Logger.debug('Current node connections are: %s' % (con_out_2))
                     
             #Add the connections to the widget
             for connect in self.connections:
