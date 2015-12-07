@@ -948,11 +948,16 @@ class DatabaseWriter():
             
         session.commit()
 
-    def SaveKeyAction(self, module, sysarea, name, desc, custom, ip_list):
+    def SaveKeyAction(self, product, module, sysarea, name, desc, custom, ip_list):
         #Check if the module exists
         mod = session.query(Module).filter(Module.name==module).all()
         if len(mod) == 0:
-            module = Module(name=module)
+            prod = session.query(Product).filter(Product.name==product).all()
+            if len(prod) != 0:
+                prod_id = prod[0].id
+            else:
+                prod_id = 1
+            module = Module(name=module, productid = prod_id)
             session.add(module)
         else:
             module = mod[0]
@@ -1071,7 +1076,7 @@ class DatabaseWriter():
         if len(sa_rows) > 1:
             raise KeyError('Business Key Violation in table system area')
         elif len(sa_rows) == 1:
-            sa_rows[0].name == child.sa_in.text
+            sa_rows[0].name = child.sa_in.text
         sa_rows[0].moduleid = rows[0].id
         session.commit()
         Logger.debug('QKA: System Area Committed %s' % (child.sa_in.text))
@@ -2464,6 +2469,8 @@ class TestScriptBuilderApp(App):
         ka_text = popup.content.ka_in.text
         desc_text = popup.content.desc_in.text
         
+        prod = self.root.get_screen('keyactiongroup').current_product
+        
         if len(mod_text) < 2:
             lbl = Label(text='Module Name not long enough')
             er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
@@ -2482,7 +2489,7 @@ class TestScriptBuilderApp(App):
             return True
             
         #Save Key Action
-        writer.SaveKeyAction(mod_text, sa_text, ka_text, desc_text, cust, popup.content.ips)
+        writer.SaveKeyAction(prod, mod_text, sa_text, ka_text, desc_text, cust, popup.content.ips)
             
         #Add to workflow
         ip = []
