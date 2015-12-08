@@ -2513,9 +2513,15 @@ class TestScriptBuilderApp(App):
         popup.open()
         
         #Populate the currently selected values into the popup
-        popup.content.load_client.text = self.root.get_screen('workflow').current_client
-        popup.content.load_project.text = self.root.get_screen('workflow').current_project
-        popup.content.load_testscript.text = self.root.get_screen('workflow').current_script
+        if self.root.get_screen('workflow').current_client is not None:
+            popup.content.load_client.text = self.root.get_screen('workflow').current_client
+            
+        if self.root.get_screen('workflow').current_project is not None:
+            popup.content.load_project.text = self.root.get_screen('workflow').current_project
+            
+        if self.root.get_screen('workflow').current_script is not None:
+            popup.content.load_testscript.text = self.root.get_screen('workflow').current_script
+            
         popup.content.load_client.values.append('')
         popup.content.load_project.values.append('')
         popup.content.load_testscript.values.append('')
@@ -3006,13 +3012,17 @@ class TestScriptBuilderApp(App):
         Logger.debug('Add To Workflow')
         
         current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
-        new_script=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
-        new_project=self.root.get_screen('keyactiongroup').pop_up.content.cwp_project.text
-        new_client=self.root.get_screen('keyactiongroup').pop_up.content.cwp_client.text
+        new_script=self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript.text
+        new_project=self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
+        new_client=self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
         
-        workflow = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+        workflows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
             filter(Workflow.name==current_workflow).filter(TestScript.name==new_script).\
-            filter(Project.name == new_project).filter(Client.name == new_client).one()
+            filter(Project.name == new_project).filter(Client.name == new_client).all()
+        if len(workflows) < 1:
+            lbl = Label(text='No Workflow Found')
+            popup = Popup(title='Error', content=lbl, size_hint=(0.4, 0.5))
+            popup.open()
         for option in selected:
             keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
