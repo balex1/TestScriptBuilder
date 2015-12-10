@@ -929,22 +929,28 @@ class DatabaseWriter():
             
         session.commit()
         
-    def SaveWorkflowParameter(self, ip_name, action_name, flow_name, param_value):
+    def SaveWorkflowParameter(self, ip_name, action_name, flow_name, param_value, testscript, project, client):
         ip = session.query(InputParameter).join(KeyAction).\
             filter(KeyAction.name==action_name).filter(InputParameter.name==ip_name).all()
             
         ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
-        wf = session.query(Workflow).filter(Workflow.name==flow_name)
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==flow_name).filter(TestScript.name==testscript).\
+                filter(Project.name==project).filter(Client.name==client).all()
         
-        wfp = session.query(WorkflowParameter).join(WorkflowAction).join(Workflow).\
-            filter(Workflow.name==flow_name).filter(WorkflowParameter.inputparamid==ip[0].id).all()
+        if len(ka) > 0 and len(wf) > 0:
+            wfp = session.query(WorkflowParameter).join(WorkflowAction).join(Workflow).\
+                filter(Workflow.id==wf[0].id).filter(WorkflowParameter.inputparamid==ip[0].id).all()
+        else:
+            wfp = []
             
         if len(wfp) == 0:
-            param = WorkflowParameter(inputparamid=ip[0].id, keyactionid=ka[0].id, value = param_value)
+            wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
+                filter(KeyAction.id==ka[0].id).filter(Workflow.id==wf[0].id).all()
+            param = WorkflowParameter(inputparamid=ip[0].id, keyactionid=wfa[0].id, value = param_value)
             session.add(param)
         else:
-            param = wfp[0]
-            param.value = param_value
+            wfp[0].value = param_value
             
         session.commit()
 
@@ -998,25 +1004,29 @@ class DatabaseWriter():
             
         session.commit()
             
-    def SaveWorkflowAction(self, action_name, flow_name, expected_results, ip_value_list):
+    def SaveWorkflowAction(self, action_name, flow_name, expected_results, ip_value_list, testscript, project, client):
         ka = session.query(KeyAction).filter(KeyAction.name==action_name).all()
-        wf = session.query(Workflow).filter(Workflow.name==flow_name).one()
+        wf = session.query(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==flow_name).filter(TestScript.name==testscript).\
+                filter(Project.name==project).filter(Client.name==client).all()
         ips = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action_name).all()
         i = 0
         
         #Check if the workflow action exists
-        wfa = session.query(WorkflowAction).join(Workflow).\
-            filter(Workflow.name==flow_name).filter(WorkflowAction.keyactionid==ka[0].id).all()
+        if len(ka) > 0 and len(wf) > 0:
+            wfa = session.query(WorkflowAction).join(Workflow).\
+                filter(Workflow.id==wf[0].id).filter(WorkflowAction.keyactionid==ka[0].id).all()
+        else:
+            wfa=[]
         
         if len(wfa) == 0:
-            action = WorkflowAction(keyactionid=ka[0].id, workflowid=wf.id, expectedresult=expected_results)
+            action = WorkflowAction(keyactionid=ka[0].id, workflowid=wf[0].id, expectedresult=expected_results)
             session.add(action)
         else:
-            action = wfa[0]
-            action.expectedresult = expected_results
+            wfa[0].expectedresult = expected_results
             
         for ip_value in ip_value_list:
-            self.SaveWorkflowParameter(ips[i].name, action_name, flow_name, ip_value)
+            self.SaveWorkflowParameter(ips[i].name, action_name, flow_name, ip_value, testscript, project, client)
             i+=1
             
         session.commit()
@@ -1025,6 +1035,15 @@ class DatabaseWriter():
         start = con_list[0]
         end = con_list[1]
         i=0
+        
+        #Delete all the existing next actions in the db for the workflow
+        n_actions = session.query(WorkflowNextAction).join(WorkflowAction).join(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name == workflow).filter(TestScript.name == testscript).\
+                filter(Project.name == project).filter(Client.name == client).all()
+        for action in n_actions:
+            session.delete(action)
+        session.commit()
+                            
         #Iterate through the lists
         for celement in con_list[0]:
             #A celement of index i from con_list[0] is the start connector
@@ -1125,6 +1144,15 @@ class DatabaseWriter():
         self.ValidateInputParameter(child.iplist, ka_rows, id, orig_ip_list)
         
     def SaveFlowchart(self, nodes_list, current_script, current_project, current_client, current_workflow):
+        #Delete all the existing flowchart nodes
+        fl_nodes = session.query(FlowchartPosition).join(WorkflowAction).join(Workflow).join(TestScript).join(Project).join(Client).\
+            filter(Workflow.name==current_workflow).filter(TestScript.name == current_script).\
+                filter(Project.name==current_project).filter(Client.name==current_client).all()
+        for node in fl_nodes:
+            session.delete(node)
+        session.commit()
+        
+        #Add the current nodes into the db
         for node in nodes_list:
             wfa = session.query(WorkflowAction).join(KeyAction).join(Workflow).\
                 join(TestScript).join(Project).join(Client).filter(KeyAction.name==node.label.img.text).\
@@ -2240,7 +2268,9 @@ class TestScriptBuilderApp(App):
             ip_value_list = []
             for ip in ips:
                 ip_value_list.append(ip.name)
-            writer.SaveWorkflowAction(action.name, flow.name, flowaction.expectedresult, ip_value_list)
+            writer.SaveWorkflowAction(action.name, flow.name, flowaction.expectedresult,\
+                ip_value_list, self.root.get_screen('workflow').current_script,\
+                    self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
         
         #Clear the current elements in the UI
         self.ClearWorkflow()
@@ -2493,7 +2523,8 @@ class TestScriptBuilderApp(App):
             
         #Add to workflow
         ip = []
-        writer.SaveWorkflowAction(popup.content.ka_in.text, self.root.get_screen('workflow').current_wf.text, '', ip)
+        writer.SaveWorkflowAction(popup.content.ka_in.text, self.root.get_screen('workflow').current_wf.text, '', ip, self.root.get_screen('workflow').current_script,\
+            self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
         
         #Add node in list
         lbl = Label(text=popup.content.ka_in.text)
@@ -2721,9 +2752,11 @@ class TestScriptBuilderApp(App):
         ip_value_list = []
         for child in self.root.get_screen('workflow').ids.wf_carousel.ipgrid_in.children:
             ip_value_list.append(child.text)
+            Logger.debug('%s appended to ip value list' % (child.text))
             
         #Write values to the DB
-        writer.SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list)
+        writer.SaveWorkflowAction(action_name, flow_name, expected_results, ip_value_list, self.root.get_screen('workflow').current_script,\
+            self.root.get_screen('workflow').current_project, self.root.get_screen('workflow').current_client)
   
     #This is a critical method as it is called when a draggable is released on
     #the flowchart, to add a flowchart node.  This takes the label from the original
@@ -2942,19 +2975,21 @@ class TestScriptBuilderApp(App):
                 for node in self.root.get_screen('workflow').drag_grid.nodes:
     
                     #Add connections to the grid
-                    if ka1[0].name == node.label.img.text:
-                        
-                        #Find the connected node
-                        for node2 in self.root.get_screen('workflow').drag_grid.nodes:
-                            if ka2[0].name == node2.label.img.text:
-                                connected_node = node2
-                                
-                                connector = Connector(line_color=node.connector.connector_color)
-                                
-                                node.connector.connections.append(connector)
-                                node.connections.append(connected_node)
-                                node.grid.connections[0].append(node)
-                                node.grid.connections[1].append(connected_node)
+                    if len(ka1) > 0:
+                        if ka1[0].name == node.label.img.text:
+                            
+                            #Find the connected node
+                            for node2 in self.root.get_screen('workflow').drag_grid.nodes:
+                                if len(ka2) > 0:
+                                    if ka2[0].name == node2.label.img.text:
+                                        connected_node = node2
+                                        
+                                        connector = Connector(line_color=node.connector.connector_color)
+                                        
+                                        node.connector.connections.append(connector)
+                                        node.connections.append(connected_node)
+                                        node.grid.connections[0].append(node)
+                                        node.grid.connections[1].append(connected_node)
         else:
             for action in keyactions:
                 ka_list.append(action)
@@ -3446,7 +3481,6 @@ class TestScriptBuilderApp(App):
                     raise KeyError('Business Key Violation in table key action')
                 elif len(results) == 1:
                     result = results[0]
-                    session.add(result)
                     session.delete(result)
         elif numSelected == 1:
             action = selected[0]
@@ -3455,7 +3489,6 @@ class TestScriptBuilderApp(App):
                 raise KeyError('Business Key Violation in table key action')
             elif len(results) == 1:
                 result = results[0]
-                session.add(result)
                 session.delete(result)
                 session.commit()
         self.ApplyFilterKAG(args)

@@ -22,21 +22,13 @@
 				size_hint: 0.5, 1
 				rows: 2
 				Label:
-					text: 'Test Script'
-				Spinner:
-					on_text: app.ApplyLoadWorkflowPopupFilter_Script(self, args[0])
-					id: lwp_testscript
-		BoxLayout:
-			orientation: 'horizontal'
-			size_hint: 1, 0.3
-			GridLayout:
-				size_hint: 0.5, 1
-				rows: 2
-				Label:
 					text: 'Client'
 				Spinner:
 					on_text: app.ApplyLoadWorkflowPopupFilter(self, args[0])
 					id: lwp_client
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: 1, 0.3
 			GridLayout:
 				size_hint: 0.5, 1
 				rows: 2
@@ -45,6 +37,14 @@
 				Spinner:
 					on_text: app.ApplyLoadWorkflowPopupFilter(self, args[0])
 					id: lwp_project
+			GridLayout:
+				size_hint: 0.5, 1
+				rows: 2
+				Label:
+					text: 'Test Script'
+				Spinner:
+					on_text: app.ApplyLoadWorkflowPopupFilter_Script(self, args[0])
+					id: lwp_testscript
 		GridLayout:
 			cols: 2
 			size_hint: 1, 0.4
