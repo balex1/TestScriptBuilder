@@ -52,10 +52,24 @@ class TemplateReader():
         for file in os.listdir(dir):
             if file.endswith('.%s' % ext):
                 yield os.path.join(dir, file)
+                
+    def generate_parameter_list(self, xml_path):
+        
+        #Param list to hold input parameters
+        param_list=[]
+        #Read the XML Template
+        self.tree = ET.parse(xml_path)
+        self.root = self.tree.getroot()
+        for child in self.root:
+            if child.tag == 'InputParameters':
+                for value in child:
+                    #Add each value to the parameter list
+                    param_list.append(value.text)
+        return param_list
     
     #Takes in the XML path of the template file
     #params is a list of the input parameters for the template
-    #TO-DO: Look for '?' in the xml values and replace it with the next up param
+    #Look for '?' in the xml values and replace it with the next up param
     def translate_template(self, xml_path, params):
         
         #Counter for the input parameters
@@ -121,82 +135,89 @@ class TemplateReader():
                         segment_counter = 0
                         body_ws = self.wb.create_sheet(page.attrib['name'])
                         for segment in page:
-                            for child in segment:
-                                if child.tag == 'Title':
-                                    if '?' not in child.text:
-                                        body_ws[segment.attrib['cell']] = child.text
-                                    #If a wildcard is encountered, we need to replace it with the
-                                    #correct parameter
-                                    else:
-                                        text = list(child.text)
-                                        wc_counter = 0
-                                        for i in text:
-                                            if i == '?':
-                                                text[wc_counter] = params[int(text[wc_counter + 1])]
-                                                print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
-                                                del text[wc_counter + 1]
-                                                param_counter+=1
-                                            wc_counter+=1
-                                        body_ws[segment.attrib['cell']] = ''.join(text)
-                                    if platform.system() == 'Windows':
-                                        body_ws[segment.attrib['cell']].font = self.header_font
-                                        body_ws[segment.attrib['cell']].fill = self.header_fill
-                                        body_ws[segment.attrib['cell']].border = self.header_border
-                                        body_ws[segment.attrib['cell']].alignment = self.header_alignment
-                                        body_ws[segment.attrib['cell']].number_format = self.header_number_format
-                                    print('Data Title element %s placed in cell %s' % (child.text, segment.attrib['cell']))
-                                    segment_counter+=1
-                                elif child.tag == 'Header':
-                                    i=0
-                                    for column in child:
-                                        #Place the column header for each query column
-                                        cell = Utils.coordinate_from_string(segment.attrib['cell'])
-                                        col = Utils.column_index_from_string(cell[0])
-                                        body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)] = column.text
+                            if segment.tag == 'TestScriptSummary':
+                                #Execute the specialized Test Script Summary
+                                pass
+                            elif segment.tag == 'TestScriptSteps':
+                                #Execute the specialized Test Script Steps Export
+                                pass
+                            else:
+                                for child in segment:
+                                    if child.tag == 'Title':
+                                        if '?' not in child.text:
+                                            body_ws[segment.attrib['cell']] = child.text
+                                        #If a wildcard is encountered, we need to replace it with the
+                                        #correct parameter
+                                        else:
+                                            text = list(child.text)
+                                            wc_counter = 0
+                                            for i in text:
+                                                if i == '?':
+                                                    text[wc_counter] = params[int(text[wc_counter + 1])]
+                                                    print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
+                                                    del text[wc_counter + 1]
+                                                    param_counter+=1
+                                                wc_counter+=1
+                                            body_ws[segment.attrib['cell']] = ''.join(text)
                                         if platform.system() == 'Windows':
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].font = self.base_font
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].fill = self.base_fill
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].border = self.base_border
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].alignment = self.base_alignment
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].number_format = self.base_number_format
-                                        print('Data Header element %s placed in cell %s%s' % (column.text, Utils.get_column_letter(col+i), 2))
-                                        i+=1
-                                    segment_counter+=1
-                                elif child.tag == 'Query':
-                                    #Execute the query and place the results into the page
-                                    if '?' not in child.text:
-                                        self.cur.execute(child.text)
-                                    #If a wildcard is encountered, we need to replace it with the
-                                    #correct parameter
-                                    else:
-                                        text = list(child.text)
-                                        wc_counter = 0
-                                        for i in text:
-                                            if i == '?':
-                                                text[wc_counter] = params[int(text[wc_counter + 1])]
-                                                print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
-                                                del text[wc_counter + 1]
-                                                param_counter+=1
-                                            wc_counter+=1
-                                        self.cur.execute(''.join(text))
-                                    data = self.cur.fetchall()
-                                    print('query %s executed' % (child.text))
-                                    i=3
-                                    for row in data:
-                                        j=0
+                                            body_ws[segment.attrib['cell']].font = self.header_font
+                                            body_ws[segment.attrib['cell']].fill = self.header_fill
+                                            body_ws[segment.attrib['cell']].border = self.header_border
+                                            body_ws[segment.attrib['cell']].alignment = self.header_alignment
+                                            body_ws[segment.attrib['cell']].number_format = self.header_number_format
+                                        print('Data Title element %s placed in cell %s' % (child.text, segment.attrib['cell']))
                                         segment_counter+=1
-                                        #Place the data into the report
-                                        for e in row:
+                                    elif child.tag == 'Header':
+                                        i=0
+                                        for column in child:
+                                            #Place the column header for each query column
                                             cell = Utils.coordinate_from_string(segment.attrib['cell'])
                                             col = Utils.column_index_from_string(cell[0])
-                                            body_ws['%s%s' % (Utils.get_column_letter(col+j), i)] = e
+                                            body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)] = column.text
                                             if platform.system() == 'Windows':
-                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].font = self.base_font
-                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].fill = self.base_fill
-                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].border = self.base_border
-                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].alignment = self.base_alignment
-                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].number_format = self.base_number_format
-                                            print('Data Element %s placed in column %s%s' % (e, Utils.get_column_letter(col+i), j))
-                                            j+=1
-                                        i+=1
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].font = self.base_font
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].fill = self.base_fill
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].border = self.base_border
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].alignment = self.base_alignment
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+i), 1 + segment_counter)].number_format = self.base_number_format
+                                            print('Data Header element %s placed in cell %s%s' % (column.text, Utils.get_column_letter(col+i), 2))
+                                            i+=1
+                                        segment_counter+=1
+                                    elif child.tag == 'Query':
+                                        #Execute the query and place the results into the page
+                                        if '?' not in child.text:
+                                            self.cur.execute(child.text)
+                                        #If a wildcard is encountered, we need to replace it with the
+                                        #correct parameter
+                                        else:
+                                            text = list(child.text)
+                                            wc_counter = 0
+                                            for i in text:
+                                                if i == '?':
+                                                    text[wc_counter] = params[int(text[wc_counter + 1])]
+                                                    print('Parameter %s used' % (params[int(text[wc_counter + 1])]))
+                                                    del text[wc_counter + 1]
+                                                    param_counter+=1
+                                                wc_counter+=1
+                                            self.cur.execute(''.join(text))
+                                        data = self.cur.fetchall()
+                                        print('query %s executed' % (child.text))
+                                        i=3
+                                        for row in data:
+                                            j=0
+                                            segment_counter+=1
+                                            #Place the data into the report
+                                            for e in row:
+                                                cell = Utils.coordinate_from_string(segment.attrib['cell'])
+                                                col = Utils.column_index_from_string(cell[0])
+                                                body_ws['%s%s' % (Utils.get_column_letter(col+j), i)] = e
+                                                if platform.system() == 'Windows':
+                                                    body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].font = self.base_font
+                                                    body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].fill = self.base_fill
+                                                    body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].border = self.base_border
+                                                    body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].alignment = self.base_alignment
+                                                    body_ws['%s%s' % (Utils.get_column_letter(col+j), i)].number_format = self.base_number_format
+                                                print('Data Element %s placed in column %s%s' % (e, Utils.get_column_letter(col+i), j))
+                                                j+=1
+                                            i+=1
             self.wb.save('Export.xlsx')

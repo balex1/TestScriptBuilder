@@ -10,7 +10,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.checkbox import CheckBox
 from kivy.lang import Builder
 from kivy.logger import Logger
-from kivy.properties import ListProperty, StringProperty, BooleanProperty, ObjectProperty
+from kivy.properties import ListProperty, StringProperty, BooleanProperty, ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.actionbar import ActionBar, ActionView, ActionButton, ActionGroup
 from kivy.uix.togglebutton import ToggleButton
@@ -1759,8 +1759,11 @@ writer = DatabaseWriter()
 #Create the Selection List
 selected = []
 
-#Create the list of selected key action id's to allow updating names
+#Create the list of selected key action id's
 selected_ids = []
+
+#Create the list of id's in the key action carousel
+carousel_ids = []
 
 class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
@@ -1836,10 +1839,7 @@ class ExportPopup(BoxLayout):
     pass
 
 class ExportParametersPopup(GridLayout):
-    ip1 = ObjectProperty(None)
-    ip2 = ObjectProperty(None)
-    ip3 = ObjectProperty(None)
-    ip4 = ObjectProperty(None)
+    input_grid = ObjectProperty(None)
 
 class AddToWorkflowPopup(BoxLayout):
     spinner=ObjectProperty(None)
@@ -1878,15 +1878,18 @@ class SelectableButton(ToggleButton):
     #Exposes on_selection event
     selection = BooleanProperty(False)
     #Internal, for the Grid Layout to control the selection
+    object_id = NumericProperty(0)
 
     #Assumes button starts with selection = False
     def SelectButton(self, *args):
         if self.selection == False:
             self.selection = True
             selected.append(self.text)
+            selected_ids.append(self.object_id)
         else:
             self.selection = False
             selected.remove(self.text)
+            selected_ids.remove(self.object_id)
         
 #------------------------------------------------------------
 #----------------Central App---------------------------------
@@ -1967,10 +1970,26 @@ class TestScriptBuilderApp(App):
          
     def ShowExportParametersPopup(self, *args):
          Logger.debug('Show Export Parameters Popup')
+         
+         #Create the popup
          self.root.get_screen('keyactiongroup').original_pop_up = self.root.get_screen('keyactiongroup').pop_up
          popup = Popup(title='Export Parameters', content=ExportParametersPopup(), size_hint=(0.3, 0.5))
          self.root.get_screen('keyactiongroup').pop_up.dismiss()
          self.root.get_screen('keyactiongroup').pop_up = popup
+         
+         #Generate the parameter list
+         xml_path = os.path.abspath('src/export_templates/%s' % (self.root.get_screen('keyactiongroup').original_pop_up.content.conn_panel.db.type_spinner.text))
+         params = tr.generate_parameter_list(xml_path)
+         
+         #Add the parameter list as text inputs to the popup
+         for param in params:
+             inp = TextInput(hint_text = '%s' % (param), multiline = False)
+             popup.content.input_grid.add_widget(inp)
+         but = Button(text = 'Execute')
+         but.bind(on_press=self.ExecuteExport)
+         popup.content.input_grid.add_widget(but)
+         
+         #Show the popup
          popup.open()
          
     def ExecuteExport(self, *args):
@@ -3037,8 +3056,8 @@ class TestScriptBuilderApp(App):
         workflow = Workflow(testscriptid=test_script.id, name=self.root.get_screen('keyactiongroup').pop_up.content.new_flow.text)
         session.add(workflow)
         session.commit()
-        for option in selected:
-            keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
+        for option in selected_ids:
+            keyaction = session.query(KeyAction).filter(KeyAction.id==option).one()
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
             session.add(wfa)
         session.commit()
@@ -3265,8 +3284,7 @@ class TestScriptBuilderApp(App):
         results = filter.NextPage_KA(str(mod), str(sa), str(ka), str(cust), self.root.get_screen('keyactiongroup').current_product)
         i = 0
         for i in range(0, len(results)):
-            sel = SelectableButton(text=str(results[i].name))
-            #sel.bind(on_press.SelectButton)
+            sel = SelectableButton(text=str(results[i].name), object_id=results[i].id)
             self.root.get_screen('keyactiongroup').ids.selection_layout.add_widget(sel)
     
     #Load the previous page for the Key Action Group Screen
@@ -3285,8 +3303,7 @@ class TestScriptBuilderApp(App):
         results = filter.PrevPage_KA(str(mod), str(sa), str(ka), str(cust), self.root.get_screen('keyactiongroup').current_product)
         i = 0
         for i in range(0, len(results)):
-            sel = SelectableButton(text=str(results[i].name))
-            #sel.bind(on_press.SelectButton)
+            sel = SelectableButton(text=str(results[i].name), object_id=results[i].id)
             self.root.get_screen('keyactiongroup').ids.selection_layout.add_widget(sel)
             
     #Load the next page for the Key Action Group Screen
@@ -3306,8 +3323,7 @@ class TestScriptBuilderApp(App):
         results = filter.ApplyFilter(str(mod), str(sa), str(ka), str(cust), str(self.root.get_screen('keyactiongroup').current_product))
         i = 0
         for i in range(0, len(results)):
-            sel = SelectableButton(text=str(results[i].name))
-            #sel.bind(on_press= self.SelectButton)
+            sel = SelectableButton(text=str(results[i].name), object_id=results[i].id)
             self.root.get_screen('keyactiongroup').ids.selection_layout.add_widget(sel)
             
     #Clear the filter in t he Key Action Group Screen
@@ -3371,34 +3387,38 @@ class TestScriptBuilderApp(App):
         numSelected = len(selected)
         
         if numSelected > 1:
-            for action in selected:
+            for action in selected_ids:                      
                 #Create the Key Action Carousel Item
                 keyaction = KeyActionCarouselItem(app=self)
                     
                 #Set the Module & System Area
-                sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                 keyaction.sa_in.text = sa_rows[0].name
-                mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                sysarea = sa_rows[0].name
+                mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                 keyaction.module_in.text = mod_rows[0].name
+                module = mod_rows[0].name
+                prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product)
+                product = prod_rows[0].name
                 
-                #Create a new Key Action
-                ka = KeyAction()
-                session.add(ka)
-                
-                rows = session.query(KeyAction).filter(KeyAction.name == action)
+                rows = session.query(KeyAction).filter(KeyAction.id == action)
                 
                 #Set the Key Action attributes
                 keyaction.ka_in.text = "New %s" % (rows[0].name)
-                ka.name = "New %s" % (rows[0].name)
+                name = "New %s" % (rows[0].name)
                 keyaction.desc_in.text = rows[0].description
-                ka.description = rows[0].description
+                desc = rows[0].description
                 keyaction.custom_in.active = rows[0].custom
-                ka.custom = rows[0].custom
-                ka.systemareaid = rows[0].systemareaid
-                session.commit()
+                custom = rows[0].custom
                     
                 #Get the Input Parameters
-                ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
+                ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == action).all()
+                
+                ip_list = []
+                for ip in ip_rows:
+                    ip_list.append(ip.name)
+                
+                writer.SaveKeyAction(product, module, sysarea, name, desc, custom, ip_list)
                     
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
@@ -3418,44 +3438,48 @@ class TestScriptBuilderApp(App):
                     i+=1
 
         elif numSelected == 1:
-            action = selected[0]
+            action = selected_ids[0]
             #Create the Key Action Carousel Item
             keyaction = KeyActionCarouselItem(app=self)
                 
             #Set the Module & System Area
-            sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+            sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
             keyaction.sa_in.text = sa_rows[0].name
-            mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+            sysarea = sa_rows[0].name
+            mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
             keyaction.module_in.text = mod_rows[0].name
+            module = mod_rows[0].name
+            prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product)
+            product = prod_rows[0].name
             
-            #Create a new Key Action
-            ka = KeyAction()
-            session.add(ka)
-            
-            rows = session.query(KeyAction).filter(KeyAction.name == action)
+            rows = session.query(KeyAction).filter(KeyAction.id == action)
             
             #Set the Key Action attributes
             keyaction.ka_in.text = "New %s" % (rows[0].name)
-            ka.name = "New %s" % (rows[0].name)
+            name = "New %s" % (rows[0].name)
             keyaction.desc_in.text = rows[0].description
-            ka.description = rows[0].description
+            desc = rows[0].description
             keyaction.custom_in.active = rows[0].custom
-            ka.custom = rows[0].custom
-            ka.systemareaid = rows[0].systemareaid
-            session.commit()
+            custom = rows[0].custom
                 
             #Get the Input Parameters
-            ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
-                    
+            ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == action).all()
+            
+            ip_list = []
+            for ip in ip_rows:
+                ip_list.append(ip.name)
+            
+            writer.SaveKeyAction(product, module, sysarea, name, desc, custom, ip_list)
+                
             #Add the base widget to the screen in the carousel
             self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
-                    
+                
             #Add Text Inputs to IP Grid
             for ip in ip_rows:
                 ip_input = TextInput(hint_text='Input Parameter')
                 keyaction.ipgrid_in.add_widget(ip_input)
                 keyaction.iplist.append(ip_input)
-                        
+                    
             #Set the IP attributes
             i=0
             for ip in ip_rows:
@@ -3475,16 +3499,17 @@ class TestScriptBuilderApp(App):
         numSelected = len(selected)
         
         if numSelected > 1:
-            for action in selected:
-                results = session.query(KeyAction).filter(KeyAction.name == action).all()
+            for action in selected_ids:
+                results = session.query(KeyAction).filter(KeyAction.id == action).all()
                 if len(results) > 1:
                     raise KeyError('Business Key Violation in table key action')
                 elif len(results) == 1:
                     result = results[0]
                     session.delete(result)
+            session.commit()
         elif numSelected == 1:
-            action = selected[0]
-            results = session.query(KeyAction).filter(KeyAction.name == action).all()
+            action = selected_ids[0]
+            results = session.query(KeyAction).filter(KeyAction.id == action).all()
             if len(results) > 1:
                 raise KeyError('Business Key Violation in table key action')
             elif len(results) == 1:
@@ -3509,7 +3534,7 @@ class TestScriptBuilderApp(App):
         Logger.debug('QKA: Clear Quick Action')
         
         #Remove all selected id's from the master list
-        del selected_ids[:]
+        del carousel_ids[:]
         
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
         keyaction = KeyActionCarouselItem(app=self)
@@ -3524,8 +3549,8 @@ class TestScriptBuilderApp(App):
         Logger.debug('QKA: Save Quick Key Action Frame')
         i = 0
         #Loop through the children of the carousel and save each one
-        if len(selected_ids)>1:
-            Logger.debug('QKA: Selected IDs Length %s' % (len(selected_ids)))
+        if len(carousel_ids)>1:
+            Logger.debug('QKA: Selected IDs Length %s' % (len(carousel_ids)))
             for child in self.root.get_screen('keyactiongroup').ids.carousel_ka.slides:
                 mod_text = child.module_in.text
                 sa_text = child.sa_in.text
@@ -3553,12 +3578,12 @@ class TestScriptBuilderApp(App):
                 orig_id_list = child.id_list
                 name_list = child.name_list
                 
-                keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
-                writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
+                keyactions = writer.SaveKeyActionByID(child, carousel_ids[i])
+                writer.SaveInputParameters(child, name_list, carousel_ids[i], orig_id_list)
                 i += 1
                 
         #If there is only one child, save it
-        elif len(selected_ids) == 1:
+        elif len(carousel_ids) == 1:
             
             child = self.root.get_screen('keyactiongroup').ids.carousel_ka.slides[0]
             
@@ -3589,8 +3614,8 @@ class TestScriptBuilderApp(App):
             
             name_list = child.name_list
 
-            keyactions = writer.SaveKeyActionByID(child, selected_ids[i])
-            writer.SaveInputParameters(child, name_list, selected_ids[i], orig_id_list)
+            keyactions = writer.SaveKeyActionByID(child, carousel_ids[i])
+            writer.SaveInputParameters(child, name_list, carousel_ids[i], orig_id_list)
         else:
             #Save the key action as a new key action
             Logger.debug('QKA: Selected IDs Length 0')
@@ -3681,8 +3706,8 @@ class TestScriptBuilderApp(App):
                         inpparam.keyactionid = keyaction.id
                 session.commit()
         self.ApplyFilterKAG(args)
-        del selected_ids[:]
-        del selected[:]
+        del carousel_ids[:]
+        #del selected[:]
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
             
     def LoadQuickAction(self, *args):
@@ -3690,12 +3715,12 @@ class TestScriptBuilderApp(App):
         self.root.get_screen('keyactiongroup').ids.carousel_ka.clear_widgets()
         numSelected = len(selected)
         
-        del selected_ids[:]
+        del carousel_ids[:]
         
         if numSelected > 1:
-            for action in selected:
+            for action in selected_ids:
                 rows = session.query(KeyAction).\
-                    filter_by(name=action).all()
+                    filter(KeyAction.id==action).all()
                 if len(rows) > 1:
                     #More than one business key is found
                     raise KeyError('Business Key Violation in table key action')
@@ -3703,15 +3728,15 @@ class TestScriptBuilderApp(App):
                     #Exactly one business key is found
                     
                     #Add the key action to the list of id's in the carousel
-                    selected_ids.append(rows[0].id)
+                    carousel_ids.append(rows[0].id)
                     
                     #Create the Key Action Carousel Item
                     keyaction = KeyActionCarouselItem(app=self)
                     
                     #Set the Module & System Area
-                    sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                    sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                     keyaction.sa_in.text = sa_rows[0].name
-                    mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                    mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                     keyaction.module_in.text = mod_rows[0].name
                     
                     #Set the Key Action attributes
@@ -3720,7 +3745,7 @@ class TestScriptBuilderApp(App):
                     keyaction.custom_in.active = rows[0].custom
                     
                     #Get the Input Parameters
-                    ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
+                    ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == action).all()
                     
                     #Add the base widget to the screen in the carousel
                     self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
@@ -3743,8 +3768,8 @@ class TestScriptBuilderApp(App):
                     raise KeyError('Business Key Called from UI that does not exist in DB')
             
         elif numSelected == 1:
-            action = selected[0]
-            rows = session.query(KeyAction).filter_by(name=action).all()
+            action = selected_ids[0]
+            rows = session.query(KeyAction).filter(KeyAction.id==action).all()
             if len(rows) > 1:
                 #More than one business key is found
                 raise KeyError('Business Key Violation in table key action')
@@ -3753,12 +3778,12 @@ class TestScriptBuilderApp(App):
                 keyaction = KeyActionCarouselItem(app=self)
                 
                 #Add the key action to the list of id's in the carousel
-                selected_ids.append(rows[0].id)
+                carousel_ids.append(rows[0].id)
                 
                 #Set the Module & System Area
-                sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                 keyaction.sa_in.text = sa_rows[0].name
-                mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.name == action)
+                mod_rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == action)
                 keyaction.module_in.text = mod_rows[0].name
                 
                 #Set the Key Action attributes
@@ -3767,7 +3792,7 @@ class TestScriptBuilderApp(App):
                 keyaction.custom_in.active = rows[0].custom
                     
                 #Get the Input Parameters
-                ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.name == action).all()
+                ip_rows = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == action).all()
                    
                 #Add the base widget to the screen in the carousel
                 self.root.get_screen('keyactiongroup').ids.carousel_ka.add_widget(keyaction)
