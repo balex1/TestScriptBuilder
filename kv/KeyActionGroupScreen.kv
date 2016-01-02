@@ -18,10 +18,6 @@
 					ActionButton:
 						text: 'Advanced Options'
 						on_press: app.AdvancedOptionsPopup_KAG(self, args[0])
-					ActionButton:
-						text: 'Quit'
-						id: quit_kag
-						on_press: app.Quit(self, args[0])
 				ActionGroup:
 					id: navigationdropdown_kag
 					text: 'Navigation'
@@ -29,10 +25,6 @@
 						text: 'Flow Editor'
 						id: workflownav_kag
 						on_press: app.GoToWorkflowPage(self, args[0])
-					ActionButton:
-						text: 'Analysis'
-						id: analysisnav_kag
-						on_press: app.GoToAnalysisPage(self, args[0])
 		BoxLayout:
 			size_hint: 1, 0.1
 			GridLayout:

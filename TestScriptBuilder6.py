@@ -17,6 +17,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
+from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 
 from sqlalchemy import Column, Integer, String, Boolean
@@ -2624,13 +2625,13 @@ class TestScriptBuilderApp(App):
                 er_popup.open()
                 return True
         if (popup.content.new_project.text is not None and popup.content.new_project.text != ""):
-            if len(cl_text) < 2:
+            if len(pr_text) < 2:
                 lbl = Label(text='Project name is not long enough')
                 er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
                 er_popup.open()
                 return True
         if (popup.content.new_testscript.text is not None and popup.content.new_testscript.text != ""):
-            if len(cl_text) < 2:
+            if len(ts_text) < 2:
                 lbl = Label(text='Test Script name is not long enough')
                 er_popup = Popup(title='Error', content=lbl, size_hint=(0.5, 0.3))
                 er_popup.open()
@@ -3052,6 +3053,7 @@ class TestScriptBuilderApp(App):
             wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
             session.add(wfa)
         session.commit()
+        self.root.get_screen('keyactiongroup').pop_up.dismiss()
         
     def AddToFlow(self, *args):
         Logger.debug('Add To Workflow')
