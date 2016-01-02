@@ -998,9 +998,12 @@ class DatabaseWriter():
             keyaction.custom = False
             
         #Input Parameters
-        #Assumes that ip_list is passed in as a list of text inputs
+        #Assumes that ip_list is passed in as a list of text inputs or as a list of strings
         for ip in ip_list:
-            self.SaveInputParameter(ip.text, keyaction.name)
+            if isinstance(ip, basestring):
+                self.SaveInputParameter(ip, keyaction.name)
+            else:
+                self.SaveInputParameter(ip.text, keyaction.name)
             
         session.commit()
             
@@ -1084,7 +1087,7 @@ class DatabaseWriter():
         #Module
         rows = session.query(Module).join(SystemArea).join(KeyAction).filter(KeyAction.id == id).all()
         if len(rows) > 1:
-            raise KeyError('Business Key Violation in table module')
+            Logger.debug('Business Key Violation encountered in Module table')
         elif len(rows) == 1:
             rows[0].name = child.module_in.text
         session.commit()
@@ -1093,7 +1096,7 @@ class DatabaseWriter():
         #System Area
         sa_rows = session.query(SystemArea).join(KeyAction).filter(KeyAction.id == id).all()
         if len(sa_rows) > 1:
-            raise KeyError('Business Key Violation in table system area')
+            Logger.debug('Business Key Violation encountered in System Area table')
         elif len(sa_rows) == 1:
             sa_rows[0].name = child.sa_in.text
         sa_rows[0].moduleid = rows[0].id
@@ -1103,37 +1106,40 @@ class DatabaseWriter():
         #Key Action
         ka_rows = session.query(KeyAction).filter(KeyAction.id == id).all()
         if len(ka_rows) > 1:
-            raise KeyError('Business Key Violation in table key action')
+            Logger.debug('Business Key Violation encountered in Key Action table')
         elif len(ka_rows) == 1:
-                ka_rows[0].id == child.ka_in.text
-        ka_rows[0].systemareaid = sa_rows[0].id
-        ka_rows[0].description = child.desc_in.text
-        ka_rows[0].custom = child.custom_in.active
+            Logger.debug('QKA: Single Key Action found')
+            ka_rows[0].name = child.ka_in.text
+            ka_rows[0].systemareaid = sa_rows[0].id
+            ka_rows[0].description = child.desc_in.text
+            ka_rows[0].custom = child.custom_in.active
         session.commit()
         Logger.debug('QKA: Key Action Committed %s' % (child.ka_in.text))
         return ka_rows
         
-    def ValidateInputParameter(self, input_list, ip_list, id, orig_ip_list):
+    def ValidateInputParameter(self, input_list, ip_list, ip_id, orig_ip_list):
         #Input List gives a list of text inputs
         #IP List gives a list of IP Name Strings to check against
         #ID is the Key ActionID
         #Origin IP List gives a list of the input parameter ID's in the sameorder as the ip list
 
         #How many existing parameters do we have on the action?
-        inputparams = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == id).all()
+        inputparams = session.query(InputParameter).join(KeyAction).filter(KeyAction.id == ip_id).all()            
         
         #Fill the existing parameters first
         i=0
         for param in inputparams:
             for i in range(0, len(orig_ip_list)):
                 if param.id == orig_ip_list[i]:
-                    param.name = ip_list[i]
+                    param.name = input_list[i].text
+                    Logger.debug('QKA: Input Parameter Match found on %s' % (param.name))
                 i+=1
             i=0
         
         #Add any new parameters
         for j in range(len(inputparams), len(input_list)):
-            par = InputParameter(name=input_list[j].text, keyactionid=id)
+            par = InputParameter(name=input_list[j].text, keyactionid=ip_id)
+            Logger.debug('QKA: New Input Parameter added %s' % (par.name))
             session.add(par)
             
         session.commit()
@@ -1753,8 +1759,16 @@ Builder.load_file('kv/FileChooserPopup.kv')
 Builder.load_file('kv/ExportParametersPopup.kv')
 Logger.info('KV: KV Files Loaded')
 
+#Global Variable Declarations
+
 #Create the DB Writer
 writer = DatabaseWriter()
+
+#Create the filter manager
+filter = FilterManager()
+
+#Create the export template reader
+tr = TemplateReader('test.db')
 
 #Create the Selection List
 selected = []
@@ -1764,6 +1778,9 @@ selected_ids = []
 
 #Create the list of id's in the key action carousel
 carousel_ids = []
+
+#Number of values returned in popup filters
+popup_filter_limit = 10
 
 class KeyActionGroupScreen(Screen):
     pop_up=ObjectProperty(None)
@@ -1892,14 +1909,8 @@ class SelectableButton(ToggleButton):
             selected_ids.remove(self.object_id)
         
 #------------------------------------------------------------
-#----------------Central App---------------------------------
+#----------------Central App Class---------------------------
 #------------------------------------------------------------
-
-#Create the filter manager
-filter = FilterManager()
-
-#Create the export template reader
-tr = TemplateReader('test.db')
 
 #Create the Screenmanager and add the Screens
 sm = ScreenManager()
@@ -1995,10 +2006,9 @@ class TestScriptBuilderApp(App):
     def ExecuteExport(self, *args):
          params = []
          xml_path = os.path.abspath('src/export_templates/%s' % (self.root.get_screen('keyactiongroup').original_pop_up.content.conn_panel.db.type_spinner.text))
-         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip1.text)
-         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip2.text)
-         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip3.text)
-         params.append(self.root.get_screen('keyactiongroup').pop_up.content.ip4.text)
+         popup=self.root.get_screen('keyactiongroup').pop_up
+         for inp in popup.content.input_grid.children:
+             params.append(inp.text)
          tr.translate_template(xml_path, params)
      
     def RunMigration(self, *args):
@@ -2061,51 +2071,28 @@ class TestScriptBuilderApp(App):
                  
              if self.root.get_screen('keyactiongroup').pop_up.content.conn_panel.db.direction_spinner.text == 'Import':
                  
-                 if import_type == 0:
-                 
-                     #Delete everything from the key action import tables
-                     imp = session.query(InputParameterImport).all()
-                     for i in imp:
-                         session.delete(i)
-                         
-                     ka = session.query(KeyActionImport).all()
-                     for i in ka:
-                         session.delete(i)
-                         
-                     sa = session.query(SystemAreaImport).all()
-                     for i in sa:
-                         session.delete(i)
-                         
-                     mod = session.query(ModuleImport).all()
-                     for i in mod:
-                         session.delete(i)
-                         
-                     prod = session.query(ProductImport).all()
-                     for i in prod:
-                         session.delete(i)
-                         
-                 else:
+                 #Delete everything from the key action import tables
+                 imp = session.query(InputParameterImport).all()
+                 for i in imp:
+                     session.delete(i)
                      
-                     #Delete everything from the key action import tables
-                     imp = session.query(InputParameterImport).all()
-                     for i in imp:
-                         session.delete(i)
+                 ka = session.query(KeyActionImport).all()
+                 for i in ka:
+                     session.delete(i)
+                     
+                 sa = session.query(SystemAreaImport).all()
+                 for i in sa:
+                     session.delete(i)
+                     
+                 mod = session.query(ModuleImport).all()
+                 for i in mod:
+                     session.delete(i)
+                     
+                 prod = session.query(ProductImport).all()
+                 for i in prod:
+                     session.delete(i)
                          
-                     ka = session.query(KeyActionImport).all()
-                     for i in ka:
-                         session.delete(i)
-                         
-                     sa = session.query(SystemAreaImport).all()
-                     for i in sa:
-                         session.delete(i)
-                         
-                     mod = session.query(ModuleImport).all()
-                     for i in mod:
-                         session.delete(i)
-                         
-                     prod = session.query(ProductImport).all()
-                     for i in prod:
-                         session.delete(i)
+                 if import_type != 0:
                          
                      #Delete everything from the workflow import tables
                          
@@ -2216,7 +2203,7 @@ class TestScriptBuilderApp(App):
         Logger.debug('WF: Create New Subflow')
         popup = Popup(title='Load Workflow', content=LoadSubflowPopup(), size_hint=(0.4, 0.5))
         popup.open()
-        self.root.get_screen('workflow').pop_up = popup
+        self.root.get_screen('keyactiongroup').pop_up = popup
         
         #Populate all clients
         clients = session.query(Client).all()
@@ -2234,13 +2221,13 @@ class TestScriptBuilderApp(App):
         num_flows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
             filter(TestScript.name==self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
                 filter(Client.name==self.root.get_screen('workflow').current_client).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
+            num_flows = num_flows - popup_filter_limit
         results = session.query(Workflow).join(TestScript).join(Project).join(Client).\
             filter(TestScript.name==self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
-                filter(Client.name==self.root.get_screen('workflow').current_client).order_by(Workflow.id)[num_flows:num_flows+5]
+                filter(Client.name==self.root.get_screen('workflow').current_client).order_by(Workflow.id)[num_flows:num_flows+popup_filter_limit]
         
         #Populate values in spinner
         for result in results:
@@ -2249,12 +2236,14 @@ class TestScriptBuilderApp(App):
     def LoadSubflow(self, *args):
         Logger.debug('Load Subflow')
         
-        current_workflow=self.root.get_screen('workflow').pop_up.content.spinner.text
-        self.root.get_screen('workflow').current_script = self.root.get_screen('workflow').pop_up.content.lwp_testscript.text
-        self.root.get_screen('workflow').current_project = self.root.get_screen('workflow').pop_up.content.lwp_project.text
-        self.root.get_screen('workflow').current_client = self.root.get_screen('workflow').pop_up.content.lwp_client.text
-        new_workflow=self.root.get_screen('workflow').pop_up.content.new_name.text
-        self.root.get_screen('workflow').pop_up.dismiss()
+        popup = self.root.get_screen('keyactiongroup').pop_up
+        
+        current_workflow=popup.content.spinner.text
+        self.root.get_screen('workflow').current_script = popup.content.lwp_testscript.text
+        self.root.get_screen('workflow').current_project = popup.content.lwp_project.text
+        self.root.get_screen('workflow').current_client = popup.content.lwp_client.text
+        new_workflow=popup.content.new_name.text
+        self.root.get_screen('keyactiongroup').pop_up.dismiss()
         #Copy the current workflow into a new workflow
         
         #Check if the new workflow already exists
@@ -2283,7 +2272,7 @@ class TestScriptBuilderApp(App):
                     filter(TestScript.name == self.root.get_screen('workflow').current_script).filter(Project.name==self.root.get_screen('workflow').current_project).\
                         filter(Client.name==self.root.get_screen('workflow').current_client).all()
             flowaction = wfa[0]
-            ips = session.query(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==flowaction.id).all()
+            ips = session.query(InputParameter).join(WorkflowParameter).join(WorkflowAction).filter(WorkflowAction.id==flowaction.id).all()
             ip_value_list = []
             for ip in ips:
                 ip_value_list.append(ip.name)
@@ -2296,7 +2285,7 @@ class TestScriptBuilderApp(App):
         
         #Load the Key Actions from the new subflow into the editor
         keyactions = session.query(KeyAction).join(WorkflowAction).\
-            join(Workflow).join(TestScript).join(Project).Client().\
+            join(Workflow).join(TestScript).join(Project).join(Client).\
                 filter(Workflow.name==new_workflow).filter(TestScript.name == self.root.get_screen('workflow').current_script).\
                     filter(Project.name==self.root.get_screen('workflow').current_project).filter(Client.name==self.root.get_screen('workflow').current_client).all()
         
@@ -2386,7 +2375,7 @@ class TestScriptBuilderApp(App):
         #Create a Label
         lbl = Label(text='OR')
             
-        #Create an Add Option in the Draggable List
+        #Create an Or Option in the Draggable List
         drag_option = DraggableOption(img=lbl, app=self,\
             grid=self.root.get_screen('workflow').drag_grid,\
                 grid_layout=self.root.get_screen('workflow').grid_layout,\
@@ -2842,37 +2831,39 @@ class TestScriptBuilderApp(App):
     def ApplyLoadWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
         
-        #Clear the Spinners
-        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
-        del self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values[:]
-        
         #Get Filter Values
         wf = ''
         ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
         cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
         
+        #Clear the Spinners
+        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        del self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values[:]
+        
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 1:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+5)
+            num_flows = num_flows - popup_filter_limit
+        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+popup_filter_limit)
         
         #Get Result set from Filter Manager
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts+5)
+            num_scripts = num_scripts - popup_filter_limit
+        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts+popup_filter_limit)
         
         #Load Result Set Into Spinner
         for result in results:
+            Logger.debug('Result appended %s' % (result.name))
             self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
             
         for script in scripts:
+            Logger.debug('Script appended %s' % (script.name))
             self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values.append(script.name)
             
     def ApplyLoadWorkflowPopupFilter_Script(self, *args):
@@ -2889,11 +2880,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+5)
+            num_flows = num_flows - popup_filter_limit
+        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+popup_filter_limit)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -2919,22 +2910,22 @@ class TestScriptBuilderApp(App):
         
         #Populate the latest 5 test scripts into the spinner
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+            num_scripts = num_scripts - popup_filter_limit
+        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+popup_filter_limit]
         
         for script in scripts:
             popup.content.lwp_testscript.values.append(script.name)
         
         #Populate the latest 5 workflows into the spinner
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
+            num_flows = num_flows - popup_filter_limit
+        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+popup_filter_limit]
         
         #Populate values in spinner
         for result in results:
@@ -3097,11 +3088,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+            num_flows = num_flows - popup_filter_limit
+        results = filter.FindWorkflows(wf, ts, cl, pr, popup_filter_limit, num_flows)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -3121,11 +3112,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
+            num_scripts = num_scripts - popup_filter_limit
+        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + popup_filter_limit)
         
         #Load Result Set Into Spinner
         for script in scripts:
@@ -3133,11 +3124,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = filter.FindWorkflows(wf, ts, cl, pr, 5, num_flows)
+            num_flows = num_flows - popup_filter_limit
+        results = filter.FindWorkflows(wf, ts, cl, pr, popup_filter_limit, num_flows)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -3157,11 +3148,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
+            num_scripts = num_scripts - popup_filter_limit
+        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + popup_filter_limit)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -3181,11 +3172,11 @@ class TestScriptBuilderApp(App):
         
         #Get Result Set from Filter Manager
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + 5)
+            num_scripts = num_scripts - popup_filter_limit
+        results = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + popup_filter_limit)
         
         #Load Result Set Into Spinner
         for result in results:
@@ -3211,22 +3202,22 @@ class TestScriptBuilderApp(App):
         
         #Populate the latest 5 test scripts into the spinner
         num_scripts = session.query(TestScript).count()
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+            num_scripts = num_scripts - popup_filter_limit
+        scripts = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+popup_filter_limit]
         
         for script in scripts:
             popup.content.atwp_testscript.values.append(script.name)
         
         #Populate the latest 5 workflows into the spinner
         num_flows = session.query(Workflow).count()
-        if num_flows - 5 < 0:
+        if num_flows - popup_filter_limit < 0:
             num_flows = 0
         else:
-            num_flows = num_flows - 5
-        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+5]
+            num_flows = num_flows - popup_filter_limit
+        results = session.query(Workflow).order_by(Workflow.id)[num_flows:num_flows+popup_filter_limit]
         
         #Populate values in spinner
         for result in results:
@@ -3253,11 +3244,11 @@ class TestScriptBuilderApp(App):
         #Get the latest 5 Test Scripts
         num_scripts = session.query(TestScript).count()
         Logger.debug('Num Scripts %s' % (num_scripts))
-        if num_scripts - 5 < 0:
+        if num_scripts - popup_filter_limit < 0:
             num_scripts = 0
         else:
-            num_scripts = num_scripts - 5
-        results = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+5]
+            num_scripts = num_scripts - popup_filter_limit
+        results = session.query(TestScript).order_by(TestScript.id)[num_scripts:num_scripts+popup_filter_limit]
         Logger.debug('Num Results %s' % (len(results)))
         
         #Populate values in spinner
@@ -3502,7 +3493,7 @@ class TestScriptBuilderApp(App):
             for action in selected_ids:
                 results = session.query(KeyAction).filter(KeyAction.id == action).all()
                 if len(results) > 1:
-                    raise KeyError('Business Key Violation in table key action')
+                    Logger.debug('Business Key Violation encountered in Key Action table')
                 elif len(results) == 1:
                     result = results[0]
                     session.delete(result)
@@ -3511,7 +3502,7 @@ class TestScriptBuilderApp(App):
             action = selected_ids[0]
             results = session.query(KeyAction).filter(KeyAction.id == action).all()
             if len(results) > 1:
-                raise KeyError('Business Key Violation in table key action')
+                Logger.debug('Business Key Violation encountered in Key Action table')
             elif len(results) == 1:
                 result = results[0]
                 session.delete(result)
@@ -3655,7 +3646,7 @@ class TestScriptBuilderApp(App):
                 prod_rows = session.query(Product).filter(Product.name == self.root.get_screen('keyactiongroup').current_product).all()
                 rows = session.query(Module).filter(Module.name == child.module_in.text).all()
                 if len(rows) > 1:
-                    raise KeyError('Business Key Violation in table module')
+                    Logger.debug('Business Key Violation encountered in Module table')
                 elif len(rows) != 1:
                     mod = Module()
                     mod.name = child.module_in.text
@@ -3667,7 +3658,7 @@ class TestScriptBuilderApp(App):
                 #System Area
                 sa_rows = session.query(SystemArea).filter(SystemArea.name == child.sa_in.text).all()
                 if len(sa_rows) > 1:
-                    raise KeyError('Business Key Violation in table system area')
+                    Logger.debug('Business Key Violation encountered in System Area table')
                 elif len(sa_rows) == 1:
                     sa_rows[0].name == child.sa_in.text
                     if len(rows) == 1:
@@ -3723,7 +3714,7 @@ class TestScriptBuilderApp(App):
                     filter(KeyAction.id==action).all()
                 if len(rows) > 1:
                     #More than one business key is found
-                    raise KeyError('Business Key Violation in table key action')
+                    Logger.debug('Business Key Violation encountered in Key Action table')
                 elif len(rows) == 1:
                     #Exactly one business key is found
                     
@@ -3765,14 +3756,14 @@ class TestScriptBuilderApp(App):
                         i+=1
                 else:
                     #No matching business keys are found
-                    raise KeyError('Business Key Called from UI that does not exist in DB')
+                    Logger.debug('Business Key Called from UI that does not exist in DB')
             
         elif numSelected == 1:
             action = selected_ids[0]
             rows = session.query(KeyAction).filter(KeyAction.id==action).all()
             if len(rows) > 1:
                 #More than one business key is found
-                raise KeyError('Business Key Violation in table key action')
+                Logger.debug('Business Key Violation encountered in Key Action table')
             elif len(rows) == 1:
                 #Exactly one business key is found
                 keyaction = KeyActionCarouselItem(app=self)
@@ -3813,7 +3804,7 @@ class TestScriptBuilderApp(App):
                     
             else:
                 #No matching business keys are found
-                raise KeyError('Business Key Called from UI that does not exist in DB')
+                Logger.debug('Business Key Called from UI that does not exist in DB')
     
 if __name__ == '__main__':
     TestScriptBuilderApp().run()

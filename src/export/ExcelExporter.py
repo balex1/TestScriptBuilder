@@ -81,6 +81,7 @@ class TemplateReader():
         #Wild Card Counter
         wc_counter = 0
         
+        #Clear the sheets out of the workbook
         sn = self.wb.get_sheet_names()
         for s in sn:
             self.wb.remove_sheet(self.wb.get_sheet_by_name(s))
