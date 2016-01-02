@@ -3364,9 +3364,6 @@ class TestScriptBuilderApp(App):
     def GoToWorkflowPage(self, *args):
         Logger.debug('Go To Workflow Page')
         sm.current='workflow'
-
-    def GoToAnalysisPage(self, *args):
-        Logger.debug('Go To Analysis Page')
         
     def GoToKeyActionGroupPage(self, *args):
         Logger.debug('Go To Key Action Page')
