@@ -31,7 +31,7 @@
 				Label:
 					text: 'Project'
 				Spinner:
-					on_text: app.ApplyWorkflowPopupFilter_Script(self, args[0])
+					on_text: app.ApplyWorkflowPopupFilter(self, args[0])
 					id: atwp_project
 			GridLayout:
 				size_hint: 0.5, 1
@@ -40,7 +40,7 @@
 					text: 'TestScript'
 				Spinner:
 					size_hint: 0.5, 1
-					on_text: app.ApplyWorkflowPopupFilter(self, args[0])
+					on_text: app.ApplyWorkflowPopupFilter_Script(self, args[0])
 					id: atwp_testscript
 		GridLayout:
 			cols: 2

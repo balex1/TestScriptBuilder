@@ -136,12 +136,19 @@ class TemplateReader():
                         segment_counter = 0
                         body_ws = self.wb.create_sheet(page.attrib['name'])
                         for segment in page:
-                            if segment.tag == 'TestScriptSummary':
-                                #Execute the specialized Test Script Summary
-                                pass
-                            elif segment.tag == 'TestScriptSteps':
+                            if segment.tag == 'TestScriptSteps':
                                 #Execute the specialized Test Script Steps Export
-                                pass
+                                #We expect the first input parameter to be Test Script, then Project, then Client, 
+                                #After those, others can be used and added to the template
+                            
+                                #Grab the test script name
+                                ts_name = segment.attrib['name']
+                                
+                                #Set the parameter counter so that it doesn't break after running this
+                                param_counter+=3
+                                
+                                #Find the workflows associated with the test script
+                                workflows = self.cur.execute('select wf.name from workflow wf left join testscript ts on ts.id = wf.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where ts.name = %s and p.name = %s and c.name = %s order by w.id;' % (params[0], params[1], params[2]))
                             else:
                                 for child in segment:
                                     if child.tag == 'Title':

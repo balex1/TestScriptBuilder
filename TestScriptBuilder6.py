@@ -2828,19 +2828,13 @@ class TestScriptBuilderApp(App):
             if len(wp) != 0:
                 lbl.text = wp[0].value
             self.root.get_screen('workflow').ids.wf_carousel.ipgrid_in.add_widget(lbl)
-        
-    def ApplyLoadWorkflowPopupFilter(self, *args):
-        Logger.debug('Apply workflow filter popup')
-        
-        #Get Filter Values
-        wf = ''
-        ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
-        cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
-        pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
-        
-        #Clear the Spinners
-        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
-        del self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values[:]
+            
+    def LoadFilterWorkflows(self, workflow, testscript, client, project, spinner):
+        #Load the filter values into the relevent spinner
+        Logger.debug('Load Popup Filter Workflows')
+    
+        #Clear the spinner
+        del spinner.values[:]
         
         #Get Result Set from Filter Manager
         num_flows = session.query(Workflow).count()
@@ -2848,7 +2842,19 @@ class TestScriptBuilderApp(App):
             num_flows = 0
         else:
             num_flows = num_flows - popup_filter_limit
-        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+popup_filter_limit)
+        results = filter.FindWorkflows(workflow, testscript, client, project, num_flows, num_flows+popup_filter_limit)
+        
+        #Load Result Set Into Spinner
+        for result in results:
+            Logger.debug('Result appended %s' % (result.name))
+            spinner.values.append(result.name)
+            
+    def LoadFilterTestscripts(self, workflow, testscript, client, project, spinner):
+        #Load the filter values into the relevent spinner
+        Logger.debug('Load Popup Filter Test Scripts')
+    
+        #Clear the spinner
+        del spinner.values[:]
         
         #Get Result set from Filter Manager
         num_scripts = session.query(TestScript).count()
@@ -2856,22 +2862,15 @@ class TestScriptBuilderApp(App):
             num_scripts = 0
         else:
             num_scripts = num_scripts - popup_filter_limit
-        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts+popup_filter_limit)
+        scripts = filter.FindTestScripts(workflow, testscript, client, project, num_scripts, num_scripts+popup_filter_limit)
         
         #Load Result Set Into Spinner
-        for result in results:
-            Logger.debug('Result appended %s' % (result.name))
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
-            
         for script in scripts:
             Logger.debug('Script appended %s' % (script.name))
-            self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.values.append(script.name)
-            
-    def ApplyLoadWorkflowPopupFilter_Script(self, *args):
-        Logger.debug('Apply workflow filter popup')
+            spinner.values.append(script.name)
         
-        #Clear the Spinners
-        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+    def ApplyLoadWorkflowPopupFilter(self, *args):
+        Logger.debug('Apply load workflow filter popup')
         
         #Get Filter Values
         wf = ''
@@ -2879,17 +2878,28 @@ class TestScriptBuilderApp(App):
         cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
         
-        #Get Result Set from Filter Manager
-        num_flows = session.query(Workflow).count()
-        if num_flows - popup_filter_limit < 0:
-            num_flows = 0
-        else:
-            num_flows = num_flows - popup_filter_limit
-        results = filter.FindWorkflows(wf, ts, cl, pr, num_flows, num_flows+popup_filter_limit)
+        #Define spinners
+        workflow_spinner = self.root.get_screen('keyactiongroup').pop_up.content.spinner
+        testscript_spinner = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript
+
+        #Load the popups
+        self.LoadFilterWorkflows(wf, ts, cl, pr, workflow_spinner)
+        self.LoadFilterTestscripts(wf, ts, cl, pr, testscript_spinner)
+            
+    def ApplyLoadWorkflowPopupFilter_Script(self, *args):
+        Logger.debug('Apply load workflow script filter popup')
         
-        #Load Result Set Into Spinner
-        for result in results:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+        #Get Filter Values
+        wf = ''
+        ts = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript.text
+        cl = self.root.get_screen('keyactiongroup').pop_up.content.lwp_client.text
+        pr = self.root.get_screen('keyactiongroup').pop_up.content.lwp_project.text
+        
+        #Define spinner
+        testscript_spinner = self.root.get_screen('keyactiongroup').pop_up.content.lwp_testscript
+
+        #Load the popup
+        self.LoadFilterTestscripts(wf, ts, cl, pr, testscript_spinner)
             
     def LoadWorkflowPopup(self, *args):
         Logger.debug('WF: Load Workflow Popup')
@@ -3058,29 +3068,29 @@ class TestScriptBuilderApp(App):
     def AddToFlow(self, *args):
         Logger.debug('Add To Workflow')
         
-        current_workflow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
+        new_flow=self.root.get_screen('keyactiongroup').pop_up.content.spinner.text
         new_script=self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript.text
         new_project=self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
         new_client=self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
         
         workflows = session.query(Workflow).join(TestScript).join(Project).join(Client).\
-            filter(Workflow.name==current_workflow).filter(TestScript.name==new_script).\
+            filter(Workflow.name==new_flow).filter(TestScript.name==new_script).\
             filter(Project.name == new_project).filter(Client.name == new_client).all()
         if len(workflows) < 1:
             lbl = Label(text='No Workflow Found')
             popup = Popup(title='Error', content=lbl, size_hint=(0.4, 0.5))
             popup.open()
-        for option in selected:
-            keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
-            wfa = WorkflowAction(workflowid=workflow.id, keyactionid=keyaction.id)
-            session.add(wfa)
+        else:
+            for option in selected:
+                keyaction = session.query(KeyAction).filter(KeyAction.name==option).one()
+                wfa = WorkflowAction(workflowid=workflows[0].id, keyactionid=keyaction.id)
+                session.add(wfa)
         session.commit()
         
     def ApplyWorkflowPopupFilter(self, *args):
         Logger.debug('Apply workflow filter popup')
         
-        #Clear the Spinner
-        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        workflow_spinner = self.root.get_screen('keyactiongroup').pop_up.content.spinner
         
         #Get Filter Values
         wf = ''
@@ -3088,23 +3098,13 @@ class TestScriptBuilderApp(App):
         cl = self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
         
-        #Get Result Set from Filter Manager
-        num_flows = session.query(Workflow).count()
-        if num_flows - popup_filter_limit < 0:
-            num_flows = 0
-        else:
-            num_flows = num_flows - popup_filter_limit
-        results = filter.FindWorkflows(wf, ts, cl, pr, popup_filter_limit, num_flows)
-        
-        #Load Result Set Into Spinner
-        for result in results:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+        self.LoadFilterWorkflows(wf, ts, cl, pr, workflow_spinner)
             
     def ApplyWorkflowPopupFilter_Script(self, *args):
-        Logger.debug('Apply workflow filter popup')
+        Logger.debug('Apply workflow script filter popup')
         
-        #Clear the Spinner
-        del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
+        testscript_spinner = self.root.get_screen('keyactiongroup').pop_up.content.atwp_testscript
+        workflow_spinner = self.root.get_screen('keyactiongroup').pop_up.content.spinner
         
         #Get Filter Values
         wf = ''
@@ -3112,32 +3112,11 @@ class TestScriptBuilderApp(App):
         cl = self.root.get_screen('keyactiongroup').pop_up.content.atwp_client.text
         pr = self.root.get_screen('keyactiongroup').pop_up.content.atwp_project.text
         
-        #Get Result Set from Filter Manager
-        num_scripts = session.query(TestScript).count()
-        if num_scripts - popup_filter_limit < 0:
-            num_scripts = 0
-        else:
-            num_scripts = num_scripts - popup_filter_limit
-        scripts = filter.FindTestScripts(wf, ts, cl, pr, num_scripts, num_scripts + popup_filter_limit)
-        
-        #Load Result Set Into Spinner
-        for script in scripts:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(script.name)
-        
-        #Get Result Set from Filter Manager
-        num_flows = session.query(Workflow).count()
-        if num_flows - popup_filter_limit < 0:
-            num_flows = 0
-        else:
-            num_flows = num_flows - popup_filter_limit
-        results = filter.FindWorkflows(wf, ts, cl, pr, popup_filter_limit, num_flows)
-        
-        #Load Result Set Into Spinner
-        for result in results:
-            self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
+        self.LoadFilterWorkflows(wf, ts, cl, pr, workflow_spinner)
+        self.LoadFilterTestscripts(wf, ts, cl, pr, testscript_spinner)
         
     def ApplyCreateWorkflowPopupFilterI(self, *args):
-        Logger.debug('Apply workflow filter popup')
+        Logger.debug('Apply create workflow filter popup I')
         
         #Clear the Spinner
         del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
@@ -3161,7 +3140,7 @@ class TestScriptBuilderApp(App):
             self.root.get_screen('keyactiongroup').pop_up.content.spinner.values.append(result.name)
             
     def ApplyCreateWorkflowPopupFilterII(self, *args):
-        Logger.debug('Apply workflow filter popup')
+        Logger.debug('Apply create workflow filter popup II')
         
         #Clear the Spinner
         del self.root.get_screen('keyactiongroup').pop_up.content.spinner.values[:]
