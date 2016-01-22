@@ -13,6 +13,7 @@ if platform.system() == 'Windows':
     import openpyxl.utils as Utils
 import sqlite3 as lite
 import os
+from ObjectClasses import _Workflow, _KeyAction, _InputParameter
 
 class TemplateReader():
     #Read the XML Template and generate SQL Queries based on it
@@ -66,6 +67,57 @@ class TemplateReader():
                     #Add each value to the parameter list
                     param_list.append(value.text)
         return param_list
+        
+    def execute_workflow_export(self, flow, worksheet, row, column):
+        #Export the _Workflow object to the specified row and column on the excel sheet
+        pass
+        
+    def generate_workflow_export(self, workflow_name, testscript, project, client, worksheet, row, column):
+        
+        #The number of rows in the workflow to be returned
+        num_rows = 0
+        
+        #Find the workflow
+        self.cur.execute('select wf.id, wf.name from workflow wf left join testscript ts on ts.id = wf.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where wf.name = %s and ts.name = %s and p.name = %s and c.name = %s order by w.id;' % (workflow_name, testscript, project, client))
+        flow = self.cur.fetchone()
+        
+        workflow = _Workflow()
+        workflow.name = flow[1]
+        workflow.id = flow[0]
+        
+        #Find the Key Actions for the workflow
+        self.cur.execute('select ka.id, ka.name, ka.description, ka.custom, wfa.expectedresult, wfa.notes from ((workflowaction wfa left join keyaction ka on wfa.keyactionid = ka.id) left join workflow w on wfa.workflowid = w.id) where w.id = %s;' % (workflow[0]))
+        keyactions = self.cur.fetchall()
+        
+        for action in keyactions:
+            
+            keyaction = _KeyAction()
+            keyaction.id = action[0]
+            keyaction.name = action[1]
+            keyaction.description = action[2]
+            if action[3] == 0:
+                keyaction.custom = False
+            else:
+                keyaction.custom = True
+            keyaction.expected_result = action[4]
+            keyaction.notes = action[5]
+            workflow.add_keyaction(keyaction)
+            
+            #Find the Input Parameters for the Key Action
+            self.cur.execute('select ip.id, ip.name, wp.value from ((inputparameter ip left join keyaction ka on ip.keyactionid = ka.id) left join workflowparam wp on wp.inputparamid = ip.id) where ka.id = %s;' % (action[0]))
+            inputparameters = self.cur.fetchall()
+            for param in inputparameters:
+                input_parameter = _InputParameter()
+                input_parameter.id = param[0]
+                input_parameter.name = param[1]
+                input_parameter.value = param[2]
+                keyaction.add_inputparameter(input_parameter)
+                num_rows+=1
+                
+        #TODO - Write the _Workflow object to the Excel Sheet
+        self.execute_workflow_export(workflow, worksheet, row, column)
+            
+        return num_rows
     
     #Takes in the XML path of the template file
     #params is a list of the input parameters for the template
@@ -138,17 +190,43 @@ class TemplateReader():
                         for segment in page:
                             if segment.tag == 'TestScriptSteps':
                                 #Execute the specialized Test Script Steps Export
+                                #This segment needs to be hardcoded due to the ability to construct
+                                #nonlinear workflows.
+                                #Here, we process a full testscript and output each workflow in an optimized state
+                            
                                 #We expect the first input parameter to be Test Script, then Project, then Client, 
                                 #After those, others can be used and added to the template
                             
-                                #Grab the test script name
-                                ts_name = segment.attrib['name']
+                                start_cell = segment.attrib['cell']
                                 
                                 #Set the parameter counter so that it doesn't break after running this
                                 param_counter+=3
                                 
                                 #Find the workflows associated with the test script
-                                workflows = self.cur.execute('select wf.name from workflow wf left join testscript ts on ts.id = wf.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where ts.name = %s and p.name = %s and c.name = %s order by w.id;' % (params[0], params[1], params[2]))
+                                self.cur.execute('select wf.id, wf.name from workflow wf left join testscript ts on ts.id = wf.testscriptid) left join project p on ts.projectid = p.id) left join client c on p.clientid = c.id where ts.name = %s and p.name = %s and c.name = %s order by w.id;' % (params[0], params[1], params[2]))
+                                workflows = self.cur.fetchall()
+                                
+                                #Iterate over the cells
+                                col = Utils.column_index_from_string(start_cell[0])
+                                row = int(float(start_cell[1]))
+                                
+                                flow_counter = 0
+                                
+                                for workflow in workflows:
+                                    w_row = row + flow_counter
+                                    w_col = col
+                                    flow_counter += self.generate_workflow_export(workflow[1], params[0], params[1], params[2], body_ws, w_row, w_col)
+                            elif segment.tag == 'WorkflowSteps':
+                                #Execute a single workflow export
+                            
+                                start_cell = segment.attrib['cell']
+                                
+                                col = Utils.column_index_from_string(start_cell[0])
+                                row = int(float(start_cell[1]))
+                            
+                                #We expect the first input parameter to be Test Script, then Project, then Client, then Workflow
+                                #After those, others can be used and added to the template
+                                self.generate_workflow_export(params[3], params[0], params[1], params[2], row, col)
                             else:
                                 for child in segment:
                                     if child.tag == 'Title':
